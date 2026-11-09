@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.0.1",
+    "date": "2026-11-09",
+    "title": "Clearer wording",
+    "items": [
+      "The data browser shows row ranges as \"1 to 12 of 12\"",
+      "Storage settings say \"Nothing to clean\" where they used to show a lone dash",
+      "A project with no Git branch shows \"none\" instead of a dash",
+      "Read-only database errors read as two plain sentences",
+      "The export option now says compressed files are usually 5 to 10 times smaller",
+      "Skipped checks in localsites doctor are marked with a plain hyphen"
+    ]
+  },
+  {
     "version": "1.0.0",
     "date": "2026-11-09",
     "title": "LocalSites 1.0 for macOS",

@@ -12,7 +12,7 @@
   "info": {
     "companyName": "LocalSites",
     "productName": "LocalSites",
-    "productVersion": "1.0.0",
+    "productVersion": "1.0.1",
     "copyright": "MIT License",
     "comments": "Local PHP and MySQL sites with real HTTPS domains"
   }
