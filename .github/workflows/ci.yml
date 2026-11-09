@@ -25,3 +25,14 @@ jobs:
         run: |
           GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/...
           GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/...
+
+  linux-unit-tests:
+    # Linux support is in progress (docs/LINUX.md); this shows what still assumes macOS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Unit tests (engine and CLI; the desktop app needs WebKitGTK, milestone 4)
+        run: go test $(go list ./... | grep -v '/desktop$')
