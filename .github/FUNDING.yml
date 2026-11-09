@@ -3,5 +3,5 @@
 # To turn one off, delete its line or put # in front of it.
 
 github: itismowgli                               # GitHub Sponsors
-# custom: ["https://rzp.io/rzp/your-page"]       # Razorpay Payment Page (UPI and cards)
+custom: ["https://rzp.io/rzp/localSites"]        # Razorpay Payment Page (UPI and cards)
 # buy_me_a_coffee: your-bmc-name                 # Buy Me a Coffee
