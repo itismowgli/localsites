@@ -1,3 +1,27 @@
+# Search engines and AI assistants are welcome to read and cite this site.
+# A plain-text summary for language models: https://itismowgli.github.io/localsites/llms.txt
+
 User-agent: *
 Allow: /
+
+# AI search and assistant crawlers, named so it's clear they're allowed
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Applebot
+User-agent: Bingbot
+User-agent: DuckAssistBot
+User-agent: meta-externalagent
+User-agent: MistralAI-User
+User-agent: CCBot
+Allow: /
+
 Sitemap: https://itismowgli.github.io/localsites/sitemap.xml

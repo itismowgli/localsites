@@ -2,7 +2,7 @@ name: Website
 on:
   push:
     branches: [master]
-    paths: ["site/**", "docs/screenshots/**", "docs/brand/**", ".github/FUNDING.yml", "tools/support.mjs", ".github/workflows/pages.yml"]
+    paths: ["site/**", "docs/screenshots/**", "docs/brand/**", ".github/FUNDING.yml", "tools/support.mjs", ".github/workflows/pages.yml", "README.md"]
   workflow_dispatch:
 
 permissions:
@@ -29,6 +29,8 @@ jobs:
           cp -R docs/screenshots _site/screenshots
           cp -R docs/brand _site/brand
           mkdir -p _site/fonts && cp desktop/frontend/dist/fonts/* _site/fonts/
+          # the README as plain Markdown for language models (llms.txt links to it); drops the HTML-only lines
+          grep -vE '^\s*<(img|div|/div|br|details|/details|summary)|^\[!\[|^<!-- ' README.md > _site/llms-full.txt
       - name: Turn the support options on or off (from .github/FUNDING.yml)
         run: node tools/support.mjs --site _site/index.html
       - uses: actions/upload-pages-artifact@v3

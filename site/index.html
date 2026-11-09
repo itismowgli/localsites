@@ -7,6 +7,9 @@
 <meta name="description" content="Local PHP and web development on your Mac. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js. Free, open source, with an MCP server for AI coding agents.">
 <meta name="keywords" content="MAMP PRO alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
 <link rel="canonical" href="https://itismowgli.github.io/localsites/">
+<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
+<meta name="author" content="itismowgli">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)">
 <meta name="color-scheme" content="dark light">
@@ -32,16 +35,61 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "LocalSites",
+  "alternateName": [
+    "LocalSites for macOS",
+    "localsites"
+  ],
   "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Local web development environment",
   "operatingSystem": "macOS",
   "softwareVersion": "1.0.0",
+  "datePublished": "2026-11-09",
+  "softwareRequirements": "macOS on Apple silicon, Homebrew (httpd, mysql@8.4, php)",
+  "fileSize": "22MB",
+  "isAccessibleForFree": true,
   "license": "https://opensource.org/licenses/MIT",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "Free, open-source local web development environment for macOS: HTTPS .test domains, PHP per project, MySQL, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Free, open-source local web development environment for macOS and a MAMP PRO alternative: HTTPS .test domains for every folder, PHP 7.4 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "featureList": [
+    "HTTPS .test domain for every project folder",
+    "PHP 7.4 to 8.5 per project with isolated PHP-FPM pools",
+    "Apache or Nginx, Xdebug per project",
+    "MySQL 8.4 with one login per project",
+    "Data browser for MySQL, MariaDB, PostgreSQL and SQLite",
+    "Copy databases from MAMP PRO, MAMP or XAMPP, checked row by row",
+    "Laravel Valet compatible",
+    "Runs Next.js and Node dev servers behind HTTPS",
+    "MCP server for Claude, Cursor, VS Code and Windsurf, with approval for risky actions",
+    "Git panel with GitHub pull request and CI status",
+    "Mailpit, Redis, Valkey, Memcached, PostgreSQL, Meilisearch and MinIO add-ons",
+    "Share a site through a Cloudflare quick tunnel or bore",
+    "CLI with JSON output"
+  ],
+  "keywords": "MAMP PRO alternative, local development environment, macOS, PHP, MySQL, Laravel, WordPress, Next.js, HTTPS .test domains, Laravel Valet, MCP server, AI coding agents",
   "url": "https://itismowgli.github.io/localsites/",
   "downloadUrl": "https://github.com/itismowgli/localsites/releases/latest",
+  "installUrl": "https://github.com/itismowgli/localsites#install",
+  "releaseNotes": "https://github.com/itismowgli/localsites/releases",
   "codeRepository": "https://github.com/itismowgli/localsites",
-  "screenshot": "https://itismowgli.github.io/localsites/screenshots/projects.jpg"
+  "programmingLanguage": "Go",
+  "image": "https://itismowgli.github.io/localsites/brand/social-preview.png",
+  "screenshot": [
+    "https://itismowgli.github.io/localsites/screenshots/projects.jpg",
+    "https://itismowgli.github.io/localsites/screenshots/data-browser.jpg",
+    "https://itismowgli.github.io/localsites/screenshots/agents.jpg"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "itismowgli",
+    "url": "https://github.com/itismowgli"
+  },
+  "sameAs": [
+    "https://github.com/itismowgli/localsites"
+  ]
 }
 </script>
 <script type="application/ld+json">
@@ -49,16 +97,70 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "Is LocalSites a free alternative to MAMP PRO?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row."}},
-    {"@type": "Question", "name": "How do I run several PHP versions on a Mac?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for."}},
-    {"@type": "Question", "name": "Does LocalSites work with Laravel Valet?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains."}},
-    {"@type": "Question", "name": "Can AI coding agents use LocalSites?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app."}},
-    {"@type": "Question", "name": "Does LocalSites run on Windows or Linux?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned."}}
+    {
+      "@type": "Question",
+      "name": "Is LocalSites a free alternative to MAMP PRO?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I run several PHP versions on a Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does LocalSites work with Laravel Valet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can AI coding agents use LocalSites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What do I need to install first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Homebrew, then brew install httpd mysql@8.4 php, plus any other php@X.Y versions you want. LocalSites uses them directly."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I get HTTPS .test domains for local sites on a Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://<folder>.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I connect Claude Code, Cursor or VS Code to my local sites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Open Settings → AI agents and click Connect next to your client, or run localsites mcp config. For Claude Code: claude mcp add localsites -- \"$(which localsites)\" mcp. The agent can then list projects, switch PHP versions, read logs and run health checks."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does LocalSites run on Windows or Linux?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned."
+      }
+    }
   ]
 }
 </script>
@@ -468,6 +570,10 @@ footer a:hover { color: var(--text); }
           <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
         <details><summary>What do I need to install first?</summary>
           <p>Homebrew, then <code>brew install httpd mysql@8.4 php</code>, plus any other <code>php@X.Y</code> versions you want. LocalSites uses them directly.</p></details>
+        <details><summary>How do I get HTTPS .test domains for local sites on a Mac?</summary>
+          <p>Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://&lt;folder&gt;.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise.</p></details>
+        <details><summary>How do I connect Claude Code, Cursor or VS Code to my local sites?</summary>
+          <p>Open Settings → AI agents and click Connect next to your client, or run <code>localsites mcp config</code>. For Claude Code: <code>claude mcp add localsites -- "$(which localsites)" mcp</code>. The agent can then list projects, switch PHP versions, read logs and run health checks.</p></details>
         <details><summary>Does LocalSites run on Windows or Linux?</summary>
           <p>Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned.</p></details>
       </div>
