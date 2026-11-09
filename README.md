@@ -262,6 +262,13 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PLAN.md](docs/PLAN.md) for what's next.
 
 <!-- support:start -->
+## Support LocalSites
+
+LocalSites is free, with no ads, paid tier or tracking. If it saves you time, you can help keep it going:
+
+- **[Sponsor on GitHub](https://github.com/sponsors/itismowgli)**: monthly or one-time, and GitHub takes no fee
+
+Starring the repo and telling a friend helps too.
 <!-- support:end -->
 
 ## Contributing
