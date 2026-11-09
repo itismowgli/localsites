@@ -30,6 +30,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	installNativeDrag()
 	a.startTray()
+	askNotificationPermission()
 	a.watchWindow()
 	go a.nightlyInstall()
 }
