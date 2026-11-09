@@ -35,13 +35,14 @@ func (a *App) swap(method, then string) error {
 type updState struct {
 	Phase   string `json:"phase"`
 	Skipped bool   `json:"skipped"`
+	OnQuit  bool   `json:"on_quit"`
 	Latest  *struct {
 		Version string `json:"version"`
 	} `json:"latest"`
 }
 
-// updateWanted reports whether a downloaded update should install without asking now
-// (the person chose "download" or "auto"), and the mode.
+// updateWanted reports whether a downloaded update should install without asking now (the person's
+// update mode, or "when I quit" for this version), and the update mode.
 func (a *App) updateWanted() (bool, string) {
 	c, err := a.conn()
 	if err != nil {
@@ -57,8 +58,7 @@ func (a *App) updateWanted() (bool, string) {
 	if raw, err := c.Call("update.status", nil); err == nil {
 		_ = json.Unmarshal(raw, &st)
 	}
-	ok := st.Phase == "ready" && !st.Skipped && (set.Mode == "download" || set.Mode == "auto")
-	return ok, set.Mode
+	return st.Phase == "ready" && !st.Skipped && st.OnQuit, set.Mode
 }
 
 // installOnQuit runs when LocalSites quits: a ready update installs then, and the background

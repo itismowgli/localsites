@@ -88,6 +88,7 @@ type Settings struct {
 	UpdateChannel   string `json:"update_channel,omitempty"` // "stable" (default) or "beta"
 	UpdateAsked     bool   `json:"update_asked,omitempty"`   // the one-time question has been answered
 	UpdateSkip      string `json:"update_skip,omitempty"`    // a version the person chose to skip
+	UpdateLater     string `json:"update_later,omitempty"`   // a version the person chose to install when they quit
 	// Problem reports: "off" (default: nothing is sent), "ask" (send after I review), "auto" (send cleaned reports by themselves)
 	ReportMode string `json:"report_mode,omitempty"`
 }

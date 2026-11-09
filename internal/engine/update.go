@@ -8,14 +8,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/localsites/localsites/internal/config"
 	"github.com/localsites/localsites/internal/notify"
 	"github.com/localsites/localsites/internal/update"
 )
 
-// UpdateStatus is the update state plus the person's choice to skip it.
+// UpdateStatus is the update state plus the person's choices about it.
 type UpdateStatus struct {
 	update.Status
 	Skipped bool `json:"skipped,omitempty"`
+	OnQuit  bool `json:"on_quit,omitempty"` // a ready update installs when LocalSites quits
 }
 
 var updNotified sync.Map // version → already told the person
@@ -35,8 +37,18 @@ func (e *Engine) updChannel() string {
 // UpdateState returns where an update is.
 func (e *Engine) UpdateState() UpdateStatus {
 	st := e.updater().Status()
-	skip := e.Store.Get().Settings.UpdateSkip
-	return UpdateStatus{Status: st, Skipped: st.Latest != nil && skip == st.Latest.Version}
+	return updateStatus(st, e.Store.Get().Settings)
+}
+
+// updateStatus adds the person's choices to the updater's state: whether they skipped this version, and
+// whether a ready update installs when LocalSites quits (their update mode, or "when I quit" for this version).
+func updateStatus(st update.Status, s config.Settings) UpdateStatus {
+	out := UpdateStatus{Status: st}
+	if st.Latest != nil {
+		out.Skipped = s.UpdateSkip == st.Latest.Version
+		out.OnQuit = !out.Skipped && (s.UpdateMode == "download" || s.UpdateMode == "auto" || s.UpdateLater == st.Latest.Version)
+	}
+	return out
 }
 
 // CheckUpdate asks for the newest release now (always allowed, even with automatic checks off).
@@ -61,9 +73,13 @@ func (e *Engine) updateDownloaded(st update.Status) {
 	if _, seen := updNotified.LoadOrStore("ready:"+st.Latest.Version, true); seen {
 		return
 	}
-	when := "Restart LocalSites from Settings → Updates to install it, or it installs when you quit."
-	if e.Store.Get().Settings.UpdateMode == "auto" {
+	s := e.Store.Get().Settings
+	when := "Open LocalSites to restart now, or choose to install it when you quit."
+	switch {
+	case s.UpdateMode == "auto":
 		when = "It installs when you quit LocalSites, or tonight if it's still open."
+	case updateStatus(st, s).OnQuit:
+		when = "It installs when you quit LocalSites. You can also restart now from Settings → Updates."
 	}
 	notify.Send("LocalSites "+st.Latest.Version+" is ready", when)
 }
