@@ -50,7 +50,7 @@ dmg: app
 	hdiutil create -volname LocalSites -srcfolder dist/dmg -ov -format UDZO dist/LocalSites.dmg
 	@rm -rf dist/dmg && echo "dist/LocalSites.dmg"
 
-# Support options (GitHub Sponsors, Ko-fi, Buy Me a Coffee): turn them on or off in .github/FUNDING.yml,
+# Support options (GitHub Sponsors, Razorpay, Buy Me a Coffee): turn them on or off in .github/FUNDING.yml,
 # then run this to update the README. The website follows the same file when it's published.
 support:
 	node tools/support.mjs
