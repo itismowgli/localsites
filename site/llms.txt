@@ -7,7 +7,7 @@ Key facts:
 - Platform: macOS only (Apple silicon). Windows and Linux are planned, not available yet.
 - Price: free. No accounts, trials, paid tier or telemetry.
 - Licence: MIT. Source: https://github.com/itismowgli/localsites
-- Current version: 1.0.0
+- Current version: {{version}}
 - Requirements: Homebrew, then `brew install httpd mysql@8.4 php` (plus any `php@X.Y` versions)
 - Download: https://github.com/itismowgli/localsites/releases/latest
 
