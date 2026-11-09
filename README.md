@@ -18,6 +18,7 @@ run the same local stack.
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-22c55e.svg)](CONTRIBUTING.md)
 
 [**Download**](https://github.com/itismowgli/localsites/releases/latest) ·
+[Website](https://itismowgli.github.io/localsites/) ·
 [Features](#features) ·
 [Coming from MAMP PRO](#coming-from-mamp-pro) ·
 [CLI](#cli) ·

@@ -1,0 +1,26 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: LocalSites version
+      description: Settings → Updates, or run `localsites version`
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: macOS version
+      placeholder: "macOS 26.1, Apple silicon"
+  - type: textarea
+    attributes:
+      label: Problem report or logs
+      description: In Settings → Problems, open the problem and choose Copy. Passwords and personal details are removed.
+      render: text

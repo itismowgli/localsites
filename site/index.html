@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocalSites: free, open-source MAMP PRO alternative for macOS</title>
+<meta name="description" content="Local PHP and web development on your Mac. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js. Free, open source, with an MCP server for AI coding agents.">
+<meta name="keywords" content="MAMP PRO alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
+<link rel="canonical" href="https://itismowgli.github.io/localsites/">
+<meta name="theme-color" content="#0b0b0f">
+<link rel="icon" type="image/png" href="brand/app-icon-1024.png">
+<link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalSites">
+<meta property="og:title" content="LocalSites: free, open-source MAMP PRO alternative for macOS">
+<meta property="og:description" content="Every folder gets https://name.test. PHP, MySQL, Laravel, WordPress and Next.js in a 22 MB native app, with a CLI and an MCP server for AI agents.">
+<meta property="og:url" content="https://itismowgli.github.io/localsites/">
+<meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LocalSites: free, open-source MAMP PRO alternative for macOS">
+<meta name="twitter:description" content="Every folder gets https://name.test. PHP, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI agents.">
+<meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "LocalSites",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS",
+  "softwareVersion": "1.0.0",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free, open-source local web development environment for macOS: HTTPS .test domains, PHP per project, MySQL, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "url": "https://itismowgli.github.io/localsites/",
+  "downloadUrl": "https://github.com/itismowgli/localsites/releases/latest",
+  "codeRepository": "https://github.com/itismowgli/localsites",
+  "screenshot": "https://itismowgli.github.io/localsites/screenshots/projects.jpg"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Is LocalSites a free alternative to MAMP PRO?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row."}},
+    {"@type": "Question", "name": "How do I run several PHP versions on a Mac?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for."}},
+    {"@type": "Question", "name": "Does LocalSites work with Laravel Valet?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains."}},
+    {"@type": "Question", "name": "Can AI coding agents use LocalSites?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app."}},
+    {"@type": "Question", "name": "Does LocalSites run on Windows or Linux?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned."}}
+  ]
+}
+</script>
+
+<style>
+  :root { --bg:#0b0b0f; --panel:#13131a; --line:#24242e; --text:#ececf1; --muted:#9a9aa8; --accent:#7c83ff; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 24px; }
+  header.top { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--text); }
+  .brand img { width:28px; height:28px; }
+  nav a { color:var(--muted); margin-left:20px; font-size:15px; }
+  .hero { text-align:center; padding:56px 0 32px; }
+  .hero img.icon { width:112px; height:112px; }
+  h1 { font-size:clamp(32px, 5vw, 52px); line-height:1.1; letter-spacing:-0.02em; margin:16px 0 12px; }
+  .lead { color:var(--muted); font-size:19px; max-width:720px; margin:0 auto 28px; }
+  .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn { display:inline-block; padding:11px 20px; border-radius:8px; font-weight:600; border:1px solid var(--line); color:var(--text); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn:hover { text-decoration:none; filter:brightness(1.1); }
+  .note { color:var(--muted); font-size:14px; margin-top:12px; }
+  .shot { display:block; width:100%; height:auto; border-radius:12px; border:1px solid var(--line); margin:32px 0; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  section { padding:40px 0; border-top:1px solid var(--line); }
+  h2 { font-size:28px; letter-spacing:-0.01em; margin:0 0 8px; }
+  h3 { font-size:18px; margin:0 0 6px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
+  .card p { margin:0; color:var(--muted); font-size:15px; }
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:center; }
+  .split .shot { margin:0; }
+  @media (max-width:800px) { .split { grid-template-columns:1fr; } nav { display:none; } }
+  ul.ticks { padding-left:20px; color:var(--muted); } ul.ticks li { margin:6px 0; } ul.ticks b { color:var(--text); }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; overflow:auto; font:14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:10px 0; }
+  summary { cursor:pointer; font-weight:600; }
+  details p { color:var(--muted); margin:10px 0 0; }
+  footer { color:var(--muted); font-size:14px; padding:32px 0 48px; border-top:1px solid var(--line); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="brand/app-icon-1024.png" alt="" width="28" height="28">LocalSites</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#mamp">Coming from MAMP PRO</a>
+      <a href="#agents">AI agents</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/itismowgli/localsites">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <img class="icon" src="brand/app-icon-1024.png" alt="LocalSites app icon" width="112" height="112">
+      <h1>Local web development for macOS,<br>free and open source</h1>
+      <p class="lead">Every project folder gets a real <code>https://name.test</code> address. PHP, MySQL, Laravel, WordPress
+        and Next.js work out of the box. A free MAMP PRO alternative, with a CLI and an MCP server so your AI coding agent
+        runs the same local stack you do.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
+        <a class="btn" href="https://github.com/itismowgli/localsites">View on GitHub</a>
+      </div>
+      <p class="note">Version 1.0 · macOS on Apple silicon · MIT licence · No account, no telemetry</p>
+      <img class="shot" src="screenshots/projects.jpg" width="2000" height="1264"
+        alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings">
+    </div>
+
+    <section id="features">
+      <h2>Everything a local PHP and web stack needs</h2>
+      <p class="sub">One small native app, about 22 MB, that stays quiet in the background.</p>
+      <div class="grid">
+        <div class="card"><h3>HTTPS for every folder</h3><p>Drop a folder in your projects folder and open <code>https://folder.test</code>. No port numbers. Uses Laravel Valet if you have it, or its own proxy and DNS.</p></div>
+        <div class="card"><h3>PHP 7.4 to 8.5 per project</h3><p>Switch in one click. Each project gets its own PHP-FPM pool, and Laravel uses the version its composer.json asks for. Xdebug per project.</p></div>
+        <div class="card"><h3>Apache or Nginx</h3><p>Full .htaccess support on Apache, or Nginx with pretty-URL fallback. Laravel, WordPress, plain PHP and static sites are detected automatically.</p></div>
+        <div class="card"><h3>Node, Next.js, Docker, anything</h3><p>Runs your dev server behind <code>https://name.test</code> with npm, pnpm, yarn or bun, and restarts it if it crashes. Or any command, such as Django or Rails.</p></div>
+        <div class="card"><h3>MySQL with one login per project</h3><p>MySQL 8.4 LTS, no shared root, passwords in the macOS Keychain. Export, import, backups and restore. MySQL sleeps when nothing needs it.</p></div>
+        <div class="card"><h3>Add-ons when you need them</h3><p>Mailpit, Valkey and Redis, Memcached, PostgreSQL, Meilisearch and MinIO, with connection settings ready to paste.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="split">
+        <div>
+          <h2>A data browser that's safe by default</h2>
+          <p class="sub">Browse LocalSites MySQL, MAMP's MySQL, any MySQL or MariaDB over SSH, PostgreSQL and SQLite.</p>
+          <ul class="ticks">
+            <li><b>Read-only first.</b> Every connection starts read-only</li>
+            <li><b>Review before saving.</b> Edits are staged and you see the exact SQL</li>
+            <li><b>One transaction.</b> All of it saves together, or nothing does</li>
+            <li><b>Open in TablePlus, Sequel Ace or Adminer</b> with the details filled in</li>
+          </ul>
+        </div>
+        <img class="shot" src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites data browser showing a products table in MySQL">
+      </div>
+    </section>
+
+    <section id="mamp">
+      <h2>Coming from MAMP PRO</h2>
+      <p class="sub">LocalSites is free and open source. Moving over keeps your data safe.</p>
+      <ul class="ticks">
+        <li><b>Copy your databases</b> from MAMP PRO, MAMP or XAMPP in one step. The source is only read, and every table is checked row by row</li>
+        <li><b>Browse MAMP's MySQL</b> directly while you move over</li>
+        <li><b>Connect a project to its copied database</b> in one click. Your .env is backed up first</li>
+        <li><b>Keep Valet sites</b> where they are, or move one over in one click</li>
+      </ul>
+      <pre>localsites import database mamp-pro shop_db   # copy and verify; the original is untouched</pre>
+    </section>
+
+    <section id="agents">
+      <div class="split">
+        <img class="shot" src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click">
+        <div>
+          <h2>Built for you and your AI agent</h2>
+          <p class="sub">LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click.</p>
+          <ul class="ticks">
+            <li><b>Typed tools:</b> list projects, switch PHP, read logs, run health checks</li>
+            <li><b>Risky actions wait for you.</b> Approve them in the app; agents can't approve themselves</li>
+            <li><b>Passwords stay hidden</b> unless you turn that on</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="split">
+        <div>
+          <h2>Git, sharing and a Doctor</h2>
+          <ul class="ticks">
+            <li><b>Git built in:</b> branches, changes, history, and the GitHub pull request and CI status for your branch</li>
+            <li><b>Share a site</b> through a free Cloudflare tunnel, with a password and a time limit</li>
+            <li><b>Doctor</b> checks runtimes, ports, domains and certificates, with a fix for each problem</li>
+            <li><b>Keyboard-first:</b> ⌘K command palette, tabs, light and dark themes, a menu bar icon</li>
+          </ul>
+        </div>
+        <img class="shot" src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="Git panel showing branch, changed files, branch tree and commit history">
+      </div>
+    </section>
+
+    <section id="install">
+      <h2>Install</h2>
+      <p class="sub">Download the app from the <a href="https://github.com/itismowgli/localsites/releases/latest">latest release</a>. It uses PHP, Apache and MySQL from Homebrew:</p>
+      <pre>brew install httpd mysql@8.4 php        # plus any php@X.Y versions you want</pre>
+      <p class="sub">Open LocalSites, switch a project on and open <code>https://folder.test</code>.</p>
+    </section>
+
+    <section id="faq">
+      <h2>Questions</h2>
+      <details><summary>Is LocalSites a free alternative to MAMP PRO?</summary>
+        <p>Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row.</p></details>
+      <details><summary>How do I run several PHP versions on a Mac?</summary>
+        <p>Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for.</p></details>
+      <details><summary>Does LocalSites work with Laravel Valet?</summary>
+        <p>Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains.</p></details>
+      <details><summary>Can AI coding agents use LocalSites?</summary>
+        <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
+      <details><summary>Does LocalSites run on Windows or Linux?</summary>
+        <p>Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned.</p></details>
+    </section>
+  </main>
+
+  <footer>
+    LocalSites is free and open source (MIT). <a href="https://github.com/itismowgli/localsites">Source on GitHub</a> ·
+    <a href="https://github.com/itismowgli/localsites/issues">Report a problem</a>
+  </footer>
+</div>
+</body>
+</html>

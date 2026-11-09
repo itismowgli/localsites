@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://itismowgli.github.io/localsites/sitemap.xml
