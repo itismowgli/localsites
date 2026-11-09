@@ -261,6 +261,9 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PLAN.md](docs/PLAN.md) for what's next.
 
+<!-- support:start -->
+<!-- support:end -->
+
 ## Contributing
 
 Pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).

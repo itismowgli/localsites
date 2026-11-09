@@ -2,7 +2,7 @@ name: Website
 on:
   push:
     branches: [master]
-    paths: ["site/**", "docs/screenshots/**", "docs/brand/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "docs/screenshots/**", "docs/brand/**", ".github/FUNDING.yml", "tools/support.mjs", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,9 @@ jobs:
           cp -R site/. _site/
           cp -R docs/screenshots _site/screenshots
           cp -R docs/brand _site/brand
+          mkdir -p _site/fonts && cp desktop/frontend/dist/fonts/* _site/fonts/
+      - name: Turn the support options on or off (from .github/FUNDING.yml)
+        run: node tools/support.mjs --site _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

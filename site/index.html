@@ -7,7 +7,9 @@
 <meta name="description" content="Local PHP and web development on your Mac. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js. Free, open source, with an MCP server for AI coding agents.">
 <meta name="keywords" content="MAMP PRO alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
 <link rel="canonical" href="https://itismowgli.github.io/localsites/">
-<meta name="theme-color" content="#0b0b0f">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
 <link rel="icon" type="image/png" href="brand/app-icon-1024.png">
 <link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
 
@@ -62,170 +64,496 @@
 </script>
 
 <style>
-  :root { --bg:#0b0b0f; --panel:#13131a; --line:#24242e; --text:#ececf1; --muted:#9a9aa8; --accent:#7c83ff; }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif; }
-  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
-  .wrap { max-width:1040px; margin:0 auto; padding:0 24px; }
-  header.top { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--text); }
-  .brand img { width:28px; height:28px; }
-  nav a { color:var(--muted); margin-left:20px; font-size:15px; }
-  .hero { text-align:center; padding:56px 0 32px; }
-  .hero img.icon { width:112px; height:112px; }
-  h1 { font-size:clamp(32px, 5vw, 52px); line-height:1.1; letter-spacing:-0.02em; margin:16px 0 12px; }
-  .lead { color:var(--muted); font-size:19px; max-width:720px; margin:0 auto 28px; }
-  .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .btn { display:inline-block; padding:11px 20px; border-radius:8px; font-weight:600; border:1px solid var(--line); color:var(--text); }
-  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .btn:hover { text-decoration:none; filter:brightness(1.1); }
-  .note { color:var(--muted); font-size:14px; margin-top:12px; }
-  .shot { display:block; width:100%; height:auto; border-radius:12px; border:1px solid var(--line); margin:32px 0; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-  section { padding:40px 0; border-top:1px solid var(--line); }
-  h2 { font-size:28px; letter-spacing:-0.01em; margin:0 0 8px; }
-  h3 { font-size:18px; margin:0 0 6px; }
-  .sub { color:var(--muted); margin:0 0 24px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
-  .card p { margin:0; color:var(--muted); font-size:15px; }
-  .split { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:center; }
-  .split .shot { margin:0; }
-  @media (max-width:800px) { .split { grid-template-columns:1fr; } nav { display:none; } }
-  ul.ticks { padding-left:20px; color:var(--muted); } ul.ticks li { margin:6px 0; } ul.ticks b { color:var(--text); }
-  pre { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; overflow:auto; font:14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
-  details { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:10px 0; }
-  summary { cursor:pointer; font-weight:600; }
-  details p { color:var(--muted); margin:10px 0 0; }
-  footer { color:var(--muted); font-size:14px; padding:32px 0 48px; border-top:1px solid var(--line); text-align:center; }
+@font-face { font-family: "Inter var"; src: url("fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+:root {
+  --bg: #000; --bg2: #0d0d0f; --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.15);
+  --text: #f5f5f7; --muted: #a1a1a6; --dim: #6e6e73; --accent: #7c83ff; --accent2: #a5a9ff; --green: #30d158;
+  --glass: rgba(22,22,24,.72); --fill: rgba(255,255,255,.05); --fill2: rgba(255,255,255,.09); --well: rgba(0,0,0,.35);
+  --h1: linear-gradient(180deg, #fff 35%, rgba(255,255,255,.62)); --glow: rgba(124,131,255,.22);
+  --btn-bg: #f5f5f7; --btn-fg: #000; --shadow: 0 30px 80px rgba(0,0,0,.55);
+  --radius: 18px; --ease: cubic-bezier(.16,1,.3,1);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fbfbfd; --bg2: #fff; --line: rgba(0,0,0,.08); --line2: rgba(0,0,0,.13);
+    --text: #1d1d1f; --muted: #6e6e73; --dim: #86868b; --accent: #4f56d6; --accent2: #4f56d6; --green: #1f9d48;
+    --glass: rgba(251,251,253,.78); --fill: rgba(0,0,0,.03); --fill2: rgba(0,0,0,.06); --well: rgba(0,0,0,.035);
+    --h1: linear-gradient(180deg, #1d1d1f 40%, #4a4a50); --glow: rgba(79,86,214,.14);
+    --btn-bg: #1d1d1f; --btn-fg: #fff; --shadow: 0 30px 80px rgba(0,0,0,.14);
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.53 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter var", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; letter-spacing: -.011em; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+code, kbd, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { font-size: .88em; color: var(--text); background: var(--fill2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+img { max-width: 100%; height: auto; display: block; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* top bar */
+.nav { position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
+  background: var(--glass); border-bottom: 1px solid transparent; transition: border-color .3s; }
+.nav.scrolled { border-bottom-color: var(--line); }
+.nav .wrap { display: flex; align-items: center; height: 56px; gap: 32px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; }
+.brand img { width: 26px; height: 26px; border-radius: 6px; }
+.links { display: flex; gap: 26px; font-size: 13px; color: var(--muted); }
+.links a:hover { color: var(--text); }
+.nav .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 980px; font-size: 15px; font-weight: 500;
+  border: 1px solid var(--line2); background: var(--fill); color: var(--text); transition: background .2s, border-color .2s, transform .2s var(--ease); white-space: nowrap; }
+.btn:hover { background: var(--fill2); }
+.btn.primary { background: var(--btn-bg); color: var(--btn-fg); border-color: transparent; }
+.btn.primary:hover { opacity: .88; }
+.btn.sm { min-height: 32px; padding: 0 14px; font-size: 13px; }
+.btn svg { width: 16px; height: 16px; }
+
+/* hero */
+.hero { position: relative; padding: 96px 0 0; text-align: center; }
+.hero::before { content: ""; position: absolute; inset: -200px 0 auto; height: 900px; pointer-events: none; z-index: -1;
+  background: radial-gradient(55% 45% at 50% 30%, var(--glow), transparent 70%); }
+.grid-bg { position: absolute; inset: 0 0 auto; height: 700px; z-index: -1; pointer-events: none; opacity: .35;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px; mask-image: radial-gradient(ellipse 60% 60% at 50% 20%, #000 20%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 20%, #000 20%, transparent 75%); }
+.pill { display: inline-flex; align-items: center; gap: 10px; padding: 5px 14px 5px 6px; border: 1px solid var(--line2); border-radius: 999px;
+  font-size: 13px; color: var(--muted); background: var(--fill); transition: border-color .2s; }
+.pill:hover { color: var(--text); }
+.pill b { color: #fff; background: var(--accent); border-radius: 999px; padding: 1px 9px; font-weight: 600; font-size: 12px; }
+h1 { font-size: clamp(44px, 7.4vw, 84px); line-height: 1.04; letter-spacing: -.035em; font-weight: 700; margin: 28px auto 22px; max-width: 900px;
+  background: var(--h1); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { font-size: clamp(19px, 2.1vw, 22px); color: var(--muted); max-width: 640px; margin: 0 auto 36px; line-height: 1.55; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.cta .btn { min-height: 50px; padding: 0 26px; font-size: 17px; }
+.meta { margin-top: 18px; font-size: 13px; color: var(--dim); }
+.stage { position: relative; margin: 72px auto 0; max-width: 1120px; perspective: 2000px; }
+.stage::before { content: ""; position: absolute; inset: 10% 8% -4%; background: radial-gradient(50% 50% at 50% 50%, var(--glow), transparent 70%); filter: blur(60px); z-index: -1; }
+.frame { border-radius: 22px; border: 1px solid var(--line2); background: var(--bg2); padding: 8px; box-shadow: var(--shadow);
+  transform: rotateX(10deg) scale(.97); transform-origin: top center; transition: transform 1.2s var(--ease); }
+.frame.flat { transform: none; }
+.frame img { border-radius: 14px; }
+.fade-bottom { position: relative; }
+.fade-bottom::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 30%; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
+
+/* stack strip */
+.stack { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; padding: 56px 0 24px; color: var(--dim); font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+.stack span { transition: color .2s; } .stack span:hover { color: var(--text); }
+.stack-label { text-align: center; color: var(--dim); font-size: 13px; margin-top: 40px; }
+
+/* sections */
+section { padding: 120px 0 0; }
+.eyebrow { display: block; font-size: 17px; color: var(--accent2); font-weight: 600; margin-bottom: 10px; letter-spacing: -.01em; }
+h2 { font-size: clamp(34px, 4.8vw, 56px); line-height: 1.07; letter-spacing: -.03em; font-weight: 700; margin: 0 0 18px; max-width: 760px;
+  background: var(--h1); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { color: var(--muted); font-size: 19px; max-width: 600px; margin: 0 0 48px; }
+h3 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 6px; }
+.muted { color: var(--muted); }
+
+/* bento */
+.bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.tile { position: relative; grid-column: span 2; background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 28px; overflow: hidden; transition: border-color .3s; }
+.tile:hover { border-color: var(--line2); }
+.tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(400px circle at var(--x, 50%) var(--y, 0%), var(--glow), transparent 40%); opacity: 0; transition: opacity .3s; pointer-events: none; }
+.tile:hover::before { opacity: 1; }
+.tile.wide { grid-column: span 3; } .tile.full { grid-column: span 6; } .tile.big { grid-column: span 4; }
+.tile p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.viz { margin: 0 0 22px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--well); font-size: 13px; }
+.row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); flex: none; }
+.row .dot.off { background: var(--dim); box-shadow: none; }
+.row .url { font-family: ui-monospace, Menlo, monospace; color: var(--text); }
+.row .tag { margin-left: auto; color: var(--dim); font-size: 12px; }
+.lock { color: var(--green); width: 12px; height: 12px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line2); color: var(--muted); }
+.chip.on { color: #fff; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.term { font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--well); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--muted); white-space: pre; overflow: hidden; }
+.term .p { color: var(--accent2); } .term .ok { color: var(--green); } .term .c { color: var(--dim); }
+
+/* feature split */
+.split { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
+.split.rev { grid-template-columns: 7fr 5fr; }
+.split.rev .copy { order: 2; }
+.split > *, .bento > * { min-width: 0; }
+.shot { border-radius: var(--radius); border: 1px solid var(--line2); background: var(--bg2); padding: 6px; box-shadow: var(--shadow); }
+.shot img { border-radius: 13px; }
+.points { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; }
+.points li { display: grid; grid-template-columns: 20px 1fr; gap: 12px; color: var(--muted); font-size: 15.5px; }
+.points li b { color: var(--text); font-weight: 600; display: block; }
+.points svg { width: 18px; height: 18px; color: var(--accent2); margin-top: 3px; }
+
+/* approve card */
+.approve { margin-top: 28px; border: 1px solid var(--line2); border-radius: 12px; background: var(--bg2); padding: 16px; display: grid; gap: 12px; max-width: 420px; }
+.approve .h { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.approve { box-shadow: var(--shadow); }
+.approve .h i { width: 28px; height: 28px; border-radius: 8px; background: var(--fill2); display: grid; place-items: center; color: var(--accent2); flex: none; }
+.approve .h i svg { width: 16px; height: 16px; }
+.approve .b { font-size: 13.5px; color: var(--muted); }
+.approve .a { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* compare */
+.compare { width: 100%; border-collapse: collapse; font-size: 15px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.compare th, .compare td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.compare { border-collapse: separate; border-spacing: 0; background: var(--bg2); }
+.compare th { color: var(--muted); font-weight: 600; font-size: 13px; background: var(--fill); }
+.compare td:first-child { color: var(--muted); }
+.compare tr:last-child td { border-bottom: 0; }
+.yes { color: var(--green); font-weight: 600; }
+
+/* faq */
+.faq { display: grid; gap: 0; border-top: 1px solid var(--line); max-width: 820px; }
+.faq details { border-bottom: 1px solid var(--line); padding: 22px 0; }
+.faq summary { list-style: none; cursor: pointer; font-size: 18px; font-weight: 500; letter-spacing: -.01em; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--dim); font-weight: 300; font-size: 24px; line-height: 1; transition: transform .3s var(--ease); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq p { color: var(--muted); margin: 12px 0 0; max-width: 680px; }
+
+/* final */
+.final { text-align: center; padding: 160px 0 140px; position: relative; }
+.final::before { content: ""; position: absolute; left: 50%; top: 40%; width: min(700px, 100%); height: 400px; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--glow), transparent); filter: blur(40px); z-index: -1; }
+.final img { width: 112px; height: 112px; margin: 0 auto 28px; }
+.final h2 { margin: 0 auto 32px; }
+.final .meta { margin-top: 20px; }
+kbd { font-size: .85em; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line2); background: var(--fill); }
+footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+footer .grow { flex: 1; }
+footer a:hover { color: var(--text); }
+
+/* support */
+.btn.heart svg { color: #db61a2; }
+.support { display: grid; grid-template-columns: 7fr 5fr; gap: 14px; }
+.support .main { padding: 36px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+.support .main h3 { font-size: 24px; letter-spacing: -.02em; }
+.support .main .btn.primary svg { color: #db61a2; }
+.support .alts { display: grid; gap: 14px; align-content: start; }
+.support:not(:has(.main)), .support:not(:has(.alts)) { grid-template-columns: 1fr; }
+.support:not(:has(.main)) .alts { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.support .alt { display: flex; align-items: center; gap: 16px; padding: 22px 24px; }
+.support .alt .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--fill2); font-size: 22px; }
+.support .alt .ic svg { width: 22px; height: 22px; }
+.support .tile { grid-column: auto; }
+.support .alt b { display: block; font-weight: 600; color: var(--text); font-size: 16px; }
+.support .alt span { color: var(--muted); font-size: 14px; }
+.support .alt .go { margin-left: auto; color: var(--dim); }
+.support a.tile:hover .go { color: var(--text); }
+.amounts { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 900px) { .support { grid-template-columns: 1fr; } .support .main { padding: 28px; } }
+
+/* reveal */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .frame { transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+@media (max-width: 900px) {
+  .links { display: none; }
+  .bento { grid-template-columns: 1fr; } .tile, .tile.wide, .tile.big, .tile.full { grid-column: auto; }
+  .split, .split.rev { grid-template-columns: 1fr; gap: 32px; } .split.rev .copy { order: 0; }
+  section { padding-top: 88px; }
+  .frame { transform: none; }
+  .hide-sm { display: none; }
+  .compare th, .compare td { padding: 14px 12px; }
+  .term { font-size: 12px; }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a class="brand" href="./"><img src="brand/app-icon-1024.png" alt="" width="28" height="28">LocalSites</a>
-    <nav>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="brand/app-icon-1024.png" alt="" width="26" height="26">LocalSites</a>
+    <nav class="links" aria-label="Sections">
       <a href="#features">Features</a>
-      <a href="#mamp">Coming from MAMP PRO</a>
+      <a href="#data">Databases</a>
       <a href="#agents">AI agents</a>
+      <a href="#mamp">From MAMP PRO</a>
       <a href="#faq">FAQ</a>
-      <a href="https://github.com/itismowgli/localsites">GitHub</a>
+      <!-- fund:any --><a href="#support">Support</a><!-- /fund:any -->
     </nav>
-  </header>
-
-  <main>
-    <div class="hero">
-      <img class="icon" src="brand/app-icon-1024.png" alt="LocalSites app icon" width="112" height="112">
-      <h1>Local web development for macOS,<br>free and open source</h1>
-      <p class="lead">Every project folder gets a real <code>https://name.test</code> address. PHP, MySQL, Laravel, WordPress
-        and Next.js work out of the box. A free MAMP PRO alternative, with a CLI and an MCP server so your AI coding agent
-        runs the same local stack you do.</p>
-      <div class="cta">
-        <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
-        <a class="btn" href="https://github.com/itismowgli/localsites">View on GitHub</a>
-      </div>
-      <p class="note">Version 1.0 · macOS on Apple silicon · MIT licence · No account, no telemetry</p>
-      <img class="shot" src="screenshots/projects.jpg" width="2000" height="1264"
-        alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings">
+    <div class="right">
+      <a class="btn sm hide-sm" href="https://github.com/itismowgli/localsites">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub</a>
+      <!-- fund:any --><a class="btn sm heart hide-sm" href="#support"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Sponsor</a><!-- /fund:any -->
+      <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
     </div>
+  </div>
+</header>
 
-    <section id="features">
-      <h2>Everything a local PHP and web stack needs</h2>
-      <p class="sub">One small native app, about 22 MB, that stays quiet in the background.</p>
-      <div class="grid">
-        <div class="card"><h3>HTTPS for every folder</h3><p>Drop a folder in your projects folder and open <code>https://folder.test</code>. No port numbers. Uses Laravel Valet if you have it, or its own proxy and DNS.</p></div>
-        <div class="card"><h3>PHP 7.4 to 8.5 per project</h3><p>Switch in one click. Each project gets its own PHP-FPM pool, and Laravel uses the version its composer.json asks for. Xdebug per project.</p></div>
-        <div class="card"><h3>Apache or Nginx</h3><p>Full .htaccess support on Apache, or Nginx with pretty-URL fallback. Laravel, WordPress, plain PHP and static sites are detected automatically.</p></div>
-        <div class="card"><h3>Node, Next.js, Docker, anything</h3><p>Runs your dev server behind <code>https://name.test</code> with npm, pnpm, yarn or bun, and restarts it if it crashes. Or any command, such as Django or Rails.</p></div>
-        <div class="card"><h3>MySQL with one login per project</h3><p>MySQL 8.4 LTS, no shared root, passwords in the macOS Keychain. Export, import, backups and restore. MySQL sleeps when nothing needs it.</p></div>
-        <div class="card"><h3>Add-ons when you need them</h3><p>Mailpit, Valkey and Redis, Memcached, PostgreSQL, Meilisearch and MinIO, with connection settings ready to paste.</p></div>
+<main>
+  <div class="hero">
+    <div class="grid-bg"></div>
+    <div class="wrap">
+      <a class="pill reveal" href="https://github.com/itismowgli/localsites/releases/latest"><b>1.0</b> LocalSites for macOS is here &rarr;</a>
+      <h1 class="reveal">Local web development, without the fiddling</h1>
+      <p class="lead reveal">Every project folder gets a real <code>https://name.test</code> address. PHP, MySQL, Laravel, WordPress and Next.js
+        work out of the box. Free and open source, with an MCP server so your AI agent runs the same stack you do.</p>
+      <div class="cta reveal">
+        <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.67c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.27 1.23-2.51 1.25-2.57-.03-.01-2.4-.92-2.37-3.69zM14.1 5.92c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.05-.51 2.68-1.28z"/></svg>
+          Download for macOS</a>
+        <a class="btn" href="https://github.com/itismowgli/localsites">Star on GitHub</a>
       </div>
-    </section>
+      <p class="meta reveal">Free · MIT licence · Apple silicon · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap">
+      <div class="frame fade-bottom" id="heroFrame">
+        <img src="screenshots/projects.jpg" width="2000" height="1264" fetchpriority="high"
+          alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings">
+      </div>
+    </div>
+    <p class="stack-label">Works with the stack you already use</p>
+    <div class="stack wrap" aria-label="Supported stacks">
+      <span>PHP</span><span>Laravel</span><span>WordPress</span><span>Next.js</span><span>Node</span><span>MySQL</span><span>PostgreSQL</span><span>Apache</span><span>Nginx</span><span>Docker</span>
+    </div>
+  </div>
 
-    <section>
-      <div class="split">
-        <div>
-          <h2>A data browser that's safe by default</h2>
-          <p class="sub">Browse LocalSites MySQL, MAMP's MySQL, any MySQL or MariaDB over SSH, PostgreSQL and SQLite.</p>
-          <ul class="ticks">
-            <li><b>Read-only first.</b> Every connection starts read-only</li>
-            <li><b>Review before saving.</b> Edits are staged and you see the exact SQL</li>
-            <li><b>One transaction.</b> All of it saves together, or nothing does</li>
-            <li><b>Open in TablePlus, Sequel Ace or Adminer</b> with the details filled in</li>
-          </ul>
+  <section id="features">
+    <div class="wrap">
+      <div class="reveal">
+        <div class="eyebrow">Projects</div>
+        <h2>Drop in a folder. Open it over HTTPS.</h2>
+        <p class="sub">LocalSites finds your projects, works out what they are, and serves each one with the right PHP, web server and certificate.</p>
+      </div>
+      <div class="bento">
+        <div class="tile big reveal">
+          <div class="viz">
+            <div class="row"><span class="dot"></span><svg class="lock" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7H4a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 12 7h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 6H6V4.5a2 2 0 1 1 4 0V7Z"/></svg><span class="url">https://storefront.test</span><span class="tag">Laravel · PHP 8.5</span></div>
+            <div class="row"><span class="dot"></span><svg class="lock" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7H4a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 12 7h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 6H6V4.5a2 2 0 1 1 4 0V7Z"/></svg><span class="url">https://journal.test</span><span class="tag">WordPress · PHP 8.3</span></div>
+            <div class="row"><span class="dot"></span><svg class="lock" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7H4a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 12 7h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 6H6V4.5a2 2 0 1 1 4 0V7Z"/></svg><span class="url">https://dashboard.test</span><span class="tag">Next.js · pnpm</span></div>
+            <div class="row"><span class="dot off"></span><svg class="lock" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7H4a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 12 7h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 6H6V4.5a2 2 0 1 1 4 0V7Z"/></svg><span class="url">https://docs-site.test</span><span class="tag">Static</span></div>
+          </div>
+          <h3>HTTPS for every folder</h3>
+          <p>Real certificates and <code>.test</code> domains, no port numbers. Uses Laravel Valet if you have it, or its own proxy and DNS.</p>
         </div>
-        <img class="shot" src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites data browser showing a products table in MySQL">
-      </div>
-    </section>
-
-    <section id="mamp">
-      <h2>Coming from MAMP PRO</h2>
-      <p class="sub">LocalSites is free and open source. Moving over keeps your data safe.</p>
-      <ul class="ticks">
-        <li><b>Copy your databases</b> from MAMP PRO, MAMP or XAMPP in one step. The source is only read, and every table is checked row by row</li>
-        <li><b>Browse MAMP's MySQL</b> directly while you move over</li>
-        <li><b>Connect a project to its copied database</b> in one click. Your .env is backed up first</li>
-        <li><b>Keep Valet sites</b> where they are, or move one over in one click</li>
-      </ul>
-      <pre>localsites import database mamp-pro shop_db   # copy and verify; the original is untouched</pre>
-    </section>
-
-    <section id="agents">
-      <div class="split">
-        <img class="shot" src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click">
-        <div>
-          <h2>Built for you and your AI agent</h2>
-          <p class="sub">LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click.</p>
-          <ul class="ticks">
-            <li><b>Typed tools:</b> list projects, switch PHP, read logs, run health checks</li>
-            <li><b>Risky actions wait for you.</b> Approve them in the app; agents can't approve themselves</li>
-            <li><b>Passwords stay hidden</b> unless you turn that on</li>
-          </ul>
+        <div class="tile reveal">
+          <div class="viz"><div class="chips"><span class="chip">7.4</span><span class="chip">8.0</span><span class="chip">8.2</span><span class="chip">8.3</span><span class="chip">8.4</span><span class="chip on">8.5</span></div></div>
+          <h3>PHP 7.4 to 8.5, per project</h3>
+          <p>Each project gets its own PHP-FPM pool. Laravel uses the version composer.json asks for. Xdebug only where you need it.</p>
+        </div>
+        <div class="tile reveal">
+          <div class="viz"><div class="chips"><span class="chip on">Apache</span><span class="chip">Nginx</span></div><div class="chips"><span class="chip">.htaccess</span><span class="chip">pretty URLs</span><span class="chip">web root</span></div></div>
+          <h3>Apache or Nginx</h3>
+          <p>Full .htaccess on Apache, or Nginx with pretty-URL fallback. The web root is detected for you.</p>
+        </div>
+        <div class="tile reveal">
+          <div class="viz"><div class="term"><span class="p">$</span> pnpm dev --port {port}
+<span class="ok">✓</span> dashboard.test is up
+<span class="c"># restarted after a crash</span></div></div>
+          <h3>Node, Next.js, Docker, anything</h3>
+          <p>Runs your dev server behind a .test address and restarts it if it crashes. Django and Rails work too.</p>
+        </div>
+        <div class="tile reveal">
+          <div class="viz"><div class="chips"><span class="chip on">Mailpit</span><span class="chip">Redis</span><span class="chip">Valkey</span><span class="chip">Memcached</span><span class="chip">PostgreSQL</span><span class="chip">Meilisearch</span><span class="chip">MinIO</span></div></div>
+          <h3>Add-ons in one click</h3>
+          <p>Installed with Homebrew (you see the command first), with connection settings ready to paste. Reachable only from your Mac.</p>
+        </div>
+        <div class="tile wide reveal">
+          <div class="viz"><div class="term"><span class="p">$</span> localsites on shop
+<span class="ok">✓</span> https://shop.test
+<span class="p">$</span> localsites set shop php=8.3
+<span class="p">$</span> localsites db credentials shop --json</div></div>
+          <h3>A CLI for everything</h3>
+          <p>Everything the app does, from the terminal, with <code>--json</code> on every command for scripts.</p>
+        </div>
+        <div class="tile wide reveal">
+          <div class="viz">
+            <div class="row"><span class="dot"></span>Background service<span class="tag">~24 MB at idle</span></div>
+            <div class="row"><span class="dot off"></span>MySQL<span class="tag">asleep after 20 idle minutes</span></div>
+            <div class="row"><span class="dot"></span>App<span class="tag">22 MB, system web view</span></div>
+          </div>
+          <h3>Small and quiet</h3>
+          <p>No bundled browser and no polling. It waits for changes, and MySQL sleeps when nothing needs it.</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <div class="split">
-        <div>
-          <h2>Git, sharing and a Doctor</h2>
-          <ul class="ticks">
-            <li><b>Git built in:</b> branches, changes, history, and the GitHub pull request and CI status for your branch</li>
-            <li><b>Share a site</b> through a free Cloudflare tunnel, with a password and a time limit</li>
-            <li><b>Doctor</b> checks runtimes, ports, domains and certificates, with a fix for each problem</li>
-            <li><b>Keyboard-first:</b> ⌘K command palette, tabs, light and dark themes, a menu bar icon</li>
-          </ul>
-        </div>
-        <img class="shot" src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="Git panel showing branch, changed files, branch tree and commit history">
+  <section id="data">
+    <div class="wrap split">
+      <div class="copy reveal">
+        <div class="eyebrow">Databases</div>
+        <h2>A data browser that's safe by default</h2>
+        <p class="sub">LocalSites MySQL, MAMP's MySQL, any MySQL or MariaDB over SSH, PostgreSQL and SQLite.</p>
+        <ul class="points">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Read-only first</b>Every connection starts read-only.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>See the SQL before it runs</b>Edits are staged and saved in one transaction.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>One login per project</b>No shared root. Passwords live in the macOS Keychain.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Backups before anything risky</b>Export, import, restore, duplicate. Open in TablePlus, Sequel Ace or Adminer.</span></li>
+        </ul>
       </div>
-    </section>
+      <div class="shot reveal"><img src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites data browser showing a products table in MySQL"></div>
+    </div>
+  </section>
 
-    <section id="install">
-      <h2>Install</h2>
-      <p class="sub">Download the app from the <a href="https://github.com/itismowgli/localsites/releases/latest">latest release</a>. It uses PHP, Apache and MySQL from Homebrew:</p>
-      <pre>brew install httpd mysql@8.4 php        # plus any php@X.Y versions you want</pre>
-      <p class="sub">Open LocalSites, switch a project on and open <code>https://folder.test</code>.</p>
-    </section>
+  <section id="agents">
+    <div class="wrap split rev">
+      <div class="copy reveal">
+        <div class="eyebrow">AI agents</div>
+        <h2>Built for you and your agent</h2>
+        <p class="sub">LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click.</p>
+        <ul class="points">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Typed tools</b>List projects, switch PHP, read logs, run health checks.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>You approve risky actions</b>Agents can't approve themselves.</span></li>
+        </ul>
+        <div class="approve" aria-hidden="true">
+          <div class="h"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg></i><span><b>Cursor</b> <span class="muted">wants to share</span> storefront.test</span></div>
+          <div class="b">A public link with a password, for 1 hour.</div>
+          <div class="a"><span class="btn sm">Deny</span><span class="btn sm primary">Approve</span></div>
+        </div>
+      </div>
+      <div class="shot reveal"><img src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click"></div>
+    </div>
+  </section>
 
-    <section id="faq">
-      <h2>Questions</h2>
-      <details><summary>Is LocalSites a free alternative to MAMP PRO?</summary>
-        <p>Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row.</p></details>
-      <details><summary>How do I run several PHP versions on a Mac?</summary>
-        <p>Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for.</p></details>
-      <details><summary>Does LocalSites work with Laravel Valet?</summary>
-        <p>Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains.</p></details>
-      <details><summary>Can AI coding agents use LocalSites?</summary>
-        <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
-      <details><summary>Does LocalSites run on Windows or Linux?</summary>
-        <p>Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned.</p></details>
-    </section>
-  </main>
+  <section>
+    <div class="wrap split">
+      <div class="copy reveal">
+        <div class="eyebrow">Everyday</div>
+        <h2>Git, sharing and a doctor, built in</h2>
+        <ul class="points">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Git</b>Branches, changes, history, and the pull request and CI status for your branch.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Share a site</b>A free Cloudflare tunnel with a password and a time limit. Never serves .env or .git.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Doctor</b>Checks runtimes, ports, domains and certificates, with a fix for each problem.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Keyboard-first</b><kbd>⌘K</kbd> command palette, tabs, light and dark themes, a menu bar icon.</span></li>
+        </ul>
+      </div>
+      <div class="shot reveal"><img src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="Git panel showing branch, changed files, branch tree and commit history"></div>
+    </div>
+  </section>
 
-  <footer>
-    LocalSites is free and open source (MIT). <a href="https://github.com/itismowgli/localsites">Source on GitHub</a> ·
+  <section id="mamp">
+    <div class="wrap">
+      <div class="reveal">
+        <div class="eyebrow">Switching</div>
+        <h2>Coming from MAMP PRO?</h2>
+        <p class="sub">Copy your databases in one step. The source is only read, and every table is checked row by row afterwards.</p>
+      </div>
+      <div class="split" style="align-items:start">
+        <table class="compare reveal">
+          <thead><tr><th></th><th>LocalSites</th><th>MAMP PRO</th></tr></thead>
+          <tbody>
+            <tr><td>Price</td><td class="yes">Free</td><td>Paid</td></tr>
+            <tr><td>Source code</td><td class="yes">Open (MIT)</td><td>Closed</td></tr>
+          </tbody>
+        </table>
+        <div class="reveal">
+          <div class="term"><span class="p">$</span> localsites import database mamp-pro shop_db
+<span class="ok">✓</span> copied every table
+<span class="ok">✓</span> checked row by row
+<span class="c"># MAMP's copy is untouched</span></div>
+          <p class="muted" style="margin-top:18px;font-size:15px">You can also browse MAMP's MySQL while you move over, connect a project to its copied database in one click (your .env is backed up first), and keep Valet sites where they are.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="reveal">
+        <div class="eyebrow">FAQ</div>
+        <h2>Questions</h2>
+      </div>
+      <div class="faq reveal">
+        <details><summary>Is LocalSites a free alternative to MAMP PRO?</summary>
+          <p>Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row.</p></details>
+        <details><summary>How do I run several PHP versions on a Mac?</summary>
+          <p>Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for.</p></details>
+        <details><summary>Does LocalSites work with Laravel Valet?</summary>
+          <p>Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains.</p></details>
+        <details><summary>Can AI coding agents use LocalSites?</summary>
+          <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
+        <details><summary>What do I need to install first?</summary>
+          <p>Homebrew, then <code>brew install httpd mysql@8.4 php</code>, plus any other <code>php@X.Y</code> versions you want. LocalSites uses them directly.</p></details>
+        <details><summary>Does LocalSites run on Windows or Linux?</summary>
+          <p>Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- fund:any -->
+  <section id="support">
+    <div class="wrap">
+      <div class="reveal">
+        <div class="eyebrow">Support</div>
+        <h2>Free for everyone. Kept going by people like you.</h2>
+        <p class="sub">LocalSites has no ads, no paid tier and no tracking. If it saves you time, a coffee helps keep it that way.</p>
+      </div>
+      <div class="support">
+        <!-- fund:github -->
+        <div class="tile main reveal">
+          <h3>Sponsor on GitHub</h3>
+          <p>Monthly or one-time. GitHub takes no fee, so all of it goes to LocalSites.</p>
+          <div class="amounts"><span class="chip on">$5 a coffee</span><span class="chip">$15 supporter</span><span class="chip">$50 team</span><span class="chip">any amount</span></div>
+          <a class="btn primary" href="https://github.com/sponsors/{{github}}"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Become a sponsor</a>
+        </div>
+        <!-- /fund:github -->
+        <div class="alts">
+          <!-- fund:ko_fi -->
+          <a class="tile alt reveal" href="https://ko-fi.com/{{ko_fi}}">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>
+            <span><b>Ko-fi</b><span>One-off tip with a card or PayPal</span></span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+          <!-- /fund:ko_fi -->
+          <!-- fund:buy_me_a_coffee -->
+          <a class="tile alt reveal" href="https://buymeacoffee.com/{{buy_me_a_coffee}}">
+            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg></span>
+            <span><b>Buy Me a Coffee</b><span>Buy a coffee, one or a few</span></span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+          <!-- /fund:buy_me_a_coffee -->
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- /fund:any -->
+
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal">
+      <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
+      <a class="btn" href="https://github.com/itismowgli/localsites">View source</a>
+    </div>
+    <p class="meta reveal">Requires macOS on Apple silicon and Homebrew.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="./"><img src="brand/app-icon-1024.png" alt="" width="22" height="22" loading="lazy">LocalSites</a>
+    <span class="grow">Free and open source, MIT licence.</span>
+    <a href="https://github.com/itismowgli/localsites">GitHub</a>
+    <a href="https://github.com/itismowgli/localsites/releases">Releases</a>
+    <!-- fund:any --><a href="#support">Sponsor</a><!-- /fund:any -->
     <a href="https://github.com/itismowgli/localsites/issues">Report a problem</a>
-  </footer>
-</div>
+    <a href="https://github.com/itismowgli/localsites/security/policy">Security</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 8);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+  const frame = document.getElementById('heroFrame');
+  requestAnimationFrame(() => setTimeout(() => frame.classList.add('flat'), 250));
+
+  document.querySelectorAll('.tile').forEach((t) => t.addEventListener('pointermove', (e) => {
+    const r = t.getBoundingClientRect();
+    t.style.setProperty('--x', (e.clientX - r.left) + 'px'); t.style.setProperty('--y', (e.clientY - r.top) + 'px');
+  }));
+})();
+</script>
 </body>
 </html>

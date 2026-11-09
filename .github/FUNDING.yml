@@ -1,0 +1,7 @@
+# Support options. This one file turns them on or off everywhere: the Sponsor button on GitHub,
+# the website, and the README (run `make support` after changing it).
+# To turn one off, delete its line or put # in front of it.
+
+# github: itismowgli            # GitHub Sponsors: turn on once your Sponsors profile is approved
+# ko_fi: your-ko-fi-name         # Ko-fi
+# buy_me_a_coffee: your-bmc-name # Buy Me a Coffee

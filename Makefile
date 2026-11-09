@@ -1,4 +1,4 @@
-.PHONY: build cli app dmg release test e2e e2e-ui test-all lint
+.PHONY: build cli app dmg release test e2e e2e-ui test-all lint support
 
 VERSION := $(shell sed -n 's/^const Version = "\(.*\)"/\1/p' internal/version/version.go)
 ARCH := $(shell go env GOARCH)
@@ -50,6 +50,11 @@ dmg: app
 	hdiutil create -volname LocalSites -srcfolder dist/dmg -ov -format UDZO dist/LocalSites.dmg
 	@rm -rf dist/dmg && echo "dist/LocalSites.dmg"
 
+# Support options (GitHub Sponsors, Ko-fi, Buy Me a Coffee): turn them on or off in .github/FUNDING.yml,
+# then run this to update the README. The website follows the same file when it's published.
+support:
+	node tools/support.mjs
+
 # Unit tests: fast, no services
 test:
 	go test ./...
@@ -68,4 +73,5 @@ lint:
 	@test -z "$$(gofmt -l cmd internal desktop e2e)" || (gofmt -l cmd internal desktop e2e; exit 1)
 	go vet ./...
 	node --check desktop/frontend/dist/app.js
+	node tools/support.mjs --check
 	@! grep -n '@container\|cqw' desktop/frontend/dist/styles.css || (echo 'No CSS container queries: they make window resizing lag in WebKit. Use the size classes (docs/DESIGN.md).'; exit 1)
