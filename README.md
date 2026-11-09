@@ -170,12 +170,36 @@ LocalSites uses PHP, Apache and MySQL from Homebrew:
 brew install httpd mysql@8.4 php        # plus any php@X.Y versions you want
 ```
 
+Unzip the download and drag **LocalSites.app** into your Applications folder.
+
+### First launch: "Apple could not verify LocalSites"
+
+LocalSites isn't notarized by Apple yet, because notarizing needs a paid Apple Developer account. The app is open
+source, so you can read the code or [build it yourself](#build-from-source). The first time you open it, macOS
+blocks it. To allow it once:
+
+1. Open **LocalSites.app**. macOS says it couldn't verify the app. Click **Done** (not Move to Trash).
+2. Open **System Settings → Privacy & Security** and scroll down to **Security**.
+3. Next to "LocalSites was blocked to protect your Mac", click **Open Anyway**.
+4. Enter your password or use Touch ID, then click **Open Anyway** again.
+
+macOS remembers your choice, so you only need to do this once.
+
+If you prefer the Terminal, this does the same thing:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/LocalSites.app
+```
+
+### Start it
+
 Open **LocalSites.app**. It starts its background service and lists every folder in `~/Sites/localhost`
 (change it in Settings). Switch a project on and open `https://<folder>.test`.
 
 If you use Laravel Valet, LocalSites uses Valet's domains and certificates. Otherwise it runs its own; trust its
 certificate once so browsers don't warn. **Doctor** shows the one command to run.
 
+<a id="build-from-source"></a>
 <details>
 <summary><b>Build from source</b></summary>
 
