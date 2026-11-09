@@ -155,6 +155,7 @@ var Methods = []Method{
 	{Name: "sites.install", Description: "Install a project's dependencies in the background (composer or npm/pnpm/yarn/bun)", Mutates: true, Params: []Param{pFolder}},
 	{Name: "sites.check", Description: "Test one project end to end: DNS, PHP pool, database socket, HTTPS response and certificate trust", Params: []Param{pFolder}},
 	{Name: "doctor", Description: "Full health check of LocalSites with a fix for each problem"},
+	{Name: "attention", Description: "How many things need the person: folders waiting for macOS access, failed Doctor checks (from the last run) and running projects with a problem"},
 	{Name: "logs", Description: "Last lines of a log", Params: []Param{
 		{Name: "kind", Type: "string", Description: "Which log", Required: true, Enum: []string{"apache", "mysql", "site-error", "site-access", "site-php", "site-app", "site-install", "addon", "addon-install"}},
 		{Name: "folder", Type: "string", Description: "Project folder (for site-* logs) or add-on id (for addon logs)"},
@@ -390,7 +391,11 @@ func (s *Server) call(method string, body []byte) (any, error) {
 	case "methods":
 		return Methods, nil
 	case "doctor":
-		return e.Doctor(), nil
+		checks := e.Doctor()
+		e.NoteDoctor(checks)
+		return checks, nil
+	case "attention":
+		return e.Attention(), nil
 	case "sites.check":
 		return e.CheckSite(a.Folder), nil
 	case "debug.bundle":
