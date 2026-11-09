@@ -1,0 +1,58 @@
+name: Sentry release
+
+# Creates the Sentry release for each version tag, links the commits since the last release, finalizes it
+# and records a production deploy. Problem reports from the app are tagged "localsites@<version>"
+# (internal/problems/send.go), so the name here must stay exactly the same.
+#
+# Needs the SENTRY_AUTH_TOKEN repository secret (an organization auth token from Sentry).
+# To backfill an older version: Actions → Sentry release → Run workflow, and enter its tag.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to create in Sentry, for example v1.1.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - name: Check the auth token is set
+        id: token
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN is not set, so no Sentry release was created. Add it under Settings → Secrets and variables → Actions."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0 # linking commits needs the full history
+      - name: Release name
+        if: steps.token.outputs.ok == 'true'
+        id: name
+        run: echo "release=localsites@${TAG#v}" >> "$GITHUB_OUTPUT"
+      - name: Create the Sentry release, link commits, finalize, record the deploy
+        if: steps.token.outputs.ok == 'true'
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: pixel-perfection-ru
+          SENTRY_PROJECT: localsites
+        with:
+          release: ${{ steps.name.outputs.release }}
+          environment: production
+          finalize: true
