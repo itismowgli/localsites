@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Only the app's own files: no outside scripts, frames or connections, even through a bug -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws://localhost:* ws://wails.localhost:*; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<title>LocalSites</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="win">
+  <header class="topbar drag" id="topbar">
+    <button class="tb-btn" id="tbSidebar" title="Toggle sidebar (⌘\)"></button>
+    <button class="tb-btn" id="tbActivity" title="Recent activity"></button>
+    <button class="tb-btn" id="tbBack" title="Back (⌘[)"></button>
+    <button class="tb-btn" id="tbFwd" title="Forward (⌘])"></button>
+    <div class="tabs" id="tabs"></div>
+    <button class="tb-btn" id="tbNewTab" title="New tab (⌘T)"></button>
+  </header>
+  <div class="body" id="body">
+    <aside class="side" id="side"></aside>
+    <section class="panel">
+      <div class="ph" id="ph"></div>
+      <div class="pm"><div class="view" id="view"></div><aside class="detail" id="detail"></aside></div>
+    </section>
+  </div>
+  <footer class="statusbar" id="statusbar"></footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="palette" role="dialog" aria-label="Command palette">
+    <input id="pInput" placeholder="Type a command or search projects…" autocomplete="off" spellcheck="false">
+    <div class="list" id="pList"></div>
+    <div class="foot"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>↵</kbd> run</span><span><kbd>esc</kbd> close</span></div>
+  </div>
+</div>
+<div class="overlay" id="keysOverlay"><div class="dialog" id="keysDialog"></div></div>
+<div class="menu" id="menu"></div>
+<div class="approvals" id="approvals" aria-live="assertive"></div>
+<div class="toasts" id="toasts"></div>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

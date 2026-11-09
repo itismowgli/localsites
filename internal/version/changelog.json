@@ -1,0 +1,203 @@
+[
+  {
+    "version": "0.16.0",
+    "date": "2026-11-02",
+    "title": "Database tools for every database",
+    "items": [
+      "Databases: each row has Open and a ⋯ menu, so the page never spills sideways",
+      "Export a database to .sql or .sql.gz: structure and data, structure only, or data only",
+      "Import a .sql, .sql.gz or .zip file. Lines that would create or switch to another database are skipped, so everything lands where you chose",
+      "Backups and restore, Duplicate, Empty and Delete. Anything that removes or replaces data is backed up first; Delete asks you to type the name",
+      "PostgreSQL add-on: its databases are listed under Databases with the same tools, and each opens in the data browser",
+      "Data browser: Export and Import for any connection (MAMP MySQL, remote MySQL/MariaDB over SSH, PostgreSQL, SQLite). Export only reads; import needs a connection that allows changes and saves what is there first",
+      "Problem reports: when a DNS or ad blocker stops the report server, LocalSites says so and how to allow it, instead of failing"
+    ]
+  },
+  {
+    "version": "0.15.0",
+    "date": "2026-11-02",
+    "title": "Problems: see what went wrong, report it if you want",
+    "items": [
+      "Settings → Problems lists crashes of the app or the background service, services that stopped unexpectedly or kept crashing, failed installs and updates, and errors in the app, with the details needed to fix them",
+      "Problem reports are off by default. Choose Ask me (review each report first) or Automatic; you can also just copy a report into a GitHub issue",
+      "Every report is cleaned before you see it: passwords, tokens, e-mail and IP addresses and your user name are removed, and project names become codes",
+      "Optional: attach a debug bundle, cleaned the same way",
+      "Readable text: the Filter badge, quiet text and placeholders now have enough contrast in both themes; settings pages no longer spill sideways"
+    ]
+  },
+  {
+    "version": "0.14.0",
+    "date": "2026-11-02",
+    "title": "Quieter in the background",
+    "items": [
+      "The app and the menu bar no longer ask the service for news every few seconds: the service tells them when something changes, so changes show at once and an idle LocalSites does nothing",
+      "A window left in the menu bar, minimized or hidden for 3 minutes unloads its page and stops all of its timers; it comes back on the same tabs when you open it. Never while something is unsaved",
+      "Fixed: tests that could fail on a busy Mac"
+    ]
+  },
+  {
+    "version": "0.13.0",
+    "date": "2026-11-02",
+    "title": "Updates inside the app: opt-in, signed, with a way back",
+    "items": [
+      "Settings → Updates: check now, or let LocalSites check once a day (off until you turn it on; only the public release list is read)",
+      "Choose what happens: tell me, download and install when I quit, or install automatically at night",
+      "Download and install in one click: LocalSites restarts by itself and projects pause for a few seconds. Release notes and security fixes show before you install",
+      "Every update is signed. The signature, the checksum and the new app itself are checked before anything is replaced; a bad download is deleted",
+      "The previous version is kept: switch back in one click. Settings are backed up before every update",
+      "Stable or beta channel; skip a version you don't want; the menu bar and the help button show when an update is waiting"
+    ]
+  },
+  {
+    "version": "0.12.0",
+    "date": "2026-11-01",
+    "title": "Lighter and safer: MySQL sleeps, Storage page, safer shares",
+    "items": [
+      "LocalSites MySQL uses about 65% less memory (486 → 172 MB) and less disk, and it starts only when a project, Adminer or Data needs it. After 20 minutes unused it stops (Settings → MySQL → Keep running to turn this off)",
+      "Apache and PHP keep fewer idle processes",
+      "Settings → Storage shows what uses disk space (databases, add-on data, backups, logs, .env backups) with clean-up buttons",
+      "Shares have a password by default; “No password” must be chosen on purpose. After 10 wrong passwords in 10 minutes a visitor is refused for a while, and dotfiles (.env, .git) are never served. The share box shows visits and refused attempts",
+      "The app's page only loads its own files (Content-Security-Policy)",
+      "Fixed: PHP workers could keep running after a project or test stopped"
+    ]
+  },
+  {
+    "version": "0.11.0",
+    "date": "2026-10-28",
+    "title": "Menu bar, notifications, update check",
+    "items": [
+      "Menu bar icon: running projects open in one click, shared sites, agent requests waiting for approval, restart services, open or quit LocalSites",
+      "Closing the window keeps LocalSites running in the menu bar",
+      "Notifications when a service had to be restarted after a crash and when an install finishes",
+      "Settings → What's new → Check now looks for a newer release on GitHub"
+    ]
+  },
+  {
+    "version": "0.10.0",
+    "date": "2026-10-28",
+    "title": "PostgreSQL, search and storage add-ons; GitHub status; smarter agents",
+    "items": [
+      "New add-ons: PostgreSQL (set up on first start, browsable in Data), Meilisearch (search) and MinIO (S3-compatible storage), with settings for every stack",
+      "Git panel: the open pull request and latest CI run for the current branch on GitHub (works with SSH host aliases)",
+      "AI agents: a one-call project summary (no secrets), project summaries and logs as MCP resources, and ready-made prompts to diagnose or explain a project"
+    ]
+  },
+  {
+    "version": "0.9.0",
+    "date": "2026-10-28",
+    "title": "Nginx, Xdebug, PHP extensions, MySQL root password",
+    "items": [
+      "Serve any PHP project with Nginx instead of Apache (pretty URLs fall back to index.php; dotfiles stay private)",
+      "Xdebug per project: switch it on for the project you're debugging; others stay fast. LocalSites loads Xdebug only in its own PHP, never changing your php.ini",
+      "Settings → PHP lists each version's extensions",
+      "Change the LocalSites MySQL root password (random and strong by default); everything keeps working and it stays in the keychain"
+    ]
+  },
+  {
+    "version": "0.8.0",
+    "date": "2026-10-28",
+    "title": "AI agents: connect in one click, approve risky actions",
+    "items": [
+      "Settings → AI agents: connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click; the config file is backed up first and only the LocalSites entry changes. Zed gets a copyable snippet",
+      "Risky agent actions (stop services, share a site, save data edits, empty a cache) wait for you to click Approve in the app, with a macOS notification; agents can't approve themselves",
+      "Agents no longer pass a confirm flag themselves; the decision is always yours"
+    ]
+  },
+  {
+    "version": "0.7.0",
+    "date": "2026-10-28",
+    "title": "Open in your apps, Adminer, steadier service",
+    "items": [
+      "Open a project in the editors, terminals, git apps and browsers you have (VS Code, Cursor, Zed, PhpStorm, iTerm2, Warp, Ghostty, GitHub Desktop, Fork…); pick your editor and terminal in Settings",
+      "Open a database in TablePlus or Sequel Ace with the details filled in; the password goes to your clipboard, never on a command line",
+      "Adminer at adminer.test: a checked copy is downloaded the first time; sign in with a database's own login",
+      "The service never freezes on a macOS folder-permission prompt: the folder is shown as waiting and is picked up after you click Allow; running projects keep running",
+      "Background refreshes only redraw what changed, so clicks are never lost"
+    ]
+  },
+  {
+    "version": "0.6.0",
+    "date": "2026-10-27",
+    "title": "Share a site on the internet",
+    "items": [
+      "Share a running project through a free tunnel (Cloudflare quick tunnel or bore), no account needed",
+      "Each share has its own gateway: optional password, only that one site is reachable, redirects use the public address",
+      "Shares stop by themselves after 15 minutes to 24 hours; the status bar shows what is live; stop any time",
+      "Tunnel clients install with one click (Homebrew), like add-ons",
+      "CI on GitHub: lint, unit tests and build on every push"
+    ]
+  },
+  {
+    "version": "0.5.0",
+    "date": "2026-10-27",
+    "title": "Add-ons for any language",
+    "items": [
+      "Add-ons in Services: Mailpit (catches outgoing email), Valkey, Redis and Memcached. Install with one click; Homebrew runs in the background and the app shows the command first",
+      "PHP mail() goes to Mailpit automatically while it is on; the inbox opens at mail.test",
+      "Connect a project: ready-to-copy settings for Laravel, Node / Next.js, Django, Rails or any language",
+      "Flush a cache, send a test email, change ports and options; Doctor checks every add-on you switch on",
+      "Native Mac window: double-click the title bar to zoom, ⌃⌘F full screen, Window menu, no white flash or lag while resizing",
+      "A shared design system (docs/DESIGN.md) so every screen and service looks the same",
+      "Connect to LocalSites MySQL: copy-paste settings for Laravel, Node / Next.js, Django, Rails, WordPress, PHP, the terminal and GUI apps, with the real port, socket and each database's own login",
+      "Ports and addresses: one table in Services with every address LocalSites uses, each copyable",
+      "Narrow windows: a project opens full width with its properties as chips under the title",
+      "Smoother window resizing (about 1 ms of layout per frame instead of 7 ms)"
+    ]
+  },
+  {
+    "version": "0.4.0",
+    "date": "2026-10-27",
+    "title": "Git, safe editing and a calmer, faster app",
+    "items": [
+      "Filters: Filter → Type, Status, Folder, Group, Git account or PHP version, shown as chips you can change or remove; Display options for grouping, ordering and which properties show",
+      "Nested sidebar: folders open into their groups, Databases lists each database and opens it in the data browser",
+      "Data browser View and Edit modes: edits are staged in the grid, you review the exact SQL, and everything is saved in one transaction (nothing is saved if a row changed meanwhile)",
+      "Git panel per project: changed files, ahead/behind, fetch, fast-forward pull, branch tree, switch and create branches (refused when you have uncommitted work), commit graph",
+      "Per-project environment variables and php.ini overrides; Docker projects (any command and the port it publishes)",
+      "Serve a Valet site with LocalSites in one click, without editing Valet's settings",
+      "SSH tunnels for remote databases (your own ssh keys), SQL history and autocomplete, CSV export to a file",
+      "Smooth panel, menu and dialog animations; the layout adapts down to phone-width windows",
+      "Uses less CPU: project scans and PHP detection are cached and the app refreshes less often in the background; logs are rotated at 10 MB"
+    ]
+  },
+  {
+    "version": "0.3.0",
+    "date": "2026-10-27",
+    "title": "Every project, every folder",
+    "items": [
+      "Add as many projects folders as you like, each with a label; group folders (one per git account) are found automatically",
+      "Laravel, WordPress, Next.js, Node and plain PHP detected; Laravel gets public/ and the PHP version its composer.json asks for",
+      "Run anything with a custom command ({port} is filled in): Python, Ruby, Go, Rust…",
+      "Next.js and Node dev servers behind https://name.test, restarted if they crash; busy ports move automatically",
+      "Git branch and account (GitHub, GitLab, Bitbucket or your SSH aliases) on every project; group by folder, account or type",
+      "Sites Laravel Valet already serves show up as “Served by Valet”",
+      "A new Overview and empty states"
+    ]
+  },
+  {
+    "version": "0.2.0",
+    "date": "2026-10-26",
+    "title": "Settings, database browser, What's new and a cleaner interface",
+    "items": [
+      "Data: a TablePlus-style browser for MAMP PRO MySQL, LocalSites MySQL, any MySQL/MariaDB, PostgreSQL and SQLite with tables, rows, structure and SQL",
+      "Every database connection starts read-only; changes need an explicit switch and are blocked by the server otherwise",
+      "Settings you can edit: projects folder, start at login, domains and ports, PHP defaults, MySQL port",
+      "Connect a project to its copied database in one click (.env is backed up first, with undo)",
+      "Help menu with What's new, debug bundle, status and keyboard shortcuts",
+      "Lucide icons and the Inter font, bundled for offline use; consistent spacing, focus rings and dialogs",
+      "Activity feed showing what the app, CLI and AI agents changed"
+    ]
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-10-26",
+    "title": "First working version on macOS",
+    "items": [
+      "Apache with .htaccess, one PHP pool per project, PHP 7.4 to 8.5 per project",
+      "MySQL 8.4 LTS with a separate login per project, passwords in the Keychain",
+      "Copy databases from MAMP PRO read-only, verified row by row",
+      "Doctor, connection checks, debug bundle and an MCP server for AI agents",
+      "Desktop app with tabs, command palette and keyboard shortcuts"
+    ]
+  }
+]

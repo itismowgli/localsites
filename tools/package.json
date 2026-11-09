@@ -1,0 +1,13 @@
+{
+  "name": "localsites-ui-assets",
+  "private": true,
+  "description": "Bundles Lucide icons and the Inter font into the desktop UI (offline, no CDN).",
+  "scripts": {
+    "build": "node build-assets.mjs"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "5.2.8",
+    "lucide-static": "0.555.0",
+    "simple-icons": "^15.22.0"
+  }
+}

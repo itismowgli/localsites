@@ -1,0 +1,19 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "LocalSites",
+  "outputfilename": "LocalSites",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dir": "frontend",
+  "wailsjsdir": "",
+  "author": {
+    "name": "LocalSites contributors"
+  },
+  "info": {
+    "companyName": "LocalSites",
+    "productName": "LocalSites",
+    "productVersion": "0.16.0",
+    "copyright": "MIT License",
+    "comments": "Local PHP and MySQL sites with real HTTPS domains"
+  }
+}

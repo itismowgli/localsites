@@ -1,0 +1,8 @@
+/bin/
+/desktop/build/bin/
+*.log
+.DS_Store
+tests/ui/test-results/
+tests/ui/playwright-report/
+node_modules/
+dist/
