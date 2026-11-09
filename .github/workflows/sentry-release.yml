@@ -34,6 +34,10 @@ jobs:
             echo "::warning::SENTRY_AUTH_TOKEN is not set, so no Sentry release was created. Add it under Settings → Secrets and variables → Actions."
             echo "ok=false" >> "$GITHUB_OUTPUT"
           else
+            case "$SENTRY_AUTH_TOKEN" in
+              sntrys_*|sntryu_*) ;;
+              *) echo "::error::SENTRY_AUTH_TOKEN doesn't look like a Sentry auth token (they start with sntrys_). Save it again: copy the token in Sentry, then run gh secret set SENTRY_AUTH_TOKEN in Terminal and paste it at the prompt."; exit 1 ;;
+            esac
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@v4
