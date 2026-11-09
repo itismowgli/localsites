@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.17.0",
+    "date": "2026-11-09",
+    "title": "New icon, clearer activity, tighter security",
+    "items": [
+      "A new app icon, with the macOS 26 Liquid Glass look, plus a matching menu bar icon and sidebar logo",
+      "Recent activity: times stay on one line, actions are described in plain words, and repeats are counted (×3) instead of listed again",
+      "Adminer: clicking it again while it is being set up no longer starts a second setup",
+      "Shared sites: the limit on wrong passwords can no longer be dodged by faking where a visitor comes from",
+      "Database names can no longer start with a dash",
+      "Buttons no longer show an icon's name as text when the icon is missing"
+    ]
+  },
+  {
     "version": "0.16.0",
     "date": "2026-11-02",
     "title": "Database tools for every database",
