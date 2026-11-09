@@ -79,7 +79,7 @@
     --bg: #f4f4f5; --bg2: #ffffff; --line: #e2e2e6; --line2: #d4d4d9;
     --text: #1d1d20; --muted: #52525a; --dim: #64646c; --accent: #1d1d20; --accent2: #3e3e44; --green: #2f9a66; --red: #d64545;
     --glass: rgba(244,244,245,.8); --fill: #ffffff; --fill2: #ececee; --well: #f4f4f5;
-    --h1: linear-gradient(180deg, #1d1d20 40%, #52525a); --glow: rgba(0,0,0,.05);
+    --h1: linear-gradient(180deg, #1d1d20 40%, #52525a); --glow: rgba(255,255,255,.95); --tile-glow: rgba(0,0,0,.035);
     --on: #1d1d20; --on-fg: #ffffff; --btn-bg: #1d1d20; --btn-fg: #ffffff; --shadow: 0 16px 48px rgba(20,20,40,.14), 0 0 0 1px rgba(0,0,0,.06);
   }
 }
@@ -158,7 +158,7 @@ h3 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 6px;
 .tile { position: relative; grid-column: span 2; background: var(--bg2); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 28px; overflow: hidden; transition: border-color .3s; }
 .tile:hover { border-color: var(--line2); }
-.tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(400px circle at var(--x, 50%) var(--y, 0%), var(--glow), transparent 40%); opacity: 0; transition: opacity .3s; pointer-events: none; }
+.tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(400px circle at var(--x, 50%) var(--y, 0%), var(--tile-glow, var(--glow)), transparent 40%); opacity: 0; transition: opacity .3s; pointer-events: none; }
 .tile:hover::before { opacity: 1; }
 .tile.wide { grid-column: span 3; } .tile.full { grid-column: span 6; } .tile.big { grid-column: span 4; }
 .tile p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
@@ -229,23 +229,19 @@ footer a:hover { color: var(--text); }
 
 /* support */
 .btn.heart svg { color: var(--red); }
-.support { display: grid; grid-template-columns: 7fr 5fr; gap: 14px; }
-.support .main { padding: 36px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
-.support .main h3 { font-size: 24px; letter-spacing: -.02em; }
-.support .main .btn.primary svg { color: var(--red); }
-.support .alts { display: grid; gap: 14px; align-content: start; }
-.support:not(:has(.main)), .support:not(:has(.alts)) { grid-template-columns: 1fr; }
-.support:not(:has(.main)) .alts { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.support .alt { display: flex; align-items: center; gap: 16px; padding: 22px 24px; }
-.support .alt .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--fill2); font-size: 22px; }
-.support .alt .ic svg { width: 22px; height: 22px; }
+.support { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
 .support .tile { grid-column: auto; }
-.support .alt b { display: block; font-weight: 600; color: var(--text); font-size: 16px; }
-.support .alt span { color: var(--muted); font-size: 14px; }
-.support .alt .go { margin-left: auto; color: var(--dim); }
-.support a.tile:hover .go { color: var(--text); }
+.support .opt { padding: 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.support .opt .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--fill2); color: var(--text); }
+.support .opt .ic svg { width: 22px; height: 22px; }
+.support .opt .ic.heart { color: var(--red); }
+.support .opt h3 { font-size: 22px; letter-spacing: -.02em; margin-top: 4px; }
+.support .opt .btn { margin-top: auto; }
+.support .opt .amounts { margin-bottom: 10px; }
+.support .opt .btn.primary svg { color: var(--red); }
 .amounts { display: flex; gap: 8px; flex-wrap: wrap; }
-@media (max-width: 900px) { .support { grid-template-columns: 1fr; } .support .main { padding: 28px; } }
+@media (prefers-color-scheme: light) { .final::before { opacity: .7; } }
+@media (max-width: 900px) { .support .opt { padding: 28px; } }
 
 /* reveal */
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
@@ -305,8 +301,8 @@ footer a:hover { color: var(--text); }
     </div>
     <div class="stage wrap">
       <div class="frame fade-bottom" id="heroFrame">
-        <img src="screenshots/projects.jpg" width="2000" height="1264" fetchpriority="high"
-          alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings">
+        <picture><source srcset="screenshots/projects-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/projects.jpg" width="2000" height="1264" fetchpriority="high"
+          alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings"></picture>
       </div>
     </div>
     <p class="stack-label">Works with the stack you already use</p>
@@ -488,29 +484,32 @@ footer a:hover { color: var(--text); }
       </div>
       <div class="support">
         <!-- fund:github -->
-        <div class="tile main reveal">
+        <div class="tile opt reveal">
+          <span class="ic heart" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>
           <h3>Sponsor on GitHub</h3>
           <p>Monthly or one-time. GitHub takes no fee, so all of it goes to LocalSites.</p>
           <div class="amounts"><span class="chip on">$5 a coffee</span><span class="chip">$15 supporter</span><span class="chip">$50 team</span><span class="chip">any amount</span></div>
           <a class="btn primary" href="{{github}}"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Become a sponsor</a>
         </div>
         <!-- /fund:github -->
-        <div class="alts">
-          <!-- fund:razorpay -->
-          <a class="tile alt reveal" href="{{razorpay}}">
-            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>
-            <span><b>Pay with UPI or card</b><span>One-off, through Razorpay</span></span>
-            <span class="go" aria-hidden="true">&rarr;</span>
-          </a>
-          <!-- /fund:razorpay -->
-          <!-- fund:buy_me_a_coffee -->
-          <a class="tile alt reveal" href="{{buy_me_a_coffee}}">
-            <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg></span>
-            <span><b>Buy Me a Coffee</b><span>Buy a coffee, one or a few</span></span>
-            <span class="go" aria-hidden="true">&rarr;</span>
-          </a>
-          <!-- /fund:buy_me_a_coffee -->
+        <!-- fund:razorpay -->
+        <div class="tile opt reveal">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/><path d="M2 10h20M6 15h4"/></svg></span>
+          <h3>Pay with UPI or card</h3>
+          <p>A one-off payment through Razorpay, handy if you're in India. Pick any amount you like.</p>
+          <div class="amounts"><span class="chip">UPI</span><span class="chip">Cards</span><span class="chip">Netbanking</span><span class="chip">any amount</span></div>
+          <a class="btn" href="{{razorpay}}">Pay with Razorpay <span aria-hidden="true">&rarr;</span></a>
         </div>
+        <!-- /fund:razorpay -->
+        <!-- fund:buy_me_a_coffee -->
+        <div class="tile opt reveal">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg></span>
+          <h3>Buy Me a Coffee</h3>
+          <p>Buy a coffee, or a few. A quick checkout with a card, no account needed.</p>
+          <div class="amounts"><span class="chip">One-off</span><span class="chip">Monthly</span></div>
+          <a class="btn" href="{{buy_me_a_coffee}}">Buy a coffee <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        <!-- /fund:buy_me_a_coffee -->
       </div>
     </div>
   </section>
