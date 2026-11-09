@@ -130,11 +130,14 @@ down to 460 px wide, plus a **menu bar icon** with your running projects, shares
 - **Live logs** for Apache, MySQL, and each project's errors, visits and PHP
 - **Problems** lists crashes and failed installs. Reporting is off by default; reports are cleaned of passwords,
   tokens, emails, IPs and your user name, and you review each one first
+- **A badge on the Dock icon** counts what needs you: failed Doctor checks, projects with a problem, agent
+  requests, problems to look at and a waiting update. The Overview lists each one and says what the number is made of
 
 ### Updates you control
 
-Opt-in update checks, **signed** downloads (signature, checksum and the app are verified before anything is
-replaced), install now or when you quit, **switch back to the previous version in one click**, stable or beta channel.
+Opt-in update checks and **signed** downloads (the signature, checksum and app are verified before anything is
+replaced). When an update is ready, LocalSites asks whether to restart now or install it when you quit. You can
+**switch back to the previous version in one click**, and choose the stable or beta channel.
 
 ## Switching from another tool
 
