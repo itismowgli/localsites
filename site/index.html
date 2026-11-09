@@ -335,6 +335,20 @@ footer a:hover { color: var(--text); }
 .support .opt .amounts { margin-bottom: 10px; }
 .support .opt .btn.primary svg { color: var(--red); }
 .amounts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg2); -webkit-overflow-scrolling: touch; }
+.cmp { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 860px; table-layout: fixed; }
+.cmp thead th:first-child { width: 200px; }
+.cmp th, .cmp td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp thead th { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.cmp tbody th { font-weight: 500; color: var(--muted); position: sticky; left: 0; background: var(--bg2); white-space: nowrap; z-index: 1; }
+.cmp .ls { background: var(--fill2); color: var(--text); font-weight: 600; }
+.cmp thead .ls { color: var(--text); }
+.cmp td.ls::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin: 0 8px 2px 0; }
+.cmp .no { color: var(--dim); }
+.cmp tbody tr:last-child > * { border-bottom: 0; }
+.cmp-note { font-size: 13px; color: var(--dim); margin: 12px 0 28px; }
+.cmp-note a { text-decoration: underline; text-underline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
 .switch .tile { grid-column: auto; }
 .switch .tile h3 { margin-bottom: 8px; }
@@ -530,6 +544,22 @@ footer a:hover { color: var(--text); }
         <h2>Coming from MAMP PRO, Herd, XAMPP or Valet?</h2>
         <p class="sub">Bring what you already have. Databases are copied, never moved, and checked row by row before you switch.</p>
       </div>
+      <div class="cmp-wrap reveal" role="region" aria-label="LocalSites compared with MAMP PRO, Laravel Herd, XAMPP, Laravel Valet and Local" tabindex="0">
+        <table class="cmp">
+          <thead><tr><th scope="col"><span class="sr">Feature</span></th><th scope="col" class="ls">LocalSites</th><th scope="col">MAMP PRO</th><th scope="col">Laravel Herd</th><th scope="col">XAMPP</th><th scope="col">Laravel Valet</th><th scope="col">Local</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Price</th><td class="ls">Free</td><td class="no">Paid licence</td><td class="">Free; Pro $99/year</td><td class="">Free</td><td class="">Free</td><td class="">Free</td></tr>
+            <tr><th scope="row">Open source</th><td class="ls">Yes (MIT)</td><td class="no">No</td><td class="no">No</td><td class="">Yes (GPL)</td><td class="">Yes (MIT)</td><td class="no">No</td></tr>
+            <tr><th scope="row">Mac app</th><td class="ls">Yes</td><td class="">Yes</td><td class="">Yes</td><td class="">Yes</td><td class="no">No, command line</td><td class="">Yes</td></tr>
+            <tr><th scope="row">HTTPS local domains</th><td class="ls">Built in</td><td class="">Yes</td><td class="">Yes</td><td class="no">Manual setup</td><td class="">Yes, per site</td><td class="">Yes</td></tr>
+            <tr><th scope="row">PHP version per project</th><td class="ls">Yes, 7.4 to 8.5</td><td class="">Yes</td><td class="">Yes</td><td class="no">One per install</td><td class="">Yes</td><td class="">Yes</td></tr>
+            <tr><th scope="row">MySQL included</th><td class="ls">Yes</td><td class="">Yes</td><td class="no">Pro only</td><td class="">Yes (MariaDB)</td><td class="no">No</td><td class="">Yes</td></tr>
+            <tr><th scope="row">MCP server for AI agents</th><td class="ls">Built in, with approvals</td><td class="">Yes</td><td class="">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">Through add-ons</td></tr>
+            <tr><th scope="row">Made for</th><td class="ls">PHP, Node and Docker</td><td class="">PHP sites</td><td class="">PHP and Laravel</td><td class="">PHP sites</td><td class="">PHP and Laravel</td><td class="">WordPress</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cmp-note reveal">From each product's own website and docs, November 2026. Something out of date? <a href="https://github.com/itismowgli/localsites/issues">Let us know</a>.</p>
       <div class="switch">
         <div class="tile reveal"><h3>MAMP PRO and MAMP</h3><p>Copy your databases in one step. The source is only read, and every table is checked row by row. Browse MAMP's MySQL in the data browser while you move over.</p></div>
         <div class="tile reveal"><h3>XAMPP</h3><p>The same one-step copy for XAMPP's databases, verified table by table. Your XAMPP install isn't changed.</p></div>
