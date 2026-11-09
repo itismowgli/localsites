@@ -4,7 +4,7 @@
 
 # LocalSites
 
-**The free, open-source MAMP PRO alternative for macOS, built for the age of AI agents.**
+**The free, open-source alternative to MAMP PRO, Laravel Herd and XAMPP for macOS, built for the age of AI agents.**
 
 Every project folder gets a real `https://name.test` address. PHP, MySQL, Node, Laravel, WordPress and Next.js
 work out of the box. A 22 MB native app, a CLI and an MCP server share one engine, so you and your AI coding agent
@@ -20,7 +20,7 @@ run the same local stack.
 [**Download**](https://github.com/itismowgli/localsites/releases/latest) ·
 [Website](https://itismowgli.github.io/localsites/) ·
 [Features](#features) ·
-[Coming from MAMP PRO](#coming-from-mamp-pro) ·
+[Switching](#switching-from-another-tool) ·
 [CLI](#cli) ·
 [AI agents](#ai-agents-mcp) ·
 [Security](#security)
@@ -133,19 +133,26 @@ down to 460 px wide, plus a **menu bar icon** with your running projects, shares
 Opt-in update checks, **signed** downloads (signature, checksum and the app are verified before anything is
 replaced), install now or when you quit, **switch back to the previous version in one click**, stable or beta channel.
 
-## Coming from MAMP PRO
+## Switching from another tool
 
-LocalSites is free and open source. MAMP PRO is a paid, closed-source app. Switching keeps your data safe:
+LocalSites is free and open source, with no paid tier. Bring what you already have; databases are copied, never
+moved, and checked row by row before you switch.
 
-- **Copy your databases** from MAMP PRO, MAMP or XAMPP in one step. The source is only read (`--single-transaction`);
-  every table is then **checked row by row**. Nothing is written to MAMP
-- **Browse MAMP's MySQL** directly in the data browser while you move over
-- **Connect a project to its copied database** in one click; your `.env` is backed up first, with undo
-- **Keep Valet sites** where they are: they show up as "Served by Valet", and you can move one to LocalSites in
-  one click without editing Valet
+| Coming from | What LocalSites does |
+|---|---|
+| **MAMP PRO / MAMP** | Copies your databases in one step. The source is only read (`--single-transaction`), every table is checked row by row, and nothing is written to MAMP. Browse MAMP's MySQL in the data browser while you move over |
+| **XAMPP** | The same one-step, verified copy of XAMPP's databases |
+| **Laravel Valet** | Works alongside it: uses Valet's domains and certificates, shows Valet sites as "Served by Valet", and moves one to LocalSites in one click without editing Valet |
+| **Laravel Herd, DBngin or another MySQL** | Export with the tool you use today, then import the `.sql`, `.sql.gz` or `.zip` file. Each project gets its own database login |
+| **Local and other WordPress setups** | Add the site's folder and import its database export. WordPress is detected automatically |
+| **Docker, Next.js, Node** | Keep your `docker compose` setup or dev server; LocalSites runs it behind `https://name.test` |
+
+Once a database is copied, **connect a project to it** in one click; your `.env` is backed up first, with undo.
 
 ```sh
-localsites import database mamp-pro shop_db   # copy + verify; the original is untouched
+localsites import sources                       # finds MAMP PRO, MAMP and XAMPP
+localsites import database mamp-pro shop_db     # copy + verify; the original is untouched
+localsites import database xampp blog_db
 ```
 
 ## Install

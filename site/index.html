@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LocalSites: free, open-source MAMP PRO alternative for macOS</title>
-<meta name="description" content="Local PHP and web development on your Mac. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js. Free, open source, with an MCP server for AI coding agents.">
-<meta name="keywords" content="MAMP PRO alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
+<title>LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac</title>
+<meta name="description" content="Free, open-source local web development for Mac: an alternative to MAMP PRO, Laravel Herd, XAMPP and Valet. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI coding agents.">
+<meta name="keywords" content="MAMP PRO alternative, Laravel Herd alternative, XAMPP alternative, Local WP alternative, DBngin alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
 <link rel="canonical" href="https://itismowgli.github.io/localsites/">
 <link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
 <meta name="author" content="itismowgli">
@@ -18,7 +18,7 @@
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LocalSites">
-<meta property="og:title" content="LocalSites: free, open-source MAMP PRO alternative for macOS">
+<meta property="og:title" content="LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac">
 <meta property="og:description" content="Every folder gets https://name.test. PHP, MySQL, Laravel, WordPress and Next.js in a 22 MB native app, with a CLI and an MCP server for AI agents.">
 <meta property="og:url" content="https://itismowgli.github.io/localsites/">
 <meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
@@ -26,7 +26,7 @@
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="LocalSites: free, open-source MAMP PRO alternative for macOS">
+<meta name="twitter:title" content="LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac">
 <meta name="twitter:description" content="Every folder gets https://name.test. PHP, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI agents.">
 <meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
 
@@ -53,7 +53,7 @@
     "price": "0",
     "priceCurrency": "USD"
   },
-  "description": "Free, open-source local web development environment for macOS and a MAMP PRO alternative: HTTPS .test domains for every folder, PHP 7.4 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "description": "Free, open-source local web development environment for macOS and an alternative to MAMP PRO, Laravel Herd, XAMPP and Laravel Valet: HTTPS .test domains for every folder, PHP 7.4 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
   "featureList": [
     "HTTPS .test domain for every project folder",
     "PHP 7.4 to 8.5 per project with isolated PHP-FPM pools",
@@ -69,7 +69,7 @@
     "Share a site through a Cloudflare quick tunnel or bore",
     "CLI with JSON output"
   ],
-  "keywords": "MAMP PRO alternative, local development environment, macOS, PHP, MySQL, Laravel, WordPress, Next.js, HTTPS .test domains, Laravel Valet, MCP server, AI coding agents",
+  "keywords": "MAMP PRO alternative, Laravel Herd alternative, XAMPP alternative, Local WP alternative, local development environment, macOS, PHP, MySQL, Laravel, WordPress, Next.js, HTTPS .test domains, Laravel Valet, MCP server, AI coding agents",
   "url": "https://itismowgli.github.io/localsites/",
   "downloadUrl": "https://github.com/itismowgli/localsites/releases/latest",
   "installUrl": "https://github.com/itismowgli/localsites#install",
@@ -99,10 +99,10 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Is LocalSites a free alternative to MAMP PRO?",
+      "name": "Is LocalSites a free alternative to MAMP PRO, Laravel Herd or XAMPP?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row."
+        "text": "Yes. LocalSites is free and open source under the MIT licence, with no paid tier. It does the same core job: an HTTPS .test address for every project, PHP per project and MySQL. It can copy your databases from MAMP PRO, MAMP or XAMPP and check every row, and works alongside Laravel Valet."
       }
     },
     {
@@ -298,14 +298,6 @@ h3 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 6px;
 .approve .b { font-size: 13.5px; color: var(--muted); }
 .approve .a { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* compare */
-.compare { width: 100%; border-collapse: collapse; font-size: 15px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.compare th, .compare td { text-align: left; padding: 16px 20px; border-bottom: 1px solid var(--line); }
-.compare { border-collapse: separate; border-spacing: 0; background: var(--bg2); }
-.compare th { color: var(--muted); font-weight: 600; font-size: 13px; background: var(--fill); }
-.compare td:first-child { color: var(--muted); }
-.compare tr:last-child td { border-bottom: 0; }
-.yes { color: var(--green); font-weight: 600; }
 
 /* faq */
 .faq { display: grid; gap: 0; border-top: 1px solid var(--line); }
@@ -327,6 +319,7 @@ kbd { font-size: .85em; padding: 1px 6px; border-radius: 6px; border: 1px solid 
 footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--dim); font-size: 14px; }
 footer .wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
 footer .grow { flex: 1; }
+footer .legal { margin-top: 18px; gap: 8px 22px; font-size: 13px; }
 footer a:hover { color: var(--text); }
 
 /* support */
@@ -342,6 +335,10 @@ footer a:hover { color: var(--text); }
 .support .opt .amounts { margin-bottom: 10px; }
 .support .opt .btn.primary svg { color: var(--red); }
 .amounts { display: flex; gap: 8px; flex-wrap: wrap; }
+.switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
+.switch .tile { grid-column: auto; }
+.switch .tile h3 { margin-bottom: 8px; }
+.switch-term { margin-top: 14px; }
 @media (prefers-color-scheme: light) { .final::before { opacity: .7; } }
 @media (max-width: 900px) { .support .opt { padding: 28px; } }
 
@@ -357,7 +354,6 @@ footer a:hover { color: var(--text); }
   section { padding-top: 88px; }
   .frame { transform: none; }
   .hide-sm { display: none; }
-  .compare th, .compare td { padding: 14px 12px; }
   .term { font-size: 12px; }
 }
 </style>
@@ -371,7 +367,7 @@ footer a:hover { color: var(--text); }
       <a href="#features">Features</a>
       <a href="#data">Databases</a>
       <a href="#agents">AI agents</a>
-      <a href="#mamp">From MAMP PRO</a>
+      <a href="#switch">Switching</a>
       <a href="#faq">FAQ</a>
       <!-- fund:any --><a href="#support">Support</a><!-- /fund:any -->
     </nav>
@@ -527,29 +523,29 @@ footer a:hover { color: var(--text); }
     </div>
   </section>
 
-  <section id="mamp">
+  <section id="switch">
     <div class="wrap">
       <div class="reveal">
         <div class="eyebrow">Switching</div>
-        <h2>Coming from MAMP PRO?</h2>
-        <p class="sub">Copy your databases in one step. The source is only read, and every table is checked row by row afterwards.</p>
+        <h2>Coming from MAMP PRO, Herd, XAMPP or Valet?</h2>
+        <p class="sub">Bring what you already have. Databases are copied, never moved, and checked row by row before you switch.</p>
       </div>
-      <div class="split" style="align-items:start">
-        <table class="compare reveal">
-          <thead><tr><th></th><th>LocalSites</th><th>MAMP PRO</th></tr></thead>
-          <tbody>
-            <tr><td>Price</td><td class="yes">Free</td><td>Paid</td></tr>
-            <tr><td>Source code</td><td class="yes">Open (MIT)</td><td>Closed</td></tr>
-          </tbody>
-        </table>
-        <div class="reveal">
-          <div class="term"><span class="p">$</span> localsites import database mamp-pro shop_db
+      <div class="switch">
+        <div class="tile reveal"><h3>MAMP PRO and MAMP</h3><p>Copy your databases in one step. The source is only read, and every table is checked row by row. Browse MAMP's MySQL in the data browser while you move over.</p></div>
+        <div class="tile reveal"><h3>XAMPP</h3><p>The same one-step copy for XAMPP's databases, verified table by table. Your XAMPP install isn't changed.</p></div>
+        <div class="tile reveal"><h3>Laravel Valet</h3><p>Works alongside it. LocalSites uses Valet's domains and certificates, leaves your Valet sites where they are, and can move one over in one click.</p></div>
+        <div class="tile reveal"><h3>Laravel Herd, DBngin or another MySQL</h3><p>Export your databases with the tool you use today, then import the <code>.sql</code>, <code>.sql.gz</code> or <code>.zip</code> file. Each project gets its own login.</p></div>
+        <div class="tile reveal"><h3>Local and other WordPress setups</h3><p>Add the site's folder and import its database export. WordPress is detected automatically and served at <code>https://name.test</code>.</p></div>
+        <div class="tile reveal"><h3>Docker, Next.js and Node</h3><p>Keep your <code>docker compose</code> setup or dev server. LocalSites runs the command and serves it at <code>https://name.test</code>.</p></div>
+      </div>
+      <div class="term reveal switch-term"><span class="p">$</span> localsites import sources
+<span class="c">SOURCE    NAME      INSTALLED  MYSQL</span>
+mamp-pro  MAMP PRO  yes        yes
+xampp     XAMPP     yes        yes
+<span class="p">$</span> localsites import database mamp-pro shop_db
 <span class="ok">✓</span> copied every table
 <span class="ok">✓</span> checked row by row
-<span class="c"># MAMP's copy is untouched</span></div>
-          <p class="muted" style="margin-top:18px;font-size:15px">You can also browse MAMP's MySQL while you move over, connect a project to its copied database in one click (your .env is backed up first), and keep Valet sites where they are.</p>
-        </div>
-      </div>
+<span class="c"># the original is untouched</span></div>
     </div>
   </section>
 
@@ -560,8 +556,8 @@ footer a:hover { color: var(--text); }
         <h2>Questions</h2>
       </div>
       <div class="faq reveal">
-        <details><summary>Is LocalSites a free alternative to MAMP PRO?</summary>
-          <p>Yes. LocalSites is free and open source under the MIT licence. It gives every project an HTTPS .test address, PHP per project and MySQL, and can copy your databases from MAMP PRO, MAMP or XAMPP and check every row.</p></details>
+        <details><summary>Is LocalSites a free alternative to MAMP PRO, Laravel Herd or XAMPP?</summary>
+          <p>Yes. LocalSites is free and open source under the MIT licence, with no paid tier. It does the same core job: an HTTPS .test address for every project, PHP per project and MySQL. It can copy your databases from MAMP PRO, MAMP or XAMPP and check every row, and works alongside Laravel Valet.</p></details>
         <details><summary>How do I run several PHP versions on a Mac?</summary>
           <p>Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for.</p></details>
         <details><summary>Does LocalSites work with Laravel Valet?</summary>
@@ -641,6 +637,13 @@ footer a:hover { color: var(--text); }
     <!-- fund:any --><a href="#support">Sponsor</a><!-- /fund:any -->
     <a href="https://github.com/itismowgli/localsites/issues">Report a problem</a>
     <a href="https://github.com/itismowgli/localsites/security/policy">Security</a>
+  </div>
+  <div class="wrap legal">
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="refunds.html">Refunds and cancellations</a>
+    <a href="shipping.html">Shipping and delivery</a>
+    <a href="contact.html">Contact</a>
   </div>
 </footer>
 

@@ -1,0 +1,38 @@
+/* Shared styles for the policy pages (terms, privacy, refunds, shipping, contact). Same palette as index.html. */
+@font-face { font-family: "Inter var"; src: url("fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+:root {
+  --bg: #0b0b0c; --bg2: #111113; --line: #232327; --text: #e8e8ea; --muted: #a0a0a9; --dim: #8a8a93; --fill2: #19191c;
+  color-scheme: dark light;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f4f4f5; --bg2: #ffffff; --line: #e2e2e6; --text: #1d1d20; --muted: #52525a; --dim: #64646c; --fill2: #ececee; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter var", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+.nav { border-bottom: 1px solid var(--line); }
+.nav .wrap { max-width: 1120px; display: flex; align-items: center; height: 56px; gap: 24px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; letter-spacing: -.01em; }
+.brand .logo { width: 24px; height: 24px; display: block; flex: none; }
+.nav .back { margin-left: auto; color: var(--muted); font-size: 15px; text-decoration: none; }
+.nav .back:hover { color: var(--text); }
+main { padding: 64px 0 96px; }
+.eyebrow { color: var(--dim); font-size: 15px; font-weight: 500; margin-bottom: 10px; }
+h1 { font-size: clamp(34px, 5vw, 48px); line-height: 1.1; letter-spacing: -.03em; margin: 0 0 12px; }
+.updated { color: var(--dim); font-size: 14px; margin: 0 0 40px; }
+h2 { font-size: 21px; letter-spacing: -.015em; margin: 40px 0 10px; }
+p, li { color: var(--muted); }
+p strong, li strong { color: var(--text); font-weight: 600; }
+ul { padding-left: 22px; }
+li { margin: 6px 0; }
+main a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+main a:hover { text-decoration-color: currentColor; }
+.card { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin: 14px 0; }
+.card h2 { margin-top: 0; }
+.card p { margin: 6px 0 0; }
+footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--dim); font-size: 14px; }
+footer .wrap { max-width: 1120px; display: flex; flex-wrap: wrap; gap: 8px 22px; }
+footer a { text-decoration: none; }
+footer a:hover, footer a[aria-current] { color: var(--text); }
