@@ -27,6 +27,7 @@ import (
 var assets embed.FS
 
 func main() {
+	useNativeNotifications()
 	// update-selftest: an update checks the new app runs on this Mac before installing it
 	if len(os.Args) > 1 && os.Args[1] == "update-selftest" {
 		fmt.Println(version.Version)

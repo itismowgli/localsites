@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.0.2",
+    "date": "2026-11-09",
+    "title": "Notifications with the LocalSites icon",
+    "items": [
+      "Notifications now come from LocalSites itself and show its icon, instead of looking like they came from Script Editor",
+      "The first time you open this version, macOS asks whether LocalSites may send notifications. Click Allow to keep getting update and problem alerts"
+    ]
+  },
+  {
     "version": "1.0.1",
     "date": "2026-11-09",
     "title": "Clearer wording",
