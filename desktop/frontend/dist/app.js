@@ -276,6 +276,7 @@ function onEnter(view) {
   if (view === 'logs') loadLog();
   if (view === 'doctor' && !S.doctor && !S.doctorBusy) command('doctor');
   if (view === 'overview' && !S.doctor && !S.doctorBusy) command('doctor', { quiet: true });
+  if (view === 'overview') act(async () => { await loadProblems(); if (cur().view === 'overview') renderView(); });
   if (view === 'agent') setTimeout(() => $('#agentInput')?.focus(), 30);
 }
 function goHistory(dir) {
@@ -524,6 +525,31 @@ function activityRows(items, empty) {
 function ovSection(title, count, body, link) {
   return `<section class="ov-sec"><div class="ov-sec-h"><h2>${esc(title)}</h2>${count !== '' ? `<span class="n">${count}</span>` : ''}<span class="spacer"></span>${link || ''}</div>${body}</section>`;
 }
+// Things outside a project that need the person. Together with the items above them in "Needs attention"
+// they make up the number on the Dock icon (the service counts the same things for the badge).
+function needsYou() {
+  const out = [], ap = (S.approvals || []).length, pr = probNew(), u = S.upd;
+  if (ap) out.push({ ic: 'agent', title: ap === 1 ? 'An agent request is waiting for you' : `${ap} agent requests are waiting for you`, text: 'An AI agent wants to do something that needs your OK. Approve or deny it in the request card.', action: '' });
+  if (pr) { const last = (S.prob?.problems || []).find(p => !p.sent && p.kind !== 'ui');
+    out.push({ ic: 'alertCircle', title: pr === 1 ? 'A problem to look at' : `${pr} problems to look at`, text: last?.title || 'Something went wrong, such as a crash or a failed install.', action: `<button class="btn sm" data-cmd="openproblems">Review</button>` }); }
+  if (u?.latest && !u.skipped && ['available', 'ready'].includes(u.phase))
+    out.push({ ic: 'sparkles', title: u.phase === 'ready' ? `LocalSites ${u.latest.version} is ready to install` : `LocalSites ${u.latest.version} is available`, text: u.latest.title || 'A new version of LocalSites.', action: `<button class="btn sm" data-cmd="whatsnew">See update</button>` });
+  return out;
+}
+// One sentence that says what the Dock number is made of, e.g. "The 3 on the Dock icon: 2 failed Doctor
+// checks and 1 problem to look at."
+function badgeWhy(total, c) {
+  const u = S.upd, parts = [
+    [c.access, 'folder waiting for macOS access', 'folders waiting for macOS access'],
+    [c.checks, 'failed Doctor check', 'failed Doctor checks'],
+    [c.sites, 'running project with a problem', 'running projects with a problem'],
+    [(S.approvals || []).length, 'agent request', 'agent requests'],
+    [probNew(), 'problem to look at', 'problems to look at'],
+    [u?.latest && !u.skipped && ['available', 'ready'].includes(u.phase) ? 1 : 0, 'update', 'updates'],
+  ].filter(([n]) => n).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
+  const list = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts.at(-1) : parts[0] || '';
+  return `The ${total} on the LocalSites icon in the Dock: ${list}. It goes down as you deal with each one.`;
+}
 function viewOverview() {
   const st = S.status, d = S.doctor;
   const running = S.sites.filter(s => s.enabled);
@@ -533,6 +559,7 @@ function viewOverview() {
     ...(st?.waiting_for_access || []).map(p => ({ ic: 'lock', title: 'Waiting for folder access', text: `macOS is asking whether LocalSites may read ${p}. Click Allow in the macOS prompt, or turn LocalSites on in System Settings → Privacy & Security → Files and Folders.`, action: '' })),
     ...fails.filter(c => c.name !== 'Folder access').map(c => ({ ic: 'alertCircle', title: c.name, text: c.detail, action: `<button class="btn sm" data-view="doctor">Details</button>` })),
     ...S.sites.filter(s => s.enabled && s.problems?.length).map(s => ({ ic: 'alertCircle', title: s.name, text: s.problems[0], action: `<button class="btn sm" data-proj="${esc(s.folder)}">Open</button>` })),
+    ...needsYou(),
   ];
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -561,7 +588,9 @@ function viewOverview() {
       ...(st.addons || []).filter(a => a.enabled).map(a => [a.name, a.running])].map(([n, ok]) => `<button class="pchip" data-view="services"><span class="dot ${ok ? 'on' : 'off'}"></span>${esc(n)}</button>`).join('') : ''}
       ${d ? `<button class="pchip" data-view="doctor">${fails.length ? icon.alertCircle : icon.status}${fails.length ? plural(fails.length, 'problem') : 'All good'}</button>` : ''}
       ${(st?.roots || []).map(r => `<button class="pchip" data-scope="root" data-val="${esc(r.label)}">${icon.folder}${esc(r.label)} <span class="note">${S.sites.filter(s => s.root === r.label).length}</span></button>`).join('')}</div>
-    ${attention.length ? ovSection('Needs attention', attention.length, attention.map(a => `<div class="ov-row"><span class="bad">${icon[a.ic]}</span><span class="ov-title">${esc(a.title)}</span><span class="note ellipsis">${esc(a.text || '')}</span><span class="spacer"></span>${a.action}</div>`).join('')) : ''}
+    ${attention.length ? ovSection('Needs attention', attention.length, `<p class="note ov-why">${esc(badgeWhy(attention.length, {
+        access: (st?.waiting_for_access || []).length, checks: fails.filter(c => c.name !== 'Folder access').length,
+        sites: S.sites.filter(s => s.enabled && s.problems?.length).length }))}</p>` + attention.map(a => `<div class="ov-row"><span class="bad">${icon[a.ic]}</span><span class="ov-title">${esc(a.title)}</span><span class="note ellipsis">${esc(a.text || '')}</span><span class="spacer"></span>${a.action}</div>`).join('')) : ''}
     ${ovSection('Running', running.length, running.length ? runRows : `<div class="ov-empty">Nothing is running. <a data-view="projects">Switch a project on</a> to give it a <code>.test</code> address.</div>` + startCards('Get started', [
       { ic: 'power', title: 'Switch on a project', text: 'Give it an https://name.test address.', attrs: 'data-view="projects"' },
       { ic: 'folderPlus', title: 'Add a projects folder', text: 'LocalSites detects Laravel, Next.js and PHP.', attrs: 'data-cmd="addfolder"' },
@@ -873,6 +902,7 @@ let approvalsShown = '';
 function renderApprovals(list) {
   const box = $('#approvals');
   const key = JSON.stringify(list.map(a => a.id));
+  if (key !== approvalsShown) { S.approvals = list; if (cur().view === 'overview') setTimeout(renderView); }
   if (key === approvalsShown) { box.querySelectorAll('[data-left]').forEach(el => { el.textContent = Math.max(0, Math.round((new Date(el.dataset.left) - Date.now()) / 1000)) + 's'; }); return; }
   approvalsShown = key;
   box.innerHTML = list.map(a => {
@@ -2534,6 +2564,7 @@ async function command(cmd, opts = {}) {
     case 'clihelp': return dialog(`<h3>Command-line tool</h3><p class="note">Run this once in Terminal to use <code>localsites</code> anywhere:</p>
       <pre class="mini">sudo ln -sf "${esc(S.exe)}" /usr/local/bin/localsites</pre><p class="note">Then try <code>localsites status</code>, <code>localsites sites</code> or <code>localsites help</code>. Add <code>--json</code> for scripts.</p>
       <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-copy="sudo ln -sf &quot;${esc(S.exe)}&quot; /usr/local/bin/localsites">${icon.copy}Copy</button><button class="btn primary" data-dlg="ok">Done</button></div>`);
+    case 'openproblems': S.setSec = 'problems'; return navigate('settings');
     case 'whatsnew': S.seenVersion = S.version?.version || ''; saveUI(); S.setSec = 'updates'; return navigate('settings');
     case 'clearfilter': S.filter = ''; S.pf = {}; S.ptab = 'all'; saveUI(); return render();
     case 'addfolder': S.setSec = 'folders'; return navigate('settings');

@@ -12,7 +12,7 @@ package main
 // Asks once for permission to show notifications. macOS only prompts the first time.
 static void lsNotifyAuthorize(void) {
 	[[UNUserNotificationCenter currentNotificationCenter]
-		requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound)
+		requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
 		completionHandler:^(BOOL granted, NSError *error) {}];
 }
 
@@ -20,7 +20,7 @@ static void lsNotifySend(const char *title, const char *body) {
 	NSString *t = [NSString stringWithUTF8String:title];
 	NSString *b = [NSString stringWithUTF8String:body];
 	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-	[center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound)
+	[center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
 		completionHandler:^(BOOL granted, NSError *error) {
 			if (!granted) return;
 			UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];

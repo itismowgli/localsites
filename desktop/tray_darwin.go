@@ -97,12 +97,33 @@ func (a *App) refreshTray() {
 			_ = json.Unmarshal(raw, &upd)
 		}
 		var probs struct {
-			Problems []struct{ ID string } `json:"problems"`
+			Problems []struct {
+				Kind string `json:"kind"`
+				Sent string `json:"sent"`
+			} `json:"problems"`
 		}
 		if raw, err := c.Call("problems.list", nil); err == nil {
 			_ = json.Unmarshal(raw, &probs)
 		}
-		setBadge(attention(len(approvals), len(probs.Problems), upd))
+		var att struct {
+			Access int `json:"waiting_for_access"`
+			Checks int `json:"doctor_fails"`
+			Sites  int `json:"site_problems"`
+		}
+		if raw, err := c.Call("attention", nil); err == nil {
+			_ = json.Unmarshal(raw, &att)
+		}
+		n := needs{Access: att.Access, Checks: att.Checks, Sites: att.Sites, Approvals: len(approvals), Update: updateWaiting(upd)}
+		for _, p := range probs.Problems { // the same rule as the app's Problems count
+			if p.Sent == "" && p.Kind != "ui" {
+				n.Problems++
+			}
+		}
+		setBadge(n.total())
+		if n.total() > 0 {
+			add("item", "show", fmt.Sprintf("%d %s: %s", n.total(), map[bool]string{true: "thing needs you", false: "things need you"}[n.total() == 1], n.summary()))
+			lines = append(lines, "sep")
+		}
 		if upd.Latest != nil && !upd.Skipped {
 			switch upd.Phase {
 			case "ready":

@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.1.0",
+    "date": "2026-11-09",
+    "title": "Update when it suits you, and a badge for what needs you",
+    "items": [
+      "When an update is ready, LocalSites asks whether to restart now or install it when you quit",
+      "While an update downloads, you can pick between restarting as soon as it's ready or installing it when you quit",
+      "\"Install when I quit\" works with any update setting, not only the automatic ones",
+      "The Dock icon shows a badge with how many things need you: folders waiting for access, failed Doctor checks, projects with a problem, agent requests, problems to look at, and an update waiting to be installed",
+      "Overview → Needs attention lists every one of them and says what the Dock number is made of, and the menu bar menu starts with the same summary",
+      "macOS asks once whether LocalSites may show the badge. If you said no earlier, turn on \"Badge application icon\" in System Settings → Notifications → LocalSites"
+    ]
+  },
+  {
     "version": "1.0.2",
     "date": "2026-11-09",
     "title": "Notifications with the LocalSites icon",

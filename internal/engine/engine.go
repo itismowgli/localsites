@@ -57,10 +57,11 @@ type Engine struct {
 	pgList       []string // PostgreSQL add-on databases (see pgtools.go)
 	updOnce      sync.Once
 
-	applyMu    sync.Mutex
-	lastRoutes []frontdoor.Route // front door routes from the last apply
-	mysqlMu    sync.Mutex        // MySQL setup must never run twice at once (it generates the root password)
-	mysqlUsed  atomic.Int64      // last time something used LocalSites MySQL (unix nanoseconds)
+	applyMu     sync.Mutex
+	lastRoutes  []frontdoor.Route // front door routes from the last apply
+	mysqlMu     sync.Mutex        // MySQL setup must never run twice at once (it generates the root password)
+	mysqlUsed   atomic.Int64      // last time something used LocalSites MySQL (unix nanoseconds)
+	doctorFails atomic.Int64      // failed checks in the last Doctor run, for the Dock badge
 }
 
 // New loads config, CA and picks the front door.
