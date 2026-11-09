@@ -96,7 +96,7 @@ func (e *Engine) Doctor() []Check {
 	}
 	for _, s := range sites {
 		if s.Enabled && s.DBServer == config.DBMAMP {
-			out = append(out, socketCheck("Services", "MAMP PRO MySQL (used by "+s.Folder+")", e.mysqlSocketFor(s)))
+			out = append(out, mampFix(socketCheck("Services", "MAMP PRO MySQL (used by "+s.Folder+")", e.mysqlSocketFor(s))))
 			break
 		}
 	}
@@ -203,6 +203,9 @@ func (e *Engine) CheckSite(folder string) []Check {
 		dbName = "MAMP PRO MySQL"
 	}
 	dbc := socketCheck(area, dbName+" (localhost)", e.mysqlSocketFor(*s))
+	if s.DBServer == config.DBMAMP {
+		dbc = mampFix(dbc)
+	}
 	if m, ok := e.mysqlSvc(); dbc.Status == "fail" && s.DBServer == config.DBLocalSites && s.Database == "" && (!ok || !m.Initialized()) {
 		dbc.Status, dbc.Detail, dbc.Fix = "warn", "not set up yet (only matters if this project uses a database)", "Create a database in Databases, or set MySQL to MAMP PRO"
 	}
@@ -269,6 +272,15 @@ func socketCheck(area, name, path string) Check {
 	}
 	conn.Close()
 	c.Status, c.Detail = "ok", "accepting connections"
+	return c
+}
+
+// mampFix gives the right advice when MAMP PRO's MySQL is down: LocalSites can't start it, so restarting
+// LocalSites won't help. Either start it in MAMP PRO or move the project to LocalSites MySQL.
+func mampFix(c Check) Check {
+	if c.Status == "fail" {
+		c.Fix = "Start MySQL in MAMP PRO, or move the project to LocalSites MySQL: in Import, copy its database, then click Connect"
+	}
 	return c
 }
 
