@@ -56,3 +56,11 @@ void lsTraySetMenu(const char *spec) {
 		gItem.menu = m;
 	});
 }
+
+// Dock icon badge, like Slack's unread count: things that need the person (empty clears it).
+void lsSetBadge(const char *label) {
+	NSString *s = [NSString stringWithUTF8String:label];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[[NSApp dockTile] setBadgeLabel:(s.length ? s : nil)];
+	});
+}

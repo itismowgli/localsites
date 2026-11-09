@@ -623,6 +623,30 @@ test('settings: updates are opt-in, with a choice of what happens and a way back
   await call(page, 'settings.update', { update_auto_check: false, update_mode: 'notify' });
 });
 
+test('updates: a ready update offers restart now or when I quit, and remembers the choice', async ({ page }) => {
+  await call(page, 'settings.update', { update_mode: 'notify', update_later: '', update_skip: '' });
+  // the sandbox has no real release, so answer update.status with a ready update
+  let onQuit = false;
+  await page.route('**/__call/update.status', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+    phase: 'ready', current: '1.0.2', supported: true, signed: true, on_quit: onQuit,
+    latest: { version: '9.9.9', title: 'Test release', notes: ['First change'] } }) }));
+  await page.goto('/#settings');
+  await page.reload(); // the page loaded its update status before the route existed
+  await page.locator('[data-setsec="updates"]').click();
+  const card = page.locator('.settings .page .upd.ready');
+  await expect(card).toContainText('LocalSites 9.9.9 is ready to install');
+  await expect(card.locator('[data-cmd="updinstall"]')).toHaveText(/Restart now/);
+  await expect(card.locator('[data-cmd="updlater"]')).toHaveText(/Install when I quit/);
+  onQuit = true;
+  await card.locator('[data-cmd="updlater"]').click();
+  await expect.poll(async () => (await call(page, 'settings.get')).update_later).toBe('9.9.9');
+  // once chosen, the card says so instead of asking again
+  await expect(card.locator('[data-cmd="updlater"]')).toHaveCount(0);
+  await expect(card).toContainText('Installs when you quit');
+  await page.unroute('**/__call/update.status');
+  await call(page, 'settings.update', { update_later: '' });
+});
+
 test('live: a change made outside the app (CLI, agent) shows at once, without polling', async ({ page }) => {
   await page.locator('#side a[data-view="projects"]').click();
   await expect(page.locator('.row[data-row="hello"]')).toBeVisible();

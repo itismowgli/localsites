@@ -6,6 +6,7 @@ import (
 
 	"github.com/localsites/localsites/internal/config"
 	"github.com/localsites/localsites/internal/paths"
+	"github.com/localsites/localsites/internal/update"
 )
 
 func ptr[T any](v T) *T { return &v }
@@ -38,5 +39,26 @@ func TestUpdateSettings(t *testing.T) {
 	}
 	if err := e.InstallUpdate("/Applications/LocalSites.app/Contents/MacOS/LocalSites", 123, "reboot", false); err == nil {
 		t.Fatal("accepted an unknown then")
+	}
+}
+
+func TestUpdateStatusOnQuit(t *testing.T) {
+	ready := update.Status{Phase: update.Ready, Latest: &update.Manifest{Version: "1.0.3"}}
+	cases := []struct {
+		name string
+		set  config.Settings
+		want bool
+	}{
+		{"tell me, no choice yet", config.Settings{UpdateMode: "notify"}, false},
+		{"tell me, chose when I quit", config.Settings{UpdateMode: "notify", UpdateLater: "1.0.3"}, true},
+		{"tell me, chose it for an older version", config.Settings{UpdateMode: "notify", UpdateLater: "1.0.2"}, false},
+		{"download mode", config.Settings{UpdateMode: "download"}, true},
+		{"automatic mode", config.Settings{UpdateMode: "auto"}, true},
+		{"skipped wins", config.Settings{UpdateMode: "auto", UpdateSkip: "1.0.3"}, false},
+	}
+	for _, c := range cases {
+		if got := updateStatus(ready, c.set).OnQuit; got != c.want {
+			t.Errorf("%s: on_quit = %v, want %v", c.name, got, c.want)
+		}
 	}
 }

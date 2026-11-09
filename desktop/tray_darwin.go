@@ -8,6 +8,7 @@ package main
 #include <stdlib.h>
 void lsTrayInit(const void *iconData, int iconLen);
 void lsTraySetMenu(const char *spec);
+void lsSetBadge(const char *label);
 */
 import "C"
 
@@ -15,6 +16,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"unsafe"
@@ -94,6 +96,13 @@ func (a *App) refreshTray() {
 		if raw, err := c.Call("update.status", nil); err == nil {
 			_ = json.Unmarshal(raw, &upd)
 		}
+		var probs struct {
+			Problems []struct{ ID string } `json:"problems"`
+		}
+		if raw, err := c.Call("problems.list", nil); err == nil {
+			_ = json.Unmarshal(raw, &probs)
+		}
+		setBadge(attention(len(approvals), len(probs.Problems), upd))
 		if upd.Latest != nil && !upd.Skipped {
 			switch upd.Phase {
 			case "ready":
@@ -129,6 +138,17 @@ func (a *App) refreshTray() {
 	cs := C.CString(strings.Join(lines, "\n"))
 	defer C.free(unsafe.Pointer(cs))
 	C.lsTraySetMenu(cs)
+}
+
+// setBadge shows the number on the Dock icon (nothing when it's zero).
+func setBadge(n int) {
+	label := ""
+	if n > 0 {
+		label = strconv.Itoa(n)
+	}
+	cs := C.CString(label)
+	defer C.free(unsafe.Pointer(cs))
+	C.lsSetBadge(cs)
 }
 
 func (a *App) trayAction(id string) {

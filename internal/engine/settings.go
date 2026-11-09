@@ -99,6 +99,7 @@ type SettingsPatch struct {
 	UpdateChan   *string            `json:"update_channel,omitempty"`
 	UpdateAsked  *bool              `json:"update_asked,omitempty"`
 	UpdateSkip   *string            `json:"update_skip,omitempty"`
+	UpdateLater  *string            `json:"update_later,omitempty"`
 	ReportMode   *string            `json:"report_mode,omitempty"`
 }
 
@@ -288,6 +289,9 @@ func (e *Engine) UpdateSettings(p SettingsPatch) ([]string, error) {
 	}
 	if p.UpdateSkip != nil {
 		s.UpdateSkip = strings.TrimSpace(*p.UpdateSkip)
+	}
+	if p.UpdateLater != nil {
+		s.UpdateLater = strings.TrimSpace(*p.UpdateLater)
 	}
 	if p.PHPIni != nil {
 		ini := map[string]string{}

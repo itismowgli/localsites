@@ -185,7 +185,7 @@ function dialog(html) {
     const done = (v) => { ov.classList.remove('open'); ov.onmousedown = null; box.onkeydown = null; resolve(v); };
     ov.onmousedown = (e) => { if (e.target === ov) done(null); };
     box.onkeydown = (e) => { if (e.key === 'Escape') { e.preventDefault(); done(null); } };
-    box.querySelectorAll('[data-dlg]').forEach(b => { b.onclick = () => done(b.dataset.dlg === 'ok' ? (box.querySelector('input')?.value.trim() ?? true) : null); });
+    box.querySelectorAll('[data-dlg]').forEach(b => { b.onclick = () => done(b.dataset.dlg === 'ok' ? (box.querySelector('input')?.value.trim() ?? true) : b.dataset.dlg === 'cancel' ? null : b.dataset.dlg); });
     const inp = box.querySelector('input');
     if (inp) { inp.focus(); inp.onkeydown = (e) => { if (e.key === 'Enter') done(inp.value.trim()); }; } else box.querySelector('[data-dlg="ok"]')?.focus();
   });
@@ -1912,9 +1912,22 @@ function pollUpdate() {
     try { await loadUpdate(); } catch (_) { /* the service may be restarting for the update */ }
     if (S.updAfter && before === 'downloading' && S.upd?.phase === 'ready') { S.updAfter = false; installUpdate(); }
     if (S.upd?.phase === 'error' && before === 'downloading') toast(S.upd.error, 'err');
+    if (before === 'downloading' && S.upd?.phase === 'ready') promptUpdateReady();
     if (cur().view === 'settings' && S.setSec === 'updates') renderView();
     renderSide(); pollUpdate();
   }, 600);
+}
+// When an update has finished downloading and the person hasn't said when to install it, ask once.
+async function promptUpdateReady() {
+  const u = S.upd, v = u?.latest?.version;
+  if (!v || u.phase !== 'ready' || u.skipped || u.on_quit || S.updAfter || S.updPrompted === v || !window.go?.main?.App?.InstallUpdate) return;
+  S.updPrompted = v;
+  const items = (u.latest.notes || []).slice(0, 3).map(i => `<li>${esc(i)}</li>`).join('');
+  const r = await dialog(`<h3>LocalSites ${esc(v)} is ready to install</h3>${items ? `<ul class="upd-notes">${items}</ul>` : ''}
+    <p class="note">Restarting takes a few seconds and your projects keep their settings. If you choose later, it installs the next time you quit LocalSites.</p>
+    <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-dlg="cancel">Not now</button><button class="btn" data-dlg="later">When I quit</button><button class="btn primary" data-dlg="ok">Restart now</button></div>`);
+  if (r === true) return installUpdate();
+  if (r === 'later') return command('updlater');
 }
 async function installUpdate(rollback = false) {
   if (!window.go?.main?.App?.InstallUpdate) return toast('Install updates from the LocalSites app.', 'warn');
@@ -1941,13 +1954,14 @@ function updCard(u) {
     const pct = u.size ? Math.min(100, Math.round(100 * (u.done || 0) / u.size)) : 0;
     return `<div class="upd">${head('download2', `Downloading LocalSites ${ver}`, `${mb(u.done || 0)} of ${mb(u.size || 0)}`, UI.status('busy', pct + '%'))}
       <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Download progress"><span style="width:${pct}%"></span></div>
-      <p class="note">${S.updAfter ? 'It installs as soon as it is downloaded and checked.' : 'You can keep working. Nothing changes until you install it.'}</p></div>`;
+      <div class="upd-f"><span class="note">When it's downloaded:</span><div class="seg" role="group" aria-label="When it's downloaded">${[['updnow', 'Restart and install', S.updAfter], ['updquit', 'Install when I quit', !S.updAfter && u.on_quit]].map(([c, l, on]) => `<button data-cmd="${c}" class="${on ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <p class="note">${S.updAfter ? 'LocalSites restarts as soon as the update is downloaded and checked.' : u.on_quit ? 'You can keep working. It installs the next time you quit LocalSites.' : 'You can keep working. Nothing changes until you install it.'}</p></div>`;
   }
   if (m && u.phase === 'ready') {
-    const quit = ['download', 'auto'].includes(setVal('update_mode'));
-    return `<div class="upd ready">${head('rocket', `LocalSites ${ver} is ready to install`, m.title ? esc(m.title) : '', `<span class="upd-facts">${facts}</span>`)}${notes(m)}
-      <div class="upd-f">${UI.btn('Restart and install', { kind: 'primary', ic: 'refresh', attrs: 'data-cmd="updinstall"' })}<span class="spacer"></span>${UI.btn('Skip this version', { kind: 'ghost', attrs: 'data-cmd="updskip"' })}</div>
-      <p class="note">Projects pause for a few seconds while LocalSites restarts. Settings are backed up first.${quit ? ' If you don’t restart now, it installs the next time you quit LocalSites.' : ''}</p></div>`;
+    const later = u.on_quit;
+    return `<div class="upd ready">${head('rocket', `LocalSites ${ver} is ready to install`, m.title ? esc(m.title) : '', `<span class="upd-facts">${facts}</span>${later ? UI.status('on', 'Installs when you quit') : ''}`)}${notes(m)}
+      <div class="upd-f">${UI.btn('Restart now', { kind: 'primary', ic: 'refresh', attrs: 'data-cmd="updinstall"' })}${later ? '' : UI.btn('Install when I quit', { attrs: 'data-cmd="updlater"' })}<span class="spacer"></span>${UI.btn('Skip this version', { kind: 'ghost', attrs: 'data-cmd="updskip"' })}</div>
+      <p class="note">Projects pause for a few seconds while LocalSites restarts. Settings are backed up first.${later ? ' If you don’t restart now, it installs the next time you quit LocalSites.' : ''}</p></div>`;
   }
   if (m && (u.phase === 'available' || (u.phase === 'error' && m))) {
     const err = u.phase === 'error' ? `<p class="upd-err" role="alert">${esc(u.error)}</p>` : '';
@@ -2660,6 +2674,9 @@ async function command(cmd, opts = {}) {
       S.upd = r; renderView(); if (r.phase === 'ready' && S.updAfter) { S.updAfter = false; return installUpdate(); } pollUpdate(); return;
     }
     case 'updinstall': return installUpdate();
+    case 'updlater': if (S.upd?.latest && await setUpdSetting('update_later', S.upd.latest.version)) { await act(loadUpdate); renderView(); renderSide(); toast(`LocalSites ${S.upd.latest.version} installs the next time you quit.`); } return;
+    case 'updnow': S.updAfter = true; if (S.upd?.latest) await setUpdSetting('update_later', ''); await act(loadUpdate); renderView(); return;
+    case 'updquit': S.updAfter = false; if (S.upd?.latest) await setUpdSetting('update_later', S.upd.latest.version); await act(loadUpdate); renderView(); return;
     case 'updrollback': {
       if (!S.upd?.kept) return;
       if (!await confirmBox(`Switch to LocalSites ${S.upd.kept}?`, `LocalSites quits and opens again as ${S.upd.kept}. Projects pause for a few seconds. ${S.upd.current} is kept, so you can switch back the same way.`, `Switch to ${S.upd.kept}`)) return;
@@ -2935,7 +2952,7 @@ act(loadVersion).then(renderSide);
 }
 loadApps().then(render);
 pollApprovals();
-act(async () => { await loadUpdate(); pollUpdate(); renderSide(); });
+act(async () => { await loadUpdate(); pollUpdate(); renderSide(); promptUpdateReady(); });
 // Once, in the desktop app: ask whether to check for updates automatically (off until the person says yes)
 setTimeout(() => {
   if (!window.go?.main?.App || !S.settings || S.settings.update_asked || $('#updAsk')) return;
@@ -2988,7 +3005,7 @@ setInterval(() => {
   if ((stale && !busyUI() && !document.activeElement?.matches('input,select,textarea') && !$('#menu').classList.contains('open')) || Date.now() - lastPoll >= every - 100) refreshAll();
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastPoll = 0; watchChanges(); } });
-window.addEventListener('focus', () => { lastPoll = 0; act(async () => { const was = updPending(); await loadUpdate(); pollUpdate(); if (was !== updPending()) renderSide(); }); });
+window.addEventListener('focus', () => { lastPoll = 0; act(async () => { const was = updPending(); await loadUpdate(); pollUpdate(); if (was !== updPending()) renderSide(); promptUpdateReady(); }); });
 // While the window is being resized (zoom, full screen, dragging an edge) the native animation drives the size:
 // switch CSS transitions off so the layout follows it frame by frame instead of easing behind it.
 let resizeT = 0;
