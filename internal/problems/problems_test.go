@@ -15,6 +15,8 @@ import (
 
 func TestCleanRemovesSecretsAndPersonalData(t *testing.T) {
 	c := Cleaner{Home: "/Users/alice", User: "alice", Projects: []string{"shop", "client-portal"}}
+	// a fake Stripe key, put together here so secret scanners don't mistake it for a real one
+	stripeKey := "sk_" + "live_51H" + strings.Repeat("x", 47) + "XYZ"
 	in := strings.Join([]string{
 		`DB_PASSWORD=hunter2 APP_KEY=base64:abc`,
 		`{"password": "s3cret", "api_key":"k-123"}`,
@@ -22,11 +24,11 @@ func TestCleanRemovesSecretsAndPersonalData(t *testing.T) {
 		`Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.sig`,
 		`GET /login?user=x&token=abc123 from 192.168.1.20`,
 		`open /Users/alice/Sites/client-portal/index.php: permission denied (alice@example.com)`,
-		`stripe sk_live_51HxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxXYZ`,
+		"stripe " + stripeKey,
 		`listening on 127.0.0.1:8744`,
 	}, "\n")
 	out := c.Clean(in)
-	for _, leak := range []string{"hunter2", "base64:abc", "s3cret", "k-123", "pw123", "eyJhbGci", "abc123", "192.168.1.20", "/Users/alice", "alice", "client-portal", "example.com", "sk_live_51H"} {
+	for _, leak := range []string{"hunter2", "base64:abc", "s3cret", "k-123", "pw123", "eyJhbGci", "abc123", "192.168.1.20", "/Users/alice", "alice", "client-portal", "example.com", stripeKey[:11]} {
 		if strings.Contains(out, leak) {
 			t.Errorf("leaked %q in:\n%s", leak, out)
 		}
