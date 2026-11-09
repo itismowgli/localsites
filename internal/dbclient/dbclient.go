@@ -783,7 +783,7 @@ func (m *Manager) Query(id string, r QueryRequest) (Result, error) {
 	err = readOnly(db, c.Driver, func(tx *sql.Tx) error { return run(tx) })
 	res.MS = time.Since(start).Milliseconds()
 	if err != nil && !write && looksLikeWrite(sqlText) {
-		return res, fmt.Errorf("%v — this connection is read-only. Turn on “Allow changes” for it to run statements that change data", friendly(err))
+		return res, fmt.Errorf("%v. This connection is read-only. Turn on “Allow changes” for it to run statements that change data", friendly(err))
 	}
 	return res, friendly(err)
 }

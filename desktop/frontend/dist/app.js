@@ -722,7 +722,7 @@ function row(s) {
 }
 
 /* --- detail panel --- */
-const statusIcon = { ok: '<span class="ok">✓</span>', warn: '<span class="warnc">!</span>', fail: '<span class="bad">✗</span>', skip: '<span class="note">–</span>' };
+const statusIcon = { ok: '<span class="ok">✓</span>', warn: '<span class="warnc">!</span>', fail: '<span class="bad">✗</span>', skip: '<span class="note">-</span>' };
 function checksTable(checks, withArea = true) {
   let area = '', h = '';
   for (const c of checks) {
@@ -823,7 +823,7 @@ function detailsPane(s) {
         <button class="btn" data-app="${prefApp('terminal').id}" data-folder="${esc(s.folder)}">${icon.terminal}${esc(prefApp('terminal').name)}</button>
         <button class="btn" data-app="${prefApp('editor').id}" data-folder="${esc(s.folder)}">${icon.code}${esc(prefApp('editor').name)}</button></div>
       ${s.git ? `<div class="st">Git<span class="spacer"></span><button class="btn ghost sm" data-dpane="git">${icon.branch}Open git</button></div>
-        <div class="kv"><span>Branch</span><code>${esc(s.git.branch || '—')}</code></div>
+        <div class="kv"><span>Branch</span><code>${esc(s.git.branch || 'none')}</code></div>
         ${s.git.account ? `<div class="kv"><span>Account</span><span class="form-row" style="gap:6px">${hostIcon(s.git.host)}${esc(s.git.account)}${s.git.host && !/\./.test(s.git.host) ? ` <span class="note">(SSH alias ${esc(s.git.host)})</span>` : ''}</span></div>` : ''}
         ${s.git.repo ? `<div class="kv"><span>Repository</span><span>${esc(s.git.repo)}</span></div>` : ''}` : ''}
       ${!valet && s.runtime !== 'none' ? `<div class="st">Connection<span class="spacer"></span><button class="btn ghost sm" data-check="${esc(s.folder)}" ${s.enabled ? '' : 'disabled'}>${icon.doctor}Check</button></div>
@@ -1093,7 +1093,7 @@ async function exportFlow(label, base, call) {
   const opt = await formDialog(`<h3>Export ${esc(label)}</h3><p class="note">Saves a .sql file you can import anywhere: here, on a server, or in another app.</p>
     <div class="choice" role="radiogroup" aria-label="What to export" style="margin-top:12px">${[['full', 'Structure and data', 'Tables, rows, views and routines.'], ['structure', 'Structure only', 'Tables and views without rows. Good for a fresh copy.'], ['data', 'Data only', 'Rows only, for tables that already exist.']].map(([v, l, d], i) =>
       `<label class="choice-row ${i ? '' : 'on'}"><input type="radio" name="xmode" value="${v}" ${i ? '' : 'checked'}><span><span class="label">${l}</span><span class="desc">${d}</span></span></label>`).join('')}</div>
-    <label class="form-row note" style="gap:8px;margin-top:12px"><input type="checkbox" id="xgz" checked> Compress (.sql.gz), usually 5–10× smaller</label>`,
+    <label class="form-row note" style="gap:8px;margin-top:12px"><input type="checkbox" id="xgz" checked> Compress (.sql.gz), usually 5 to 10 times smaller</label>`,
     (box) => ({ mode: box.querySelector('input[name="xmode"]:checked').value, gz: box.querySelector('#xgz').checked }), 'Choose where to save');
   if (!opt) return;
   const file = await pickSavePath(`${base}-${fileStamp()}${opt.mode === 'full' ? '' : '-' + opt.mode}.sql${opt.gz ? '.gz' : ''}`);
@@ -1494,7 +1494,7 @@ function viewData() {
         const modeSeg = `<div class="seg mode" role="group" aria-label="Mode"><button data-cmd="dview" class="${edit ? '' : 'on'}" title="Browse only: nothing can change">${icon.eye}View</button>
           <button data-cmd="dedit" class="${edit ? 'on' : ''}" ${noKey ? 'disabled title="This table has no primary key, so rows can’t be identified safely. Use SQL."' : 'title="Change, add and delete rows; nothing is saved until you review it"'}>${icon.edit}Edit</button></div>`;
         body = `<div class="dbar">${modeSeg}<div class="fchips inline">${dataFilterChips()}</div>
-          <span class="spacer"></span>${d.busy ? '<span class="spinner"></span>' : ''}<span class="note">${r && !r.error ? `${from.toLocaleString()}–${to.toLocaleString()} of ${total.toLocaleString()}${r.ms !== undefined ? ` · ${r.ms} ms` : ''}` : ''}</span>
+          <span class="spacer"></span>${d.busy ? '<span class="spinner"></span>' : ''}<span class="note">${r && !r.error ? `${from.toLocaleString()} to ${to.toLocaleString()} of ${total.toLocaleString()}${r.ms !== undefined ? ` · ${r.ms} ms` : ''}` : ''}</span>
           <button class="tb-btn" data-cmd="dprev" title="Previous page" ${d.page > 0 ? '' : 'disabled'}>${icon.back}</button><button class="tb-btn" data-cmd="dnext" title="Next page" ${to < total ? '' : 'disabled'}>${icon.fwd}</button>
           <button class="tb-btn" data-cmd="dexport" title="Export rows">${icon.download2}</button></div>
           ${edit ? `<div class="editbar" role="status"><span class="pill">${icon.edit}Editing</span><span class="note">Click a cell to change it. Nothing is written until you review and save.</span><span class="spacer"></span>
@@ -1984,7 +1984,7 @@ function updatesPage() {
     ${settingRow('Switch back', u?.kept ? `LocalSites ${esc(u.kept)} is kept from before the last update.` : 'After an update, the previous version is kept here so you can go back in one click.',
       UI.btn(u?.kept ? `Switch to ${u.kept}` : 'Nothing kept yet', { ic: 'history2', attrs: `data-cmd="updrollback" ${u?.kept && u?.supported ? '' : 'disabled'}` }))}
     <p class="note upd-safety">${icon.shield}<span>Every update is signed. Before installing, LocalSites checks the signature against the key built into this app, the download’s checksum, and that the new app starts on this Mac. If any check fails, the download is deleted and nothing changes.</span></p>
-    <h3 class="sub">What’s new</h3>
+    <h3 class="sub">What's new</h3>
     ${(v?.changelog || []).map(r => `<div class="release"><h3>${esc(r.version)} · ${esc(r.title)}</h3><div class="note">${esc(r.date)}</div><ul>${r.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}`;
 }
 /* --- problems: what went wrong on this Mac, and opt-in reports (cleaned, reviewed before sending) --- */
@@ -2112,7 +2112,7 @@ function viewSettings() {
     const list = S.storage || [], total = list.reduce((a, x) => a + x.bytes, 0);
     const size = (b) => b >= 1 << 30 ? (b / (1 << 30)).toFixed(1) + ' GB' : b >= 1 << 20 ? (b / (1 << 20)).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
     page = `<h2>Storage</h2><p class="lead">What LocalSites keeps on this Mac${S.storage ? `: ${size(total)} in total` : ''}. Clean-ups only remove files LocalSites made, and ask first.</p>
-      ${S.storage ? list.map(x => settingRow(`${x.name} · ${size(x.bytes)}`, esc(x.detail), x.clean ? UI.btn(x.can_clean ? 'Clean up' : 'Nothing to clean', { attrs: `data-storageclean="${esc(x.id)}" ${x.can_clean ? '' : 'disabled'}`, title: x.clean }) : '<span class="note">–</span>')).join('') : '<span class="skeleton" style="width:40%"></span>'}`;
+      ${S.storage ? list.map(x => settingRow(`${x.name} · ${size(x.bytes)}`, esc(x.detail), x.clean ? UI.btn(x.can_clean ? 'Clean up' : 'Nothing to clean', { attrs: `data-storageclean="${esc(x.id)}" ${x.can_clean ? '' : 'disabled'}`, title: x.clean }) : '<span class="note">Nothing to clean</span>')).join('') : '<span class="skeleton" style="width:40%"></span>'}`;
   } else if (sec === 'problems') {
     page = problemsPage();
   } else if (sec === 'updates') {
@@ -2435,7 +2435,7 @@ function showHelpMenu(anchor) {
     <button data-menu="goto-doctor">${icon.status}LocalSites status<span class="kb">${fails === null ? '' : fails ? `<span class="bad">${fails} problem${fails > 1 ? 's' : ''}</span>` : '<span class="ok">All good</span>'}</span></button>
     <button data-menu="clihelp">${icon.cli}Command-line tool</button>
     <button data-menu="goto-settings">${icon.settings}Settings<span class="kb">G then ,</span></button>
-    ${latest ? `<div class="label2">What’s new</div><div class="timeline">${latest.items.slice(0, 3).map(i => `<button data-menu="whatsnew" title="${esc(i)}"><span>${esc(i.split(/[:;,(—]/)[0].trim())}</span></button>`).join('')}
+    ${latest ? `<div class="label2">What's new</div><div class="timeline">${latest.items.slice(0, 3).map(i => `<button data-menu="whatsnew" title="${esc(i)}"><span>${esc(i.split(/[:;,(]/)[0].trim())}</span></button>`).join('')}
       <button data-menu="whatsnew">Full changelog</button></div>` : ''}`);
   if (S.version) { S.seenVersion = S.version.version; saveUI(); renderSide(); }
 }

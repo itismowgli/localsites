@@ -4,7 +4,7 @@
 
 # LocalSites
 
-**The free, open-source alternative to MAMP PRO, Laravel Herd and XAMPP for macOS, built for the age of AI agents.**
+**A free, open-source alternative to MAMP PRO, Laravel Herd and XAMPP for macOS, with an MCP server for AI coding agents.**
 
 Every project folder gets a real `https://name.test` address. PHP, MySQL, Node, Laravel, WordPress and Next.js
 work out of the box. A 22 MB native app, a CLI and an MCP server share one engine, so you and your AI coding agent
@@ -35,14 +35,17 @@ run the same local stack.
 
 ## Why LocalSites
 
-- **Free and open source, for good.** MIT licence. No accounts, trials, upsells or telemetry. Problem reports are
-  off until you turn them on, and you see each one before it's sent.
-- **Real HTTPS, no ports, no fiddling.** Drop a folder in `~/Sites` and open `https://shop.test`. Real
-  certificates, isolated PHP per project, a database login per project.
-- **Built for you *and* your AI agent.** Claude, Cursor, VS Code and Windsurf connect in one click over MCP.
-  Agents can list projects, switch PHP, read logs and run health checks. Anything risky waits for **your** Approve.
-- **Small and quiet.** A 22 MB app on the system web view. At idle the background service uses about 24 MB of
-  memory and does nothing until something changes. MySQL sleeps when nothing needs it.
+LocalSites is free and open source under the MIT licence, with no accounts, trials, upsells or telemetry. Problem
+reports stay off until you turn them on, and you see each report before it's sent.
+
+Drop a folder in `~/Sites` and open `https://shop.test`. Each project gets a real certificate, its own PHP pool and
+its own database login, and you never type a port number.
+
+Claude, Cursor, VS Code and Windsurf connect over MCP in one click. Agents can list projects, switch PHP, read logs
+and run health checks, and anything risky waits for you to click Approve.
+
+The app is 22 MB because it uses the system web view. At idle the background service uses about 24 MB of memory and
+does nothing until something changes. MySQL sleeps when nothing needs it.
 
 ## Features
 
@@ -264,7 +267,7 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 | Engine and CLI | ✅ | compiles, not yet usable | compiles, not yet usable |
 | PHP / Apache / MySQL runtimes | ✅ Homebrew | planned | planned |
 | HTTPS domains | ✅ Valet or built-in | planned | planned |
-| Import from MAMP PRO / MAMP / XAMPP | ✅ | — | planned |
+| Import from MAMP PRO / MAMP / XAMPP | ✅ | not needed (no MAMP on Linux) | planned |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PLAN.md](docs/PLAN.md) for what's next.
 

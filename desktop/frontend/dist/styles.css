@@ -838,7 +838,7 @@ table.ports td { height: auto; padding-top: 8px; padding-bottom: 8px; vertical-a
 .lt-panel-760 table.ports th:nth-child(3), .lt-panel-760 table.ports td:nth-child(3) { display: none; }
 .lt-panel-760 table.ports th:nth-child(2) { width: auto; }
 
-/* Responsive fixes found by the layout audit (every screen at 600–1440 px) */
+/* Responsive fixes found by the layout audit (every screen at 600 to 1440 px) */
 .topbar, .topbar * { -webkit-user-select: none; user-select: none; }
 .nowrap { white-space: nowrap; }
 table.dbt { table-layout: auto; }

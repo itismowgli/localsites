@@ -1,4 +1,4 @@
-# LocalSites — end-to-end plan and build tracker
+# LocalSites: end-to-end plan and build tracker
 
 The single source of truth for **what is built, what is partly built, and what is not started**, with the test
 that proves each piece. Update this file in the same change that adds or finishes a feature.
@@ -12,7 +12,7 @@ _Last updated: 2026-10-27 (v0.3.0)_
 
 ## 1. Goal
 
-A free, open-source, MAMP PRO–class local environment for PHP & MySQL that is **light (≈12 MB app), keyboard-first
+A free, open-source, MAMP PRO-class local environment for PHP & MySQL that is **light (≈12 MB app), keyboard-first
 (a fast, keyboard-first UI), secure by default, and drivable by people, scripts and AI agents (CLI `--json`, local API, MCP)**,
 on macOS, Windows and Linux, with optional Docker per project.
 
@@ -26,7 +26,7 @@ on macOS, Windows and Linux, with optional Docker per project.
 
 ---
 
-## 3. Phase 1 — macOS, daily-usable (current)
+## 3. Phase 1: macOS, daily-usable (current)
 
 ### 3.1 Core engine
 
@@ -69,7 +69,7 @@ on macOS, Windows and Linux, with optional Docker per project.
 |---|---|---|---|
 | Apache 2.4 with `.htaccess` | ✅ | E | TLS on 127.0.0.1 |
 | One PHP-FPM pool per project | ✅ | E | own temp dir, logs, `clear_env` |
-| PHP 7.4 / 8.0 / 8.2 / 8.3 / 8.5 switch per project | ✅ | E UI | Homebrew 7.1–7.3 builds crash → hidden |
+| PHP 7.4 / 8.0 / 8.2 / 8.3 / 8.5 switch per project | ✅ | E UI | Homebrew 7.1 to 7.3 builds crash → hidden |
 | MAMP-compatible php.ini defaults | ✅ | M | `output_buffering=4096` etc. |
 | Per-project php.ini overrides (UI) | ✅ | e2e | same allowlist and value checks as Settings → PHP |
 | Web root auto-detect (`public/`) | ✅ | E | |
@@ -152,7 +152,7 @@ on macOS, Windows and Linux, with optional Docker per project.
 
 ---
 
-## 4. Phase 2 — Docker, add-ons, deeper agent support
+## 4. Phase 2: Docker, add-ons, deeper agent support
 
 | Item | Status |
 |---|---|
@@ -165,7 +165,7 @@ on macOS, Windows and Linux, with optional Docker per project.
 | MCP resources (logs, configs) + prompts ("diagnose site") | ✅ |
 | Agent activity: approve/deny queue for destructive calls in the app | ✅ |
 
-## 5. Phase 3 — Windows, Linux, public release
+## 5. Phase 3: Windows, Linux, public release
 
 | Item | Status |
 |---|---|
@@ -215,7 +215,7 @@ Rule: every release adds an entry to `changelog.json` in the same change.
 
 | Issue | Impact | Plan |
 |---|---|---|
-| Homebrew PHP 7.1–7.3 crash on start; 7.4 `intl` broken | those versions unavailable / partial | static PHP builds (phase 3) |
+| Homebrew PHP 7.1 to 7.3 crash on start; 7.4 `intl` broken | those versions unavailable / partial | static PHP builds (phase 3) |
 | Built-in front door needs one-time OS setup | only Valet mode is fully set up today | installer helper |
 | Agent box is rule-based | understands common phrases only | by design; real AI via MCP |
 | Prototype `~/.localsites` still on disk | none (stopped) | remove after migration |
@@ -231,4 +231,4 @@ Rule: every release adds an entry to `changelog.json` in the same change.
 - [ ] Retire MAMP PRO
 - [x] MIT license
 - [x] First git commit of `localsites-app`
-- [ ] Add `~/Documents/websites` (Laravel, Valet) and `~/Documents/Project` (Next.js, account groups) as folders — done by the app owner or in setup
+- [ ] Add `~/Documents/websites` (Laravel, Valet) and `~/Documents/Project` (Next.js, account groups) as folders (done by the app owner or in setup)

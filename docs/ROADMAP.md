@@ -17,19 +17,19 @@ Status: plan, 2026-10-27. Tracking of built items stays in [PLAN.md](PLAN.md).
 | MAMP PRO screen | What it does | Us today | Plan |
 |---|---|---|---|
 | Hosts | sites, PHP per host, aliases | ✅ projects in many folders, PHP/Node/custom/Docker | add aliases and extra domains per project (A2) |
-| Ports & User | ports, run as user | ✅ Settings → Domains & ports | – |
+| Ports & User | ports, run as user | ✅ Settings → Domains & ports | done |
 | Editor | built-in code editor | open in VS Code etc. | one-click open in any installed editor (C1); no built-in editor |
-| Cloud | paid backup/sync | – | not planned (paid); git covers sharing |
+| Cloud | paid backup/sync | not built | not planned (paid); git covers sharing |
 | Apache modules | toggle modules | fixed safe set | module list with toggles (A3) |
 | Nginx | alternative web server | Apache only | Nginx as a per-project choice (A3) |
 | MySQL | root password, network access, admin tools | ✅ per-project logins, data browser | root password change, LAN access toggle (A4) |
-| Dynamic DNS | DNS-O-Matic, No-IP… | – | replaced by share tunnels, which need no router setup (B1) |
-| Memcached | cache server | – | add-on (A1) |
-| Redis | cache server | – | add-on, Valkey or Redis (A1) |
-| MailHog | catch outgoing mail | – | Mailpit add-on, wired into every PHP project automatically (A1) |
+| Dynamic DNS | DNS-O-Matic, No-IP… | not built | replaced by share tunnels, which need no router setup (B1) |
+| Memcached | cache server | not built | add-on (A1) |
+| Redis | cache server | not built | add-on, Valkey or Redis (A1) |
+| MailHog | catch outgoing mail | not built | Mailpit add-on, wired into every PHP project automatically (A1) |
 | PHP | versions, extensions, Xdebug | ✅ versions, php.ini per project | extensions list, Xdebug toggle per project (A3) |
 | Other languages | Python, Ruby, Node | ✅ Node; custom command for anything | detected Python/Ruby/Go projects (A2) |
-| Recent hosts | quick list | ✅ Running + Favorites + palette | – |
+| Recent hosts | quick list | ✅ Running + Favorites + palette | done |
 | GroupStart | start a set together | ✅ everything switched on starts together | per-project "needs Redis + Mailpit" (A1) |
 
 Things MAMP PRO doesn't do that we already do: real HTTPS on `.test`, Laravel/Next.js detection, git panel,
@@ -97,7 +97,7 @@ CI status for the current branch in the git panel. Read-only; uses the CLI's own
 MCP server to their config (backup first, shown as a diff, undo button).
 
 **D2. Richer MCP:** resources (logs, generated configs, project files list), prompts ("diagnose this site",
-"set up Laravel locally", "why is mail not sending"), tools for every new feature in A–C.
+"set up Laravel locally", "why is mail not sending"), tools for every new feature in A to C.
 
 **D3. Approval queue:** destructive agent calls (stop, restart, data writes, shares) wait in the app for
 Approve / Deny, with the exact change shown. Replaces the `confirm: true` convention.

@@ -1,6 +1,6 @@
 # Roadmap 2: lighter, safer, and things no other local dev tool does
 
-Status: plan, 2026-11-01. Builds on [ROADMAP.md](ROADMAP.md) (steps 1–8 done or waiting on an Apple Developer ID).
+Status: plan, 2026-11-01. Builds on [ROADMAP.md](ROADMAP.md) (steps 1 to 8 done or waiting on an Apple Developer ID).
 
 ## Where we are (measured on the owner's Mac, idle, 44 projects, 1 running)
 
@@ -17,7 +17,7 @@ Status: plan, 2026-11-01. Builds on [ROADMAP.md](ROADMAP.md) (steps 1–8 done o
 
 | # | Change | Expected effect |
 |---|---|---|
-| 1.1 | MySQL tuned for local work: `performance_schema=OFF`, 32–64 MB buffer pool (grows with data size), 16 MB redo log, small caches, 50 connections | ~460 MB → ~90 MB RAM; ~207 MB → ~70 MB disk |
+| 1.1 | MySQL tuned for local work: `performance_schema=OFF`, 32 to 64 MB buffer pool (grows with data size), 16 MB redo log, small caches, 50 connections | ~460 MB → ~90 MB RAM; ~207 MB → ~70 MB disk |
 | 1.2 | Start MySQL, PostgreSQL and add-ons **on demand**: when a project that uses them is on, or when you open Databases/Data; stop after 20 min unused (setting) | 0 MB when you only use MAMP's MySQL |
 | 1.3 | Event-driven updates instead of polling: the service pushes changes to the app (one long-lived stream); folders are watched with FSEvents instead of rescanned | done in v0.14.0 (`events.wait` long poll; folders still rescanned every 60 s while the window is focused). Measured before: service 1.25 % CPU idle, all of it from the app's polling |
 | 1.4 | App closed to the menu bar frees its page (the web view is reloaded on open) | done in v0.14.0. Measured: page process 47 → 36 MB, timers stopped. WebKit keeps its page process, so the estimated −40 MB isn't reachable this way |
@@ -89,12 +89,12 @@ Local list of crashes (Go panics via `debug.SetCrashOutput`, macOS `.ips` report
 
 | Phase | Items | Size | Needs from the owner |
 |---|---|---|---|
-| A (done in v0.12.0) | 1.1, 1.2, 1.5, 1.6, 6.4, 6.5 | M | – (measured: MySQL 486 → 172 MB RAM, 187 → 118 MB disk; 0 MB while asleep) |
-| B | 3.1, 3.2 (next); 1.3, 1.4 done in v0.14.0 | M | – |
-| C | 5.1 branch previews, 5.2 time machine | L | – |
-| D | 4.2 GitLab, 4.4 Ollama, 4.7 editors, 5.5 clone & run | M | – |
-| E | 5.4 inspector, 5.6 agent undo, 6.2, 6.3, 6.7 | L | – |
-| F | 2.x updates (2.1–2.4 and channels done in v0.13.0), 6.1, 6.8, Homebrew cask | M | Apple Developer ID (name decided: LocalSites) |
+| A (done in v0.12.0) | 1.1, 1.2, 1.5, 1.6, 6.4, 6.5 | M | nothing (measured: MySQL 486 → 172 MB RAM, 187 → 118 MB disk; 0 MB while asleep) |
+| B | 3.1, 3.2 (next); 1.3, 1.4 done in v0.14.0 | M | nothing |
+| C | 5.1 branch previews, 5.2 time machine | L | nothing |
+| D | 4.2 GitLab, 4.4 Ollama, 4.7 editors, 5.5 clone & run | M | nothing |
+| E | 5.4 inspector, 5.6 agent undo, 6.2, 6.3, 6.7 | L | nothing |
+| F | 2.x updates (2.1 to 2.4 and channels done in v0.13.0), 6.1, 6.8, Homebrew cask | M | Apple Developer ID (name decided: LocalSites) |
 | G | 3.3 ntfy, 4.3, 4.5, 4.6, 5.3, 5.7 | M | which issue tracker and chat the team uses |
 
 Every phase ships like before: unit + e2e + UI tests, measured before/after for anything that claims to save memory or disk, changelog entry, PLAN.md rows.

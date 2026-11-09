@@ -459,7 +459,7 @@ func printChecks(b []byte) error {
 	if err := json.Unmarshal(b, &checks); err != nil {
 		return err
 	}
-	icons := map[string]string{"ok": "✓", "warn": "!", "fail": "✗", "skip": "–"}
+	icons := map[string]string{"ok": "✓", "warn": "!", "fail": "✗", "skip": "-"}
 	area, failed := "", 0
 	for _, c := range checks {
 		if c.Area != area {
