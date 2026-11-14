@@ -28,6 +28,10 @@ var assets embed.FS
 
 func main() {
 	useNativeNotifications()
+	// notify: the service (when started from the command line) sends notifications through the app
+	if len(os.Args) > 3 && os.Args[1] == "notify" {
+		os.Exit(notifyOnce(os.Args[2], os.Args[3]))
+	}
 	// update-selftest: an update checks the new app runs on this Mac before installing it
 	if len(os.Args) > 1 && os.Args[1] == "update-selftest" {
 		fmt.Println(version.Version)
@@ -64,6 +68,7 @@ func main() {
 	}
 	// a fatal Go crash of the app is written to a file; the service turns it into a problem
 	problems.CaptureCrashes(filepath.Join(paths.Default().Data, "problems"), "app")
+	rememberAppPath(paths.Default().Data)
 	app := &App{}
 	err := wails.Run(&options.App{
 		Title:            "LocalSites",

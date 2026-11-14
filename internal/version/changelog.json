@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.2.2",
+    "date": "2026-11-15",
+    "title": "Notifications always show the LocalSites icon",
+    "items": [
+      "Notifications show LocalSites' name and icon even when the background service was started from the command line. Before, they showed a blank script icon in that case"
+    ]
+  },
+  {
     "version": "1.2.1",
     "date": "2026-11-14",
     "title": "Clearer approval requests",

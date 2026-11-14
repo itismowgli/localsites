@@ -33,6 +33,7 @@ func Run() error {
 	if logf != nil {
 		log.SetOutput(logf)
 	}
+	notify.AppFile = filepath.Join(e.P.Data, "app-path") // the app writes its location there (see notify.Send)
 	srv := &api.Server{E: e, Quit: make(chan struct{})}
 	if err := srv.Listen(); err != nil {
 		return err
