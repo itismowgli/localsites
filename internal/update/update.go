@@ -536,7 +536,20 @@ func CheckBundle(app, want string) error {
 	if want != "" && strings.TrimSpace(string(out)) != want {
 		return fmt.Errorf("the new app reports version %q, expected %s", strings.TrimSpace(string(out)), want)
 	}
+	unlist(app) // running it registered this copy with macOS
 	return nil
+}
+
+const lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+
+// unlist keeps a copy of the app that LocalSites keeps for itself (downloads, the version kept for
+// switching back) out of Launchpad, the Apps list and "Open with", so only the installed app shows.
+func unlist(app string) {
+	if _, err := os.Stat(lsregister); err == nil {
+		_ = exec.Command(lsregister, "-u", app).Run()
+	}
+	// Spotlight (which the Apps list uses) skips folders holding this file
+	_ = os.WriteFile(filepath.Join(filepath.Dir(app), ".metadata_never_index"), nil, 0o600)
 }
 
 // BundleOf turns the app's executable path into its .app folder.
@@ -734,6 +747,7 @@ func apply(p Plan) error {
 		return fmt.Errorf("couldn't put the new app in place: %v; the old one was restored", err)
 	}
 	_ = os.WriteFile(filepath.Join(keep, "version.txt"), []byte(p.ToVer+"\n"), 0o600)
+	unlist(old)
 	_ = os.RemoveAll(filepath.Dir(p.From))
 	// downloads of versions now installed or older are no longer needed
 	ents, _ := os.ReadDir(p.Dir)
