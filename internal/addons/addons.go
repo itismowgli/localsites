@@ -30,8 +30,10 @@ type Def struct {
 	OwnPackageOnly bool `json:"-"`
 	// UIName is the web page's address: <UIName>.<tld> (mail.test, minio.test …)
 	UIName string `json:"ui_name,omitempty"`
-	// Init prepares the data folder before the first start (PostgreSQL's initdb)
+	// Init prepares the data folder before every start (PostgreSQL: initdb once, then its login rules)
 	Init func(bin, dataDir string) error `json:"-"`
+	// Secret: the add-on has a login password, generated once and kept in the keychain
+	Secret bool `json:"-"`
 	// ProcEnv are extra environment variables for the process (MinIO's login)
 	ProcEnv func(o Options) []string `json:"-"`
 }
@@ -52,35 +54,51 @@ var Catalog = []Def{
 		Formula:     "memcached", Bin: "memcached", Port: 11211},
 	{ID: "postgres", Name: "PostgreSQL", Kind: "database", License: "PostgreSQL", Homepage: "https://www.postgresql.org",
 		Description: "A second database server next to MySQL, for projects built on Postgres. Browse it in Data.",
-		Formula:     "postgresql@17", Bin: "postgres", Port: 5433, OwnPackageOnly: true, Init: initPostgres},
+		Formula:     "postgresql@17", Bin: "postgres", Port: 5433, OwnPackageOnly: true, Init: initPostgres, Secret: true},
 	{ID: "meilisearch", Name: "Meilisearch", Kind: "search", License: "MIT", Homepage: "https://www.meilisearch.com",
 		Description: "Fast search for your app (Laravel Scout, InstantSearch). Its dashboard opens in the browser.",
 		Formula:     "meilisearch", Bin: "meilisearch", Port: 7700, UIPort: 7700, UIName: "meilisearch"},
 	{ID: "minio", Name: "MinIO", Kind: "storage", License: "AGPL-3.0", Homepage: "https://min.io",
 		Description: "S3-compatible file storage for uploads, so code that uses S3 works locally.",
-		Formula:     "minio", Bin: "minio", Port: 9000, UIPort: 9001, UIName: "minio",
-		ProcEnv: func(Options) []string {
-			return []string{"MINIO_ROOT_USER=" + MinIOUser, "MINIO_ROOT_PASSWORD=" + MinIOPassword, "MINIO_BROWSER_REDIRECT=false"}
+		Formula:     "minio", Bin: "minio", Port: 9000, UIPort: 9001, UIName: "minio", Secret: true,
+		ProcEnv: func(o Options) []string {
+			return []string{"MINIO_ROOT_USER=" + MinIOUser, "MINIO_ROOT_PASSWORD=" + o.secret(MinIOPassword), "MINIO_BROWSER_REDIRECT=false"}
 		}},
 }
 
-// MinIO's login. Local only (127.0.0.1), shown in the app so projects can use it.
+// MinIO's user name. Its password is random per Mac (kept in the keychain); MinIO folders made before
+// that keep the old fixed password, since changing it would lock MinIO out of its own data.
 const (
 	MinIOUser     = "localsites"
 	MinIOPassword = "localsites-dev"
 )
 
-// initPostgres creates the data folder once: superuser "postgres", local connections only.
+func (o Options) secret(fallback string) string {
+	if o.Password != "" {
+		return o.Password
+	}
+	return fallback
+}
+
+// pgHBA: no password over the socket, which sits in a folder only this Mac user can open; a password
+// over TCP, so other users and programs on this Mac can't log in as the superuser.
+const pgHBA = `# Written by LocalSites on every start.
+local all all trust
+host  all all 127.0.0.1/32 scram-sha-256
+host  all all ::1/128      scram-sha-256
+`
+
+// initPostgres creates the data folder once (superuser "postgres") and writes the login rules.
 func initPostgres(bin, dataDir string) error {
+	_ = os.Chmod(dataDir, 0o700) // the socket is here
 	data := filepath.Join(dataDir, "data")
-	if _, err := os.Stat(filepath.Join(data, "PG_VERSION")); err == nil {
-		return nil
+	if _, err := os.Stat(filepath.Join(data, "PG_VERSION")); err != nil {
+		out, err := exec.Command(filepath.Join(filepath.Dir(bin), "initdb"), "-D", data, "-U", "postgres", "--auth-local=trust", "--auth-host=scram-sha-256", "-E", "UTF8", "--locale=C").CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("initdb: %v %s", err, strings.TrimSpace(string(out)))
+		}
 	}
-	out, err := exec.Command(filepath.Join(filepath.Dir(bin), "initdb"), "-D", data, "-U", "postgres", "--auth=trust", "-E", "UTF8", "--locale=C").CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("initdb: %v %s", err, strings.TrimSpace(string(out)))
-	}
-	return nil
+	return os.WriteFile(filepath.Join(data, "pg_hba.conf"), []byte(pgHBA), 0o600)
 }
 
 // Find returns the add-on with this id.
@@ -127,9 +145,10 @@ func Brew() (string, bool) {
 type Options struct {
 	Port      int
 	UIPort    int
-	KeepMail  bool // Mailpit: keep messages after a restart
-	MemoryMB  int  // Memcached
-	PersistDB bool // Valkey/Redis: save data to disk
+	KeepMail  bool   // Mailpit: keep messages after a restart
+	MemoryMB  int    // Memcached
+	PersistDB bool   // Valkey/Redis: save data to disk
+	Password  string `json:"-"` // PostgreSQL's and MinIO's login (from the keychain)
 }
 
 // Args builds the command line. dataDir is the add-on's own folder.
@@ -199,13 +218,14 @@ func (d Def) Snippets(o Options) []Snippet {
 			{"Any language", "Redis URL", lines("redis://" + addr)},
 		}
 	case "postgres":
-		url := "postgres://postgres@" + addr + "/postgres"
+		pw := o.Password
+		url := "postgres://postgres:" + pw + "@" + addr + "/postgres"
 		return []Snippet{
-			{"Laravel", ".env", lines("DB_CONNECTION=pgsql", "DB_HOST=127.0.0.1", "DB_PORT="+p, "DB_DATABASE=postgres", "DB_USERNAME=postgres", "DB_PASSWORD=")},
+			{"Laravel", ".env", lines("DB_CONNECTION=pgsql", "DB_HOST=127.0.0.1", "DB_PORT="+p, "DB_DATABASE=postgres", "DB_USERNAME=postgres", "DB_PASSWORD="+pw)},
 			{"Node / Next.js", ".env.local (Prisma, Drizzle, pg)", lines(`DATABASE_URL="` + url + `"`)},
-			{"Django", "settings.py", lines(`DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": "postgres", "USER": "postgres", "HOST": "127.0.0.1", "PORT": "` + p + `"}}`)},
-			{"Rails", "config/database.yml", lines("development:", "  adapter: postgresql", "  host: 127.0.0.1", "  port: "+p, "  database: postgres", "  username: postgres")},
-			{"Any language", "Connection URL", lines(url, "# no password: only this Mac can connect")},
+			{"Django", "settings.py", lines(`DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": "postgres", "USER": "postgres", "PASSWORD": "` + pw + `", "HOST": "127.0.0.1", "PORT": "` + p + `"}}`)},
+			{"Rails", "config/database.yml", lines("development:", "  adapter: postgresql", "  host: 127.0.0.1", "  port: "+p, "  database: postgres", "  username: postgres", "  password: "+pw)},
+			{"Any language", "Connection URL", lines(url, "# only this Mac can connect")},
 		}
 	case "meilisearch":
 		return []Snippet{
@@ -217,11 +237,11 @@ func (d Def) Snippets(o Options) []Snippet {
 		}
 	case "minio":
 		return []Snippet{
-			{"Laravel", ".env", lines("FILESYSTEM_DISK=s3", "AWS_ACCESS_KEY_ID="+MinIOUser, "AWS_SECRET_ACCESS_KEY="+MinIOPassword, "AWS_DEFAULT_REGION=us-east-1", "AWS_BUCKET=local", "AWS_ENDPOINT=http://"+addr, "AWS_USE_PATH_STYLE_ENDPOINT=true")},
-			{"Node / Next.js", ".env.local (AWS SDK)", lines("S3_ENDPOINT=http://"+addr, "S3_ACCESS_KEY_ID="+MinIOUser, "S3_SECRET_ACCESS_KEY="+MinIOPassword, "S3_FORCE_PATH_STYLE=true", "S3_REGION=us-east-1")},
-			{"Django", "settings.py (django-storages)", lines(`AWS_S3_ENDPOINT_URL = "http://`+addr+`"`, `AWS_ACCESS_KEY_ID = "`+MinIOUser+`"`, `AWS_SECRET_ACCESS_KEY = "`+MinIOPassword+`"`)},
-			{"Rails", "config/storage.yml", lines("local_s3:", "  service: S3", "  endpoint: http://"+addr, "  access_key_id: "+MinIOUser, "  secret_access_key: "+MinIOPassword, "  region: us-east-1", "  bucket: local", "  force_path_style: true")},
-			{"Any language", "S3 endpoint", lines("http://"+addr, "Access key: "+MinIOUser, "Secret key: "+MinIOPassword, "Create buckets in the console")},
+			{"Laravel", ".env", lines("FILESYSTEM_DISK=s3", "AWS_ACCESS_KEY_ID="+MinIOUser, "AWS_SECRET_ACCESS_KEY="+o.secret(MinIOPassword), "AWS_DEFAULT_REGION=us-east-1", "AWS_BUCKET=local", "AWS_ENDPOINT=http://"+addr, "AWS_USE_PATH_STYLE_ENDPOINT=true")},
+			{"Node / Next.js", ".env.local (AWS SDK)", lines("S3_ENDPOINT=http://"+addr, "S3_ACCESS_KEY_ID="+MinIOUser, "S3_SECRET_ACCESS_KEY="+o.secret(MinIOPassword), "S3_FORCE_PATH_STYLE=true", "S3_REGION=us-east-1")},
+			{"Django", "settings.py (django-storages)", lines(`AWS_S3_ENDPOINT_URL = "http://`+addr+`"`, `AWS_ACCESS_KEY_ID = "`+MinIOUser+`"`, `AWS_SECRET_ACCESS_KEY = "`+o.secret(MinIOPassword)+`"`)},
+			{"Rails", "config/storage.yml", lines("local_s3:", "  service: S3", "  endpoint: http://"+addr, "  access_key_id: "+MinIOUser, "  secret_access_key: "+o.secret(MinIOPassword), "  region: us-east-1", "  bucket: local", "  force_path_style: true")},
+			{"Any language", "S3 endpoint", lines("http://"+addr, "Access key: "+MinIOUser, "Secret key: "+o.secret(MinIOPassword), "Create buckets in the console")},
 		}
 	case "memcached":
 		return []Snippet{

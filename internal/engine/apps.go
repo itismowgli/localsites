@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	goruntime "runtime"
 	"sort"
 	"strconv"
@@ -135,10 +136,12 @@ func (e *Engine) appSpec(s SiteView) (proc.Spec, error) {
 	return spec, nil
 }
 
+var nodeVersionRe = regexp.MustCompile(`^[0-9]+(\.[0-9]+){0,2}$`)
+
 // nodeBins puts the project's Node version first when it pins one (.nvmrc) and nvm has it.
 func (e *Engine) nodeBins(s SiteView) []string {
 	want := s.Framework.Node
-	if want == "" {
+	if want == "" || !nodeVersionRe.MatchString(want) { // from the project's .nvmrc: a version, nothing else
 		return nil
 	}
 	dirs, _ := filepath.Glob(filepath.Join(e.P.Home, ".nvm", "versions", "node", "v"+want+"*"))

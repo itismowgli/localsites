@@ -53,7 +53,7 @@ var Providers = []Provider{
 		},
 		URLRe: regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)},
 	{ID: "bore", Name: "bore", Formula: "bore-cli", Bin: "bore", License: "MIT",
-		Description: "Free, no account, open source end to end (bore.pub or your own server). Plain http:// address.",
+		Description: "Free, no account, open source end to end (bore.pub or your own server). Plain http:// address: the password and pages travel unencrypted, so share nothing secret this way.",
 		Args:        func(p int) []string { return []string{"local", fmt.Sprint(p), "--to", "bore.pub"} },
 		URLRe:       regexp.MustCompile(`listening at ([a-z0-9.-]+):(\d+)`),
 		URLFrom:     func(m []string) string { return "http://" + m[1] + ":" + m[2] }},
@@ -273,10 +273,20 @@ const (
 	failWindow       = 10 * time.Minute
 )
 
+// placeholderIP is what the site sees as the visitor's address when the tunnel doesn't say (bore). It is
+// a documentation address, never 127.0.0.1, so "localhost only" pages stay closed to the internet.
+const placeholderIP = "192.0.2.1"
+
+// tooMany: this visitor guessed wrong too often, so even the right password waits. Behind a tunnel
+// that can't tell visitors apart (bore) everyone is one visitor, so guessing there blocks everyone for
+// a while: the price of an unlimited guess rate otherwise.
+// During a flood (many wrong passwords from many addresses) visitors who already guessed wrong wait
+// too, but visitors with no wrong guesses still get their try, so a flood doesn't lock them out.
 func (f *failures) tooMany(who string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return len(f.recent(who)) >= maxFailures || len(f.recent("")) >= maxTotalFailures
+	mine := len(f.recent(who))
+	return mine >= maxFailures || mine > 0 && len(f.recent("")) >= maxTotalFailures
 }
 
 func (f *failures) add(who string) {
@@ -339,6 +349,18 @@ func gateway(t Target, password string, trustCF bool, publicURL func() string, s
 			r.SetURL(be)
 			r.Out.Host = t.Domain
 			r.SetXForwarded()
+			// Every visitor reaches the site from 127.0.0.1, and Apache trusts X-Real-IP from there:
+			// set both to the visitor's real address (Cloudflare) or a placeholder, never loopback, and
+			// never what the visitor sent.
+			ip := placeholderIP
+			if v := visitor(r.In, trustCF); v != "*" && net.ParseIP(v) != nil {
+				ip = v
+			}
+			r.Out.Header.Set("X-Real-IP", ip)
+			r.Out.Header.Set("X-Forwarded-For", ip)
+			if password != "" {
+				r.Out.Header.Del("Authorization") // the share's password is for the gateway, not the site
+			}
 			r.Out.Header.Set("X-Forwarded-Proto", "https")
 			if pu, err := url.Parse(publicURL()); err == nil && pu.Host != "" {
 				r.Out.Header.Set("X-Forwarded-Host", pu.Host)

@@ -15,6 +15,7 @@ import (
 	"github.com/localsites/localsites/internal/config"
 	"github.com/localsites/localsites/internal/frontdoor"
 	"github.com/localsites/localsites/internal/proc"
+	"github.com/localsites/localsites/internal/secrets"
 )
 
 // AddonView is an add-on with its install and run state, for the app, CLI and agents.
@@ -54,7 +55,47 @@ func (e *Engine) addonOptions(d addons.Def) (config.Addon, addons.Options) {
 	if d.ID == "memcached" && o.MemoryMB == 0 {
 		o.MemoryMB = 64
 	}
+	o.Password = e.addonSecret(d)
 	return a, o
+}
+
+func secretAddon(id string) string { return "addon-" + id }
+
+// addonSecret is an add-on's login password: random, made once, kept in the keychain.
+func (e *Engine) addonSecret(d addons.Def) string {
+	if !d.Secret {
+		return ""
+	}
+	e.pgMu.Lock()
+	defer e.pgMu.Unlock()
+	if pw := e.addonPw[d.ID]; pw != "" {
+		return pw
+	}
+	pw, err := e.Secrets.Get(secretAddon(d.ID))
+	if err != nil || pw == "" {
+		pw = secrets.Generate(24)
+		if _, err := os.Stat(filepath.Join(e.P.Data, "addons", d.ID, "data")); err == nil && d.ID == "minio" {
+			pw = addons.MinIOPassword // MinIO's data was made with the old fixed login
+		}
+		if err := e.Secrets.Set(secretAddon(d.ID), pw); err != nil {
+			return ""
+		}
+	}
+	if e.addonPw == nil {
+		e.addonPw = map[string]string{}
+	}
+	e.addonPw[d.ID] = pw
+	return pw
+}
+
+// pgSetPassword gives the add-on's superuser its keychain password (over the socket, which needs none),
+// so TCP logins need it. Done on every start; it also moves older installs off password-less TCP.
+func (e *Engine) pgSetPassword(pw string) error {
+	if pw == "" {
+		return errors.New("no password in the keychain")
+	}
+	_, err := e.pgRun("postgres", []byte("ALTER ROLE postgres PASSWORD '"+strings.ReplaceAll(pw, "'", "''")+"';\n"), "--file=-")
+	return err
 }
 
 // uiDomain is where an add-on's web page opens: <name>.<tld> (mail.test, minio.test …). If a project
@@ -245,6 +286,11 @@ func (e *Engine) applyAddons(add func(string, ...any)) []frontdoor.Route {
 			add("%s started but isn't answering on port %d yet; see its log", v.Name, o.Port)
 		} else {
 			add("Started %s on port %d", v.Name, o.Port)
+			if v.ID == "postgres" {
+				if err := e.pgSetPassword(o.Password); err != nil {
+					add("PostgreSQL: couldn't set its password: %v", err)
+				}
+			}
 		}
 		if v.UIPort != 0 {
 			routes = append(routes, frontdoor.Route{Domain: e.uiDomain(v.Def), Backend: fmt.Sprintf("http://127.0.0.1:%d", o.UIPort)})

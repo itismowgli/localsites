@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -155,9 +156,17 @@ func (m *Manager) Save(c Conn, password *string) (Conn, error) {
 		if c.Driver == "postgres" && c.Database == "" {
 			return c, errors.New("PostgreSQL needs a database name")
 		}
+		switch c.SSLMode {
+		case "", "disable", "prefer", "require", "verify-ca", "verify-full":
+		default:
+			return c, errors.New("encryption must be disable, prefer, require, verify-ca or verify-full")
+		}
 	case "sqlite":
 		if c.File == "" {
 			return c, errors.New("choose the SQLite file")
+		}
+		if !filepath.IsAbs(c.File) {
+			return c, errors.New("give the SQLite file's full path")
 		}
 	default:
 		return c, errors.New("driver must be mysql, postgres or sqlite")
@@ -320,11 +329,11 @@ func (m *Manager) open(c Conn, database string) (*sql.DB, error) {
 		cfg := mysql.NewConfig()
 		cfg.User, cfg.Passwd, cfg.DBName = c.User, pw, database
 		if c.SSHHost != "" {
-			lp, err := tunnelFor(c, orDefault(c.Port, 3306))
+			sock, err := tunnelFor(c, orDefault(c.Port, 3306))
 			if err != nil {
 				return nil, err
 			}
-			cfg.Net, cfg.Addr = "tcp", fmt.Sprintf("127.0.0.1:%d", lp)
+			cfg.Net, cfg.Addr = "unix", sock
 		} else if c.Socket != "" {
 			cfg.Net, cfg.Addr = "unix", c.Socket
 		} else {
@@ -338,16 +347,21 @@ func (m *Manager) open(c Conn, database string) (*sql.DB, error) {
 			database = c.Database
 		}
 		hostport := fmt.Sprintf("%s:%d", c.Host, orDefault(c.Port, 5432))
+		sockDir := ""
 		if c.SSHHost != "" {
-			lp, err := tunnelFor(c, orDefault(c.Port, 5432))
+			dir, err := tunnelFor(c, orDefault(c.Port, 5432))
 			if err != nil {
 				return nil, err
 			}
-			hostport = fmt.Sprintf("127.0.0.1:%d", lp)
+			hostport, sockDir = "", dir
 		}
 		u := url.URL{Scheme: "postgres", User: url.UserPassword(c.User, pw), Host: hostport, Path: "/" + database}
 		q := u.Query()
-		q.Set("sslmode", orDefaultS(c.SSLMode, "prefer"))
+		if sockDir != "" {
+			q.Set("host", sockDir)
+			q.Set("port", strconv.Itoa(orDefault(c.Port, 5432)))
+		}
+		q.Set("sslmode", orDefaultS(c.SSLMode, pgSSLDefault(c)))
 		q.Set("connect_timeout", "5")
 		u.RawQuery = q.Encode()
 		driver, dsn = "pgx", u.String()
@@ -747,7 +761,7 @@ func (m *Manager) Query(id string, r QueryRequest) (Result, error) {
 	res := Result{Total: -1, ReadOnly: !write, Statement: sqlText}
 	// Layer 1: in read-only mode only reading statements may run at all. MySQL ends a transaction
 	// before DDL (DROP, ALTER, CREATE...), so a read-only transaction alone does not stop those.
-	if !write && !readOnlyRe.MatchString(sqlText) {
+	if !write && (!readOnlyRe.MatchString(sqlText) || sideEffectRe.MatchString(sqlText)) {
 		if c.ReadOnly {
 			return res, errors.New("This connection is read-only, so only reading statements (SELECT, SHOW, DESCRIBE, EXPLAIN, WITH) can run. Turn on “Allow changes” for this connection to change data")
 		}
@@ -913,7 +927,11 @@ var (
 	// Statements allowed on a read-only connection (layer 1; layer 2 is the read-only transaction).
 	readOnlyRe = regexp.MustCompile(`(?is)^\s*(select|show|describe|desc|explain|with|values|table|pragma)\b`)
 	rowsRe     = regexp.MustCompile(`(?is)^\s*(select|show|describe|desc|explain|with|pragma|values|table)\b`)
-	writeRe    = regexp.MustCompile(`(?is)^\s*(insert|update|delete|replace|create|alter|drop|truncate|rename|grant|revoke)\b`)
+	// reading statements that still change something: MySQL writes files with INTO OUTFILE/DUMPFILE;
+	// these PostgreSQL functions end sessions, write files, change sequences or reach other servers
+	// (a read-only transaction doesn't stop them)
+	sideEffectRe = regexp.MustCompile(`(?is)\binto\s+(outfile|dumpfile)\b|\b(pg_terminate_backend|pg_cancel_backend|pg_reload_conf|pg_rotate_logfile|pg_switch_wal|dblink_exec|dblink_connect|dblink|lo_export|lo_import|lo_unlink|pg_file_write|pg_file_unlink|pg_advisory_lock|pg_advisory_xact_lock|pg_try_advisory_lock|pg_notify|set_config|nextval|setval|load_file)\s*\(`)
+	writeRe      = regexp.MustCompile(`(?is)^\s*(insert|update|delete|replace|create|alter|drop|truncate|rename|grant|revoke)\b`)
 )
 
 func returnsRows(q string) bool {
@@ -943,6 +961,15 @@ func orDefault(v, d int) int {
 		return d
 	}
 	return v
+}
+
+// pgSSLDefault: encrypted unless the server is on this Mac or behind an SSH tunnel (already encrypted).
+// "require" refuses a server that only speaks plain text, so a network attacker can't downgrade it.
+func pgSSLDefault(c Conn) string {
+	if c.SSHHost != "" || c.Socket != "" || c.Host == "" || c.Host == "localhost" || strings.HasPrefix(c.Host, "127.") || c.Host == "::1" || strings.HasPrefix(c.Host, "/") {
+		return "prefer"
+	}
+	return "require"
 }
 
 func orDefaultS(v, d string) string {

@@ -91,12 +91,12 @@ func Create(file string) (*Writer, error) {
 	if !filepath.IsAbs(file) {
 		return nil, errors.New("give a full path for the file")
 	}
-	tmp := file + ".partial"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	// a new, unpredictable name (O_EXCL): a planted link can't redirect the write
+	f, err := os.CreateTemp(filepath.Dir(file), "."+filepath.Base(file)+".*.partial")
 	if err != nil {
 		return nil, err
 	}
-	w := &Writer{f: f, file: file, tmp: tmp}
+	w := &Writer{f: f, file: file, tmp: f.Name()}
 	w.w = bufio.NewWriterSize(f, 1<<20)
 	if strings.HasSuffix(strings.ToLower(file), ".gz") {
 		w.gz = gzip.NewWriter(w.w)
@@ -106,6 +106,7 @@ func Create(file string) (*Writer, error) {
 
 // Writer is a dump file being written.
 type Writer struct {
+	NoReplace bool // Commit fails instead of replacing a file that appeared meanwhile
 	f         *os.File
 	w         *bufio.Writer
 	gz        *gzip.Writer
@@ -138,7 +139,16 @@ func (w *Writer) Commit() (int64, error) {
 		return 0, err
 	}
 	st, _ := os.Stat(w.tmp)
-	if err := os.Rename(w.tmp, w.file); err != nil {
+	if w.NoReplace {
+		err := os.Link(w.tmp, w.file) // fails if the name exists, unlike rename
+		_ = os.Remove(w.tmp)
+		if err != nil {
+			if errors.Is(err, os.ErrExist) {
+				return 0, fmt.Errorf("%s already exists", filepath.Base(w.file))
+			}
+			return 0, err
+		}
+	} else if err := os.Rename(w.tmp, w.file); err != nil {
 		_ = os.Remove(w.tmp)
 		return 0, err
 	}
@@ -154,13 +164,44 @@ func (w *Writer) Abort() {
 	_ = os.Remove(w.tmp)
 }
 
-// statements that would switch to (or create) another database: mysqldump --databases, phpMyAdmin exports
-var switchDB = regexp.MustCompile(`(?i)^\s*(CREATE\s+DATABASE\b|CREATE\s+SCHEMA\b|USE\s+[` + "`" + `"\w]|DROP\s+DATABASE\b|\\c(onnect)?\s|\\connect\b)`)
+// statements that would switch to (or create) another database: mysqldump --databases, phpMyAdmin
+// exports, psql's \connect. Also psql's \restrict lines (the import sets its own, see ForPsql).
+var switchDB = regexp.MustCompile(`(?i)^\s*(/\*!\d*\s*)?(CREATE\s+DATABASE\b|CREATE\s+SCHEMA\b|USE\s+[` + "`" + `"\w]|DROP\s+DATABASE\b)|^\s*(\\c(onnect)?\s|\\connect\b|\\(un)?restrict\b)`)
 
-// KeepInDatabase removes top-level lines that create, drop or switch databases, so everything in the
-// dump lands in the database the person picked. The rest streams through unchanged, however long a
-// line is (one INSERT can be many megabytes).
-func KeepInDatabase(r io.Reader) io.Reader {
+// KeepInDatabase removes top-level lines that create, drop or switch databases, so a dump made with
+// "--databases" lands in the database the person picked. It is a convenience, not a security
+// boundary: imports run with a login that can only reach that database (MySQL) or with psql's
+// meta-commands off and no superuser rights (PostgreSQL). The rest streams through unchanged, however
+// long a line is (one INSERT can be many megabytes).
+func KeepInDatabase(r io.Reader) io.Reader { return filter(r, switchDB.Match, nil) }
+
+// lines that need rights a database's own login doesn't have (mysqldump with GTIDs or binary logs)
+var mysqlPriv = regexp.MustCompile(`(?i)^\s*(/\*!\d*\s*)?SET\s+@@(GLOBAL|SESSION)\.(GTID_PURGED|SQL_LOG_BIN)\b`)
+
+var definer = regexp.MustCompile("(?i)DEFINER\\s*=\\s*(`[^`]*`|'[^']*'|\"[^\"]*\"|[^\\s@]+)\\s*@\\s*(`[^`]*`|'[^']*'|\"[^\"]*\"|[A-Za-z0-9_.%-]+)\\s*")
+
+// ForMySQL prepares a dump for a database's own login: KeepInDatabase, plus no DEFINER clauses (views,
+// triggers and routines then belong to that login) and no GTID / binary log settings.
+func ForMySQL(r io.Reader) io.Reader {
+	return filter(r, func(head []byte) bool { return switchDB.Match(head) || mysqlPriv.Match(head) }, func(line []byte) []byte {
+		h := bytes.ToUpper(bytes.TrimLeft(line[:min(len(line), 24)], " \t"))
+		if bytes.HasPrefix(h, []byte("CREATE")) || bytes.HasPrefix(h, []byte("/*!")) {
+			return definer.ReplaceAll(line, nil)
+		}
+		return line
+	})
+}
+
+// ForPsql turns psql's meta-commands (\! shell, \o |program, \copy … program, \connect …) off for the
+// whole file: psql 17.6+ refuses every backslash command after "\restrict <key>" except
+// "\unrestrict <key>", and the key is random, so the file can't contain it.
+func ForPsql(r io.Reader, key string) io.Reader {
+	return io.MultiReader(strings.NewReader("\\restrict "+key+"\n"), KeepInDatabase(r))
+}
+
+// filter streams r line by line. drop sees the start of each line (up to 256 bytes); rewrite, when
+// given, may change lines that fit in the buffer (long INSERT lines go through untouched).
+func filter(r io.Reader, drop func(head []byte) bool, rewrite func(line []byte) []byte) io.Reader {
 	pr, pw := io.Pipe()
 	go func() {
 		br := bufio.NewReaderSize(r, 1<<20)
@@ -168,13 +209,16 @@ func KeepInDatabase(r io.Reader) io.Reader {
 		start := true
 		for {
 			line, err := br.ReadSlice('\n')
-			if start && len(line) > 0 && switchDB.Match(bytes.TrimLeft(line[:min(len(line), 256)], " \t")) {
+			if start && len(line) > 0 && drop(bytes.TrimLeft(line[:min(len(line), 256)], " \t")) {
 				// drop the whole line
 				for errors.Is(err, bufio.ErrBufferFull) {
 					line, err = br.ReadSlice('\n')
 				}
 				start = true
 			} else if len(line) > 0 {
+				if start && rewrite != nil && !errors.Is(err, bufio.ErrBufferFull) {
+					line = rewrite(line)
+				}
 				if _, werr := bw.Write(line); werr != nil {
 					pw.CloseWithError(werr)
 					return

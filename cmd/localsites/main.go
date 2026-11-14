@@ -6,7 +6,7 @@
 //	localsites set <folder> php=8.5 domain=shop.test docroot=public
 //	localsites db list|create|backup|credentials <name>
 //	localsites import sources|databases|database ...
-//	localsites call <method> '{"json":"params"}'   any API method (for scripts and AI agents)
+//	localsites call <method> '{"json":"params"}'   any API method (agents should use "localsites mcp")
 //
 // Add --json to any command for machine-readable output.
 package main
@@ -67,9 +67,20 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	if err := run(c.As("cli"), args); err != nil {
+	if err := run(c.As(cliClient()), args); err != nil {
 		fail(err)
 	}
+}
+
+// cliClient names the caller: "cli" when a person types in a terminal, "cli-script" otherwise
+// (scripts and agents with a shell), whose risky calls wait for approval in the app like an agent's.
+func cliClient() string {
+	for _, f := range []*os.File{os.Stdin, os.Stdout} {
+		if st, err := f.Stat(); err != nil || st.Mode()&os.ModeCharDevice == 0 {
+			return "cli-script"
+		}
+	}
+	return "cli"
 }
 
 func run(c *api.Client, a []string) error {
@@ -496,8 +507,9 @@ Claude Code:
 Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), and most other clients:
 %s
 
-Agents can read everything and change project settings. Stop/restart/quit need the user's approval
-(confirm=true). Tools that show or take passwords are off; add "--allow-secrets" after "mcp" to enable them.
+Agents can read everything and change ordinary project settings. Anything that stops sites, deletes
+or exports data, edits .env files, or sets a start command or environment needs the user's approval
+in the app. Tools that show or take passwords are off; add "--allow-secrets" after "mcp" to enable them.
 `, self, b)
 }
 

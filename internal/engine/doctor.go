@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -123,6 +124,55 @@ func (e *Engine) Doctor() []Check {
 	for _, s := range sites {
 		if s.Enabled {
 			out = append(out, e.CheckSite(s.Folder)...)
+		}
+	}
+	return append(out, e.exposureChecks(sites)...)
+}
+
+// exposureChecks: things on this Mac that others could use. Valet's certificate authority key readable
+// by every user (anyone with it can impersonate any website to this Mac), and dev servers that listen
+// on every network instead of only 127.0.0.1 (people on the same Wi-Fi can open them).
+func (e *Engine) exposureChecks(sites []SiteView) []Check {
+	var out []Check
+	key := filepath.Join(e.P.Home, ".config", "valet", "CA", "LaravelValetCASelfSigned.key")
+	if st, err := os.Stat(key); err == nil {
+		if st.Mode().Perm()&0o077 != 0 {
+			out = append(out, warn("Certificates", "Valet's certificate key", "other users on this Mac can read "+key,
+				"chmod 600 "+key))
+		} else {
+			out = append(out, ok("Certificates", "Valet's certificate key", "only you can read it"))
+		}
+	}
+	ports := map[int]string{}
+	for _, s := range sites {
+		if s.Enabled && s.Runtime == "app" && s.Port > 0 {
+			ports[s.Port] = s.Name
+		}
+	}
+	if len(ports) == 0 {
+		return out
+	}
+	raw, _ := exec.Command("/usr/sbin/lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fn").Output()
+	open := map[int]bool{}
+	for _, l := range strings.Split(string(raw), "\n") {
+		addr, found := strings.CutPrefix(l, "n")
+		if !found {
+			continue
+		}
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+		var p int
+		fmt.Sscan(port, &p)
+		if ip := net.ParseIP(host); host == "*" || ip != nil && !ip.IsLoopback() {
+			open[p] = true
+		}
+	}
+	for p, name := range ports {
+		if open[p] {
+			out = append(out, warn("Projects", name+": reachable from the network", fmt.Sprintf("its dev server listens on every network on port %d, not only 127.0.0.1", p),
+				"Start it on 127.0.0.1 (for example --host 127.0.0.1, or -p 127.0.0.1:PORT:PORT for Docker)"))
 		}
 	}
 	return out
@@ -313,16 +363,22 @@ func (e *Engine) DebugBundle() (string, error) {
 		return "", err
 	}
 	defer f.Close()
-	return file, e.writeBundle(f, func(s string) string { return secretLine.ReplaceAllString(s, "$1$2[removed]") })
+	_, err = e.writeBundle(f, func(s string) string { return secretLine.ReplaceAllString(s, "$1$2[removed]") })
+	return file, err
 }
 
 // writeBundle writes the debug zip to w, passing every file through clean.
-func (e *Engine) writeBundle(w io.Writer, clean func(string) string) error {
+// writeBundle writes the debug bundle and returns the names of the files in it. Left out: secrets,
+// keys, dumps, saved database connections (hosts and logins; only a count goes in) and web access
+// logs (visitors' addresses and requested URLs). Environment variable values become "(hidden)".
+func (e *Engine) writeBundle(w io.Writer, clean func(string) string) ([]string, error) {
 	zw := zip.NewWriter(w)
+	var names []string
 	add := func(name, content string) {
 		w, err := zw.Create(name)
 		if err == nil {
 			_, _ = io.WriteString(w, clean(content))
+			names = append(names, name)
 		}
 	}
 	var report strings.Builder
@@ -334,12 +390,27 @@ func (e *Engine) writeBundle(w io.Writer, clean func(string) string) error {
 	for _, dir := range []string{e.P.Config, e.P.Generated, e.P.Logs, e.P.SiteLogs} {
 		entries, _ := os.ReadDir(dir)
 		for _, de := range entries {
-			if de.IsDir() || strings.Contains(de.Name(), "secret") || strings.HasSuffix(de.Name(), ".key") || strings.HasSuffix(de.Name(), ".sql") {
+			n := de.Name()
+			if de.IsDir() || strings.Contains(n, "secret") || strings.HasSuffix(n, ".key") || strings.HasSuffix(n, ".sql") || strings.Contains(n, "access") {
 				continue
 			}
-			b, err := os.ReadFile(filepath.Join(dir, de.Name()))
+			b, err := os.ReadFile(filepath.Join(dir, n))
 			if err != nil {
 				continue
+			}
+			if n == "connections.json" {
+				var list []map[string]any
+				_ = json.Unmarshal(b, &list)
+				add("config/connections.txt", fmt.Sprintf("%d saved connection(s); details left out\n", len(list)))
+				continue
+			}
+			if strings.HasSuffix(n, ".json") {
+				var v any
+				if json.Unmarshal(b, &v) == nil {
+					if out, err := json.MarshalIndent(hideEnvValues(v), "", "  "); err == nil {
+						b = out
+					}
+				}
 			}
 			if len(b) > 256<<10 { // last 256 KB of big logs
 				b = b[len(b)-256<<10:]
@@ -347,5 +418,26 @@ func (e *Engine) writeBundle(w io.Writer, clean func(string) string) error {
 			add(filepath.Base(dir)+"/"+de.Name(), string(b))
 		}
 	}
-	return zw.Close()
+	return names, zw.Close()
+}
+
+// hideEnvValues replaces every "env_vars" value (often API keys) with "(hidden)", keeping the names.
+func hideEnvValues(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, x := range t {
+			if env, ok := x.(map[string]any); ok && k == "env_vars" {
+				for ek := range env {
+					env[ek] = "(hidden)"
+				}
+				continue
+			}
+			t[k] = hideEnvValues(x)
+		}
+	case []any:
+		for i := range t {
+			t[i] = hideEnvValues(t[i])
+		}
+	}
+	return v
 }

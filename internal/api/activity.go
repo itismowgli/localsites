@@ -51,13 +51,11 @@ func summarize(m Method, body []byte) string {
 	_ = json.Unmarshal(body, &in)
 	out := map[string]any{}
 	for _, p := range m.Params {
-		if p.Name == "password" {
-			continue
-		}
 		if v, ok := in[p.Name]; ok {
 			out[p.Name] = v
 		}
 	}
+	maskSecrets(out)
 	if len(out) == 0 {
 		return ""
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -126,8 +127,8 @@ func (e *Engine) oldLogs() []string {
 func (e *Engine) oldEnvBackups() []string {
 	var out []string
 	for _, s := range e.Sites() {
-		m, _ := filepath.Glob(filepath.Join(s.Path, envBackupPrefix+"*"))
-		sort.Sort(sort.Reverse(sort.StringSlice(m))) // names end in a timestamp: newest first
+		m := envBackups(s.Path, e.envBackupDir(s.Folder))
+		slices.Reverse(m) // newest first
 		if len(m) > keepEnvBackups {
 			out = append(out, m[keepEnvBackups:]...)
 		}

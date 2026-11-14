@@ -1,10 +1,14 @@
 package dbclient
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,8 +22,27 @@ var sshHostRe = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9._-]*(@[A-Za-z0-9_][A
 
 type tunnel struct {
 	cmd  *exec.Cmd
-	port int
+	addr string // the socket (MySQL) or the folder holding it (PostgreSQL)
 	done chan struct{}
+}
+
+// tunnelDir is a folder only this user can open. Tunnels end in sockets there, not on a local TCP
+// port, which another program on this Mac could take first and so receive the database login.
+func tunnelDir() (string, error) {
+	d := filepath.Join(os.TempDir(), "localsites-ssh")
+	if err := os.MkdirAll(d, 0o700); err != nil {
+		return "", err
+	}
+	st, err := os.Lstat(d)
+	if err != nil || !st.IsDir() || st.Mode().Perm() != 0o700 {
+		if err == nil && st.IsDir() {
+			if os.Chmod(d, 0o700) == nil {
+				return d, nil
+			}
+		}
+		return "", errors.New("the SSH tunnel folder isn't private")
+	}
+	return d, nil
 }
 
 var tunnels = struct {
@@ -43,29 +66,41 @@ func validSSH(c Conn) error {
 	return nil
 }
 
-// tunnelFor starts (or reuses) ssh -L for a connection and returns the local port.
-func tunnelFor(c Conn, remotePort int) (int, error) {
+// tunnelFor starts (or reuses) ssh -L for a connection. It returns the local socket for MySQL, and for
+// PostgreSQL the folder holding ".s.PGSQL.<remotePort>" (how PostgreSQL clients name sockets).
+func tunnelFor(c Conn, remotePort int) (string, error) {
 	tunnels.Lock()
 	defer tunnels.Unlock()
 	if t, ok := tunnels.m[c.ID]; ok {
 		select {
 		case <-t.done: // exited: start a new one
 		default:
-			return t.port, nil
+			return t.addr, nil
 		}
 	}
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	base, err := tunnelDir()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
+	h := sha256.Sum256([]byte(c.ID))
+	id := hex.EncodeToString(h[:6])
+	addr := filepath.Join(base, id+".sock")
+	sock := addr
+	if c.Driver == "postgres" {
+		addr = filepath.Join(base, id)
+		if err := os.MkdirAll(addr, 0o700); err != nil {
+			return "", err
+		}
+		sock = filepath.Join(addr, ".s.PGSQL."+strconv.Itoa(remotePort))
+	}
+	_ = os.Remove(sock)
 	host := c.Host
 	if host == "" {
 		host = "127.0.0.1"
 	}
 	args := []string{"-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=30", "-o", "ConnectTimeout=10",
-		"-L", fmt.Sprintf("127.0.0.1:%d:%s:%d", port, host, remotePort)}
+		"-o", "StreamLocalBindUnlink=yes", "-o", "StreamLocalBindMask=0177",
+		"-L", fmt.Sprintf("%s:%s:%d", sock, host, remotePort)}
 	if c.SSHPort != 0 {
 		args = append(args, "-p", strconv.Itoa(c.SSHPort))
 	}
@@ -74,13 +109,13 @@ func tunnelFor(c Conn, remotePort int) (int, error) {
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		return 0, fmt.Errorf("could not start ssh: %v", err)
+		return "", fmt.Errorf("could not start ssh: %v", err)
 	}
-	t := &tunnel{cmd: cmd, port: port, done: make(chan struct{})}
+	t := &tunnel{cmd: cmd, addr: addr, done: make(chan struct{})}
 	go func() { _ = cmd.Wait(); close(t.done) }()
 	deadline := time.Now().Add(15 * time.Second)
 	for {
-		if conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 300*time.Millisecond); err == nil {
+		if conn, err := net.DialTimeout("unix", sock, 300*time.Millisecond); err == nil {
 			conn.Close()
 			break
 		}
@@ -90,17 +125,17 @@ func tunnelFor(c Conn, remotePort int) (int, error) {
 			if msg == "" {
 				msg = "ssh exited"
 			}
-			return 0, fmt.Errorf("SSH tunnel to %s failed: %s (keys or ssh-agent are needed; passwords can't be typed here)", c.SSHHost, msg)
+			return "", fmt.Errorf("SSH tunnel to %s failed: %s (keys or ssh-agent are needed; passwords can't be typed here)", c.SSHHost, msg)
 		default:
 		}
 		if time.Now().After(deadline) {
 			_ = cmd.Process.Kill()
-			return 0, fmt.Errorf("SSH tunnel to %s timed out", c.SSHHost)
+			return "", fmt.Errorf("SSH tunnel to %s timed out", c.SSHHost)
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
 	tunnels.m[c.ID] = t
-	return port, nil
+	return addr, nil
 }
 
 func closeTunnel(id string) {

@@ -39,7 +39,8 @@ module.exports = async () => {
   await new Promise(r => sentry.listen(0, '127.0.0.1', r));
   sentry.unref();
   process.env.LS_SENTRY = `http://127.0.0.1:${sentry.address().port}`;
-  const env = { ...process.env, LOCALSITES_REPORT_DSN: `http://testkey@127.0.0.1:${sentry.address().port}/1`, LOCALSITES_UPDATE_FEED: `http://127.0.0.1:${feed.address().port}/releases`, LOCALSITES_HOME: home, LOCALSITES_SECRETS: 'file', LOCALSITES_DEVUI_ADDR: `127.0.0.1:${ui}`,
+  const token = require('crypto').randomBytes(24).toString('hex'); // devui answers only this browser cookie
+  const env = { ...process.env, LOCALSITES_REPORT_DSN: `http://testkey@127.0.0.1:${sentry.address().port}/1`, LOCALSITES_UPDATE_FEED: `http://127.0.0.1:${feed.address().port}/releases`, LOCALSITES_HOME: home, LOCALSITES_SECRETS: 'file', LOCALSITES_DEVUI_ADDR: `127.0.0.1:${ui}`, LOCALSITES_DEVUI_TOKEN: token,
     LOCALSITES_LAUNCHAGENTS_DIR: path.join(home, 'launchagents'),
     LOCALSITES_DEVUI_DIR: path.join(root, 'desktop', 'frontend', 'dist') };
   const devui = spawn(path.join(root, 'bin', 'devui'), [path.join(root, 'bin', 'localsites')], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
@@ -47,10 +48,11 @@ module.exports = async () => {
 
   const url = `http://127.0.0.1:${ui}`;
   for (let i = 0; i < 300; i++) {
-    try { const r = await fetch(url + '/__call/status', { method: 'POST', body: '{}' }); if (r.ok) break; } catch (_) { /* not up yet */ }
+    try { const r = await fetch(url + '/__call/status', { method: 'POST', body: '{}', headers: { Cookie: 'lsdevui=' + token } }); if (r.ok) break; } catch (_) { /* not up yet */ }
     await new Promise(r => setTimeout(r, 200));
   }
   process.env.LS_UI_URL = url;
+  fs.writeFileSync(path.join(os.tmpdir(), 'lsui-auth.json'), JSON.stringify({ cookies: [{ name: 'lsdevui', value: token, domain: '127.0.0.1', path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Strict' }], origins: [] }));
   process.env.LS_HOME = home;
   process.env.LS_HTTPS_PORT = String(https);
   fs.writeFileSync(path.join(os.tmpdir(), 'lsui-state.json'), JSON.stringify({ home, devuiPid: devui.pid, root }));

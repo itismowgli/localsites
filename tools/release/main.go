@@ -54,10 +54,14 @@ func main() {
 	}
 }
 
-func store() secrets.Store { return secrets.New(os.TempDir()) }
+// store is always the keychain: the signing key never goes into a file, even with LOCALSITES_SECRETS=file.
+func store() (secrets.Store, error) { return secrets.Keychain() }
 
 func keygen() error {
-	s := store()
+	s, err := store()
+	if err != nil {
+		return err
+	}
 	if _, err := s.Get(keyName); err == nil {
 		return errors.New("a signing key already exists in the keychain; delete it first if you really want a new one (old releases can then no longer be verified)")
 	}
@@ -88,7 +92,11 @@ func manifest(args []string) error {
 	if *channel != "stable" && *channel != "beta" {
 		return errors.New("-channel must be stable or beta")
 	}
-	seed, err := store().Get(keyName)
+	s, err := store()
+	if err != nil {
+		return err
+	}
+	seed, err := s.Get(keyName)
 	if err != nil {
 		return errors.New("no signing key in the keychain; run: go run ./tools/release keygen")
 	}

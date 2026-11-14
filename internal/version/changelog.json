@@ -1,5 +1,27 @@
 [
   {
+    "version": "1.2.0",
+    "date": "2026-11-14",
+    "title": "Security fixes: AI agents ask first, imports can't run anything",
+    "items": [
+      "AI agents now need your approval to set a project's start command or environment variables, export or import a database, edit a project's .env, or change where projects live, start at login, problem reports or updates. Before, an agent tricked by a project file could run a command on your Mac without asking",
+      "Scripts and programs that call localsites without a terminal (including agents with a shell) wait for the same approval",
+      "Importing a .sql file can no longer run commands on your Mac. SQLite imports use sqlite3's safe mode, PostgreSQL imports switch psql's own commands off and run without superuser rights",
+      "MySQL imports run with the database's own login, so a file can't delete or change your other databases or create logins. DEFINER and GTID lines that need admin rights are removed, so mysqldump files still load",
+      "The PostgreSQL add-on now needs a password for connections over the network port, so other users and programs on this Mac can't log in as its admin. The Services page shows the new settings to copy; update projects that use it",
+      "New MinIO setups get a random password instead of a fixed one (existing MinIO data keeps its login)",
+      "\"Connect database\" keeps its .env backups in LocalSites' own folder, outside the project, and won't write through a link planted in a project",
+      "Shared sites: the site sees the visitor's address instead of 127.0.0.1, so \"localhost only\" pages stay closed; the share password isn't passed on to the site; visitors with the right password get in even while someone is guessing",
+      "Suggested share passwords are much stronger (four words and a number), typed ones need 8 characters, and bore shares always need a password",
+      "Exports never follow links or replace a file that appeared meanwhile, and stay inside your home folder",
+      "Automatic problem reports leave out log lines, and the debug bundle leaves out saved connections and web access logs and lists its files before you send it",
+      "SSH tunnels go through a private socket, remote PostgreSQL connections are encrypted by default (with a setting for servers without TLS), and read-only queries can't write files or end other sessions",
+      "Doctor warns when Valet's certificate key is readable by other users or a dev server is reachable from the network",
+      "Passwords for MySQL tools no longer go through the environment, and git commands from the app never run a project's hooks",
+      "AI agents started with --allow-secrets can use the database tools again"
+    ]
+  },
+  {
     "version": "1.1.0",
     "date": "2026-11-09",
     "title": "Update when it suits you, and a badge for what needs you",

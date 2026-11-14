@@ -14,6 +14,8 @@ import (
 
 	"github.com/localsites/localsites/internal/dbclient"
 	"github.com/localsites/localsites/internal/runtime"
+	"github.com/localsites/localsites/internal/secrets"
+	"github.com/localsites/localsites/internal/services"
 	"github.com/localsites/localsites/internal/sqlfile"
 )
 
@@ -22,6 +24,25 @@ import (
 // tables). Import needs a connection that allows changes, and saves an export of what is there first.
 
 var schemaRe = regexp.MustCompile(`^[A-Za-z0-9_$][A-Za-z0-9_$-]{0,63}$`) // no leading "-": it would reach mysqldump/psql as an option
+
+// psqlRestricted is psql that understands \restrict (17.6, 16.10, 15.14, 14.19, 13.22 and later), which
+// imports use to switch psql's own commands (\! runs a shell) off for the file.
+func psqlRestricted() (string, error) {
+	bin, err := pgTool("psql")
+	if err != nil {
+		return "", err
+	}
+	out, _ := exec.Command(bin, "--version").Output()
+	m := regexp.MustCompile(`(\d+)\.(\d+)`).FindStringSubmatch(string(out))
+	if m != nil {
+		major, _ := strconv.Atoi(m[1])
+		minor, _ := strconv.Atoi(m[2])
+		if need, ok := map[int]int{13: 22, 14: 19, 15: 14, 16: 10, 17: 6}[major]; major >= 18 || ok && minor >= need {
+			return bin, nil
+		}
+	}
+	return "", fmt.Errorf("%s is too old to import files safely. Update it with: brew upgrade libpq", strings.TrimSpace(string(out)))
+}
 
 // pgTool finds pg_dump or psql, newest first (a newer pg_dump can read older servers, not the reverse).
 func pgTool(name string) (string, error) {
@@ -65,6 +86,17 @@ func pgArgs(ep dbclient.Endpoint, db string) []string {
 func run(bin string, args, env []string, stdin io.Reader, stdout io.Writer) error {
 	cmd := exec.Command(bin, args...)
 	cmd.Env = append(os.Environ(), env...)
+	return runCmd(cmd, bin, stdin, stdout)
+}
+
+// runMySQL runs a MySQL client tool with the password passed privately (see services.MySQLCommand).
+func runMySQL(bin, password string, args []string, stdin io.Reader, stdout io.Writer) error {
+	cmd, done := services.MySQLCommand(bin, password, args...)
+	defer done()
+	return runCmd(cmd, bin, stdin, stdout)
+}
+
+func runCmd(cmd *exec.Cmd, bin string, stdin io.Reader, stdout io.Writer) error {
 	cmd.Stdin, cmd.Stdout = stdin, stdout
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
@@ -93,16 +125,15 @@ func (e *Engine) dumpConn(ep dbclient.Endpoint, schema, mode string, w io.Writer
 		case "data":
 			base = append(base, "--no-create-info", "--skip-triggers")
 		}
-		env := []string{"MYSQL_PWD=" + ep.Password}
 		// routines need extra rights some logins don't have: try with them, then without
 		if mode != "data" {
-			if err := run(bin, append(append(base, "--routines"), schema), env, nil, w); err == nil {
+			if err := runMySQL(bin, ep.Password, append(append(base, "--routines"), schema), nil, w); err == nil {
 				return nil
 			} else if !strings.Contains(strings.ToLower(err.Error()), "denied") && !strings.Contains(err.Error(), "routines") {
 				return err
 			}
 		}
-		return run(bin, append(base, schema), env, nil, w)
+		return runMySQL(bin, ep.Password, append(base, schema), nil, w)
 	case "postgres":
 		bin, err := pgTool("pg_dump")
 		if err != nil {
@@ -118,7 +149,7 @@ func (e *Engine) dumpConn(ep dbclient.Endpoint, schema, mode string, w io.Writer
 		case "data":
 			args = append(args, "--data-only")
 		}
-		return run(bin, args, []string{"PGPASSWORD=" + ep.Password, "PGCONNECT_TIMEOUT=10"}, nil, w)
+		return run(bin, args, []string{"PGPASSWORD=" + ep.Password, "PGCONNECT_TIMEOUT=10", "PGSSLMODE=" + ep.SSLMode}, nil, w)
 	case "sqlite":
 		cmd := ".dump"
 		switch mode {
@@ -127,7 +158,7 @@ func (e *Engine) dumpConn(ep dbclient.Endpoint, schema, mode string, w io.Writer
 		case "data":
 			cmd = ".dump --data-only"
 		}
-		return run("/usr/bin/sqlite3", []string{"-readonly", ep.File, cmd}, nil, nil, w)
+		return run("/usr/bin/sqlite3", []string{"-readonly", "-safe", "--", ep.File, cmd}, nil, nil, w)
 	}
 	return fmt.Errorf("export isn't available for %s connections", ep.Driver)
 }
@@ -157,6 +188,7 @@ func (e *Engine) ExportConnection(id, schema, file, mode string, overwrite bool)
 	if err != nil {
 		return ExportResult{}, err
 	}
+	w.NoReplace = !overwrite
 	if err := e.dumpConn(ep, schema, mode, w); err != nil {
 		w.Abort()
 		return ExportResult{}, err
@@ -206,27 +238,33 @@ func (e *Engine) ImportConnection(id, schema, file string) ([]string, error) {
 			nothing = true
 		}
 	}
-	if w, err := sqlfile.Create(before); err == nil && !nothing {
+	if !nothing {
+		w, err := sqlfile.Create(before)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't save what is there first, so nothing was imported: %v", err)
+		}
 		if derr := e.dumpConn(ep, schema, "full", w); derr != nil {
 			w.Abort()
 			return nil, fmt.Errorf("couldn't save what is there first, so nothing was imported: %v", derr)
 		}
-		_, _ = w.Commit()
+		if _, err := w.Commit(); err != nil {
+			return nil, fmt.Errorf("couldn't save what is there first, so nothing was imported: %v", err)
+		}
 	}
-	in := sqlfile.KeepInDatabase(r)
 	start := time.Now()
 	switch ep.Driver {
 	case "mysql":
+		in := sqlfile.ForMySQL(r)
 		bin, err := mysqlTool("mysql")
 		if err != nil {
 			return nil, err
 		}
-		err = run(bin, append(mysqlArgs(ep), "--binary-mode", schema), []string{"MYSQL_PWD=" + ep.Password}, in, io.Discard)
+		err = runMySQL(bin, ep.Password, append(mysqlArgs(ep), "--binary-mode", schema), in, io.Discard)
 		if err != nil {
 			return nil, fmt.Errorf("%v. It may be partly imported; what was there before is in %s", err, before)
 		}
 	case "postgres":
-		bin, err := pgTool("psql")
+		bin, err := psqlRestricted()
 		if err != nil {
 			return nil, err
 		}
@@ -234,13 +272,14 @@ func (e *Engine) ImportConnection(id, schema, file string) ([]string, error) {
 		if schema != "" {
 			pre = fmt.Sprintf("SET search_path TO %q, public;\n", schema)
 		}
-		err = run(bin, append(pgArgs(ep, ep.Database), "--quiet", "--set=ON_ERROR_STOP=1", "--file=-"), []string{"PGPASSWORD=" + ep.Password},
-			io.MultiReader(strings.NewReader(pre), in), io.Discard)
+		err = run(bin, append(pgArgs(ep, ep.Database), "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1", "--file=-"), []string{"PGPASSWORD=" + ep.Password, "PGSSLMODE=" + ep.SSLMode},
+			sqlfile.ForPsql(io.MultiReader(strings.NewReader(pre), r), secrets.Generate(32)), io.Discard)
 		if err != nil {
 			return nil, fmt.Errorf("%v. It stopped at the first error; what was there before is in %s", err, before)
 		}
 	case "sqlite":
-		err := run("/usr/bin/sqlite3", []string{ep.File}, nil, io.MultiReader(strings.NewReader(".bail on\n"), in), io.Discard)
+		// -safe: no .shell/.system/.load/.output, no ATTACH and no file functions from the dump
+		err := run("/usr/bin/sqlite3", []string{"-safe", "-bail", "--", ep.File}, nil, sqlfile.KeepInDatabase(r), io.Discard)
 		if err != nil {
 			return nil, fmt.Errorf("%v. What was there before is in %s", err, before)
 		}

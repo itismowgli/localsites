@@ -31,6 +31,18 @@ type Store interface {
 	Delete(key string) error
 }
 
+// Keychain is the macOS login keychain, whatever LOCALSITES_SECRETS says (for keys that must never
+// land in a file, like the release signing key).
+func Keychain() (Store, error) {
+	if runtime.GOOS != "darwin" {
+		return nil, errors.New("the macOS keychain is needed")
+	}
+	if _, err := exec.LookPath("/usr/bin/security"); err != nil {
+		return nil, errors.New("the macOS keychain is needed")
+	}
+	return keychain{}, nil
+}
+
 // New returns the best store for this platform. fallbackDir is used when no keychain exists.
 func New(fallbackDir string) Store {
 	// LOCALSITES_SECRETS=file forces the file store (tests, headless machines)

@@ -8,7 +8,7 @@ module.exports = defineConfig({
   retries: 0,
   globalSetup: require.resolve('./sandbox-setup.js'),
   globalTeardown: require.resolve('./sandbox-teardown.js'),
-  use: { baseURL: process.env.LS_UI_URL, viewport: { width: 1360, height: 860 }, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  use: { baseURL: process.env.LS_UI_URL, storageState: require('path').join(require('os').tmpdir(), 'lsui-auth.json'), viewport: { width: 1360, height: 860 }, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [
     { name: 'webkit', use: { browserName: 'webkit' } },
     { name: 'chromium', use: { browserName: 'chromium' } },

@@ -1,10 +1,13 @@
 // Command devui serves the desktop UI in a normal browser for development and screenshots.
-// It proxies UI calls to the running LocalSites service. Listens on 127.0.0.1 only.
+// It proxies UI calls to the running LocalSites service. Listens on 127.0.0.1 only, and only answers
+// calls from a browser that opened the link it prints (it has the app's full rights, so other programs
+// on this Mac must not be able to use it).
 //
-//	go run ./cmd/devui   then open http://127.0.0.1:7788
+//	go run ./cmd/devui   then open the printed http://127.0.0.1:7788/?t=… link
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -15,7 +18,10 @@ import (
 
 	"github.com/localsites/localsites/internal/daemon"
 	"github.com/localsites/localsites/internal/engine"
+	"github.com/localsites/localsites/internal/secrets"
 )
+
+const cookieName = "lsdevui"
 
 func main() {
 	self, _ := os.Executable()
@@ -26,8 +32,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	token := os.Getenv("LOCALSITES_DEVUI_TOKEN") // tests set their own
+	if len(token) < 20 {
+		token = secrets.Generate(32)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /__call/{method}", func(w http.ResponseWriter, r *http.Request) {
+		if ck, err := r.Cookie(cookieName); err != nil || subtle.ConstantTimeCompare([]byte(ck.Value), []byte(token)) != 1 {
+			http.Error(w, "open the link devui printed", http.StatusForbidden)
+			return
+		}
 		if !strings.HasPrefix(r.Host, "127.0.0.1:") { // basic DNS-rebinding guard
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
@@ -66,7 +80,15 @@ func main() {
 	if ui == "" {
 		ui = "desktop/frontend/dist"
 	}
-	mux.Handle("/", http.FileServer(http.Dir(ui)))
-	log.Println("UI dev server on http://" + addr)
+	files := http.FileServer(http.Dir(ui))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if t := r.URL.Query().Get("t"); t != "" && subtle.ConstantTimeCompare([]byte(t), []byte(token)) == 1 {
+			http.SetCookie(w, &http.Cookie{Name: cookieName, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode})
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		files.ServeHTTP(w, r)
+	})
+	log.Println("UI dev server on http://" + addr + "/?t=" + token)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

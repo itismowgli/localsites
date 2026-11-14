@@ -68,6 +68,13 @@ func (e *Engine) StartShare(folder, provider, password string, minutes int, noPa
 	if password == "" && !noPassword {
 		return share.Share{}, errors.New("set a password for visitors, or explicitly choose to share without one")
 	}
+	if password != "" && len([]rune(password)) < 8 {
+		return share.Share{}, errors.New("use a password of at least 8 characters (the suggested one is much stronger)")
+	}
+	if password == "" && provider == "bore" {
+		// bore addresses are plain http:// on a few ports that bots scan all day
+		return share.Share{}, errors.New("bore shares need a password: its addresses are plain http and easy to find. Set one, or use the Cloudflare tunnel")
+	}
 	s, err := e.site(folder)
 	if err != nil {
 		return share.Share{}, err

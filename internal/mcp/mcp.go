@@ -163,8 +163,14 @@ func (s *Server) tools() []map[string]any {
 			}
 		}
 		desc := m.Description
-		if m.Destructive {
+		names := make([]string, 0, len(m.Params))
+		for _, p := range m.Params {
+			names = append(names, p.Name)
+		}
+		if m.Destructive || m.Approve {
 			desc += ". Needs the user's approval: LocalSites asks them in the app and waits up to 90 seconds."
+		} else if f := api.ApprovalFields(m.Name, names); len(f) > 0 {
+			desc += ". Setting " + strings.Join(f, ", ") + " needs the user's approval: LocalSites asks them in the app and waits up to 90 seconds."
 		}
 		schema := map[string]any{"type": "object", "properties": props, "additionalProperties": false}
 		if len(required) > 0 {
@@ -216,11 +222,40 @@ func (s *Server) call(name string, args map[string]any) map[string]any {
 	var pretty any
 	text := string(res)
 	if json.Unmarshal(res, &pretty) == nil {
+		if !s.AllowSecrets {
+			pretty = maskEnv(pretty)
+		}
 		if b, err := json.MarshalIndent(pretty, "", "  "); err == nil {
 			text = string(b)
 		}
 	}
 	return map[string]any{"content": []map[string]any{{"type": "text", "text": text}}, "isError": false}
+}
+
+// maskEnv hides the values of every "env_vars" object (dev-server variables are often API keys; agents
+// see the names) and add-on snippets (they hold passwords). --allow-secrets shows them.
+func maskEnv(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, x := range t {
+			if env, ok := x.(map[string]any); ok && k == "env_vars" {
+				for ek := range env {
+					env[ek] = "(hidden)"
+				}
+				continue
+			}
+			if k == "snippets" { // add-on settings to copy hold PostgreSQL's and MinIO's passwords
+				t[k] = "(hidden: start the MCP server with --allow-secrets to see them)"
+				continue
+			}
+			t[k] = maskEnv(x)
+		}
+	case []any:
+		for i := range t {
+			t[i] = maskEnv(t[i])
+		}
+	}
+	return v
 }
 
 func toolError(msg string) map[string]any {

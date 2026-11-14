@@ -3,13 +3,14 @@
 package importers
 
 import (
+	"github.com/localsites/localsites/internal/services"
+
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -140,10 +141,10 @@ func (s Source) Connect(user, password string) (*sql.DB, error) {
 // brief read lock. Nothing is written to the source.
 func (s Source) Dump(user, password, database string, w io.Writer) error {
 	bin := filepath.Join(s.MySQLBin, "mysqldump")
-	cmd := exec.Command(bin, "--socket="+s.MySQLSock, "--user="+user,
+	cmd, done := services.MySQLCommand(bin, password, "--socket="+s.MySQLSock, "--user="+user,
 		"--single-transaction", "--routines", "--triggers", "--events", "--hex-blob",
 		"--default-character-set=utf8mb4", "--skip-comments", "--databases", database)
-	cmd.Env = append(os.Environ(), "MYSQL_PWD="+password)
+	defer done()
 	cmd.Stdout = w
 	var stderr strings.Builder
 	cmd.Stderr = &stderr

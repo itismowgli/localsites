@@ -223,10 +223,10 @@ func (m MySQL) Backup(rootPassword, name, dir string) (string, error) {
 	}
 	defer f.Close()
 	gz := gzip.NewWriter(f)
-	cmd := exec.Command(m.Bin("mysqldump"), "--socket="+m.Socket, "--user=root",
+	cmd, done := MySQLCommand(m.Bin("mysqldump"), rootPassword, "--socket="+m.Socket, "--user=root",
 		"--single-transaction", "--routines", "--triggers", "--events", "--hex-blob", "--default-character-set=utf8mb4",
 		"--set-gtid-purged=OFF", "--databases", name)
-	cmd.Env = append(os.Environ(), "MYSQL_PWD="+rootPassword) // not visible in ps (unlike -p)
+	defer done()
 	cmd.Stdout = gz
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
@@ -240,6 +240,23 @@ func (m MySQL) Backup(rootPassword, name, dir string) (string, error) {
 	return file, nil
 }
 
+// MySQLCommand runs a MySQL client tool with the password in an option file read from an inherited
+// pipe, so it is in neither the command line nor the environment. Call done after the command ends.
+func MySQLCommand(bin, password string, args ...string) (*exec.Cmd, func()) {
+	cmd := exec.Command(bin, args...)
+	r, w, err := os.Pipe()
+	if err != nil { // can't happen in practice; fall back to the environment
+		cmd.Env = append(os.Environ(), "MYSQL_PWD="+password)
+		return cmd, func() {}
+	}
+	esc := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(password)
+	_, _ = w.WriteString("[client]\npassword=\"" + esc + "\"\n")
+	_ = w.Close()
+	cmd.Args = append([]string{bin, "--defaults-extra-file=/dev/fd/3"}, args...) // must come first
+	cmd.ExtraFiles = []*os.File{r}
+	return cmd, func() { _ = r.Close() }
+}
+
 // Dump writes one database as SQL to w, without CREATE DATABASE / USE, so it can be loaded into a
 // database of any name. mode: "full" (default), "structure" (no rows) or "data" (rows only).
 func (m MySQL) Dump(rootPassword, name, mode string, w io.Writer) error {
@@ -251,8 +268,8 @@ func (m MySQL) Dump(rootPassword, name, mode string, w io.Writer) error {
 	case "data":
 		args = append(args, "--no-create-info", "--skip-triggers", "--skip-routines", "--skip-events")
 	}
-	cmd := exec.Command(m.Bin("mysqldump"), append(args, name)...)
-	cmd.Env = append(os.Environ(), "MYSQL_PWD="+rootPassword)
+	cmd, done := MySQLCommand(m.Bin("mysqldump"), rootPassword, append(args, name)...)
+	defer done()
 	cmd.Stdout = w
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
@@ -281,14 +298,21 @@ func (m MySQL) Restore(rootPassword, file string) error {
 	return m.Import(rootPassword, r, "")
 }
 
-// Import pipes SQL into the mysql client. database may be "" when the SQL selects it.
+// Import pipes SQL into the mysql client as root. database may be "" when the SQL selects it. Only for
+// SQL LocalSites wrote itself (its backups and copies); files from elsewhere go through ImportAs.
 func (m MySQL) Import(rootPassword string, r io.Reader, database string) error {
-	args := []string{"--socket=" + m.Socket, "--user=root", "--default-character-set=utf8mb4", "--binary-mode"}
+	return m.ImportAs("root", rootPassword, r, database)
+}
+
+// ImportAs pipes SQL into the mysql client with this login (a database's own login can only reach
+// its database, so a dump can't touch any other).
+func (m MySQL) ImportAs(user, password string, r io.Reader, database string) error {
+	args := []string{"--socket=" + m.Socket, "--user=" + user, "--default-character-set=utf8mb4", "--binary-mode"}
 	if database != "" {
 		args = append(args, database)
 	}
-	cmd := exec.Command(m.Bin("mysql"), args...)
-	cmd.Env = append(os.Environ(), "MYSQL_PWD="+rootPassword)
+	cmd, done := MySQLCommand(m.Bin("mysql"), password, args...)
+	defer done()
 	cmd.Stdin = r
 	var stderr strings.Builder
 	cmd.Stderr = &stderr

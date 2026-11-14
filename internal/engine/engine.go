@@ -54,7 +54,8 @@ type Engine struct {
 	problems     *problems.Store   // things that went wrong (see problems.go)
 	problemsOnce sync.Once
 	pgMu         sync.Mutex
-	pgList       []string // PostgreSQL add-on databases (see pgtools.go)
+	addonPw      map[string]string // add-on logins from the keychain (see addonSecret)
+	pgList       []string          // PostgreSQL add-on databases (see pgtools.go)
 	updOnce      sync.Once
 
 	applyMu     sync.Mutex
@@ -179,7 +180,7 @@ func (e *Engine) Sites() []SiteView {
 			v.Type = v.Kind
 		}
 		v.Runtime = runtimeOf(v.Type)
-		v.Env = projectEnv(c.Path)
+		v.Env = projectEnv(c.Path, e.envBackupDir(c.ID))
 		v.Installing = e.Sup.Status("install-" + config.Slug(c.ID)).Running
 		if real, err := filepath.EvalSymlinks(c.Path); err == nil {
 			if vi, ok := valet[real]; ok && !v.Enabled {
@@ -344,6 +345,12 @@ var envNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,63}$`)
 // reservedEnv are set by LocalSites for every dev server.
 var reservedEnv = map[string]bool{"PATH": true, "PORT": true, "HOST": true, "HOSTNAME": true}
 
+// loaderEnv: variables that make every program load extra code (never needed by a dev server)
+func loaderEnv(k string) bool {
+	k = strings.ToUpper(k)
+	return strings.HasPrefix(k, "DYLD_") || strings.HasPrefix(k, "LD_")
+}
+
 // UpdateSite validates and saves settings for one folder.
 func (e *Engine) UpdateSite(folder string, p SitePatch) error {
 	var cur *SiteView
@@ -396,6 +403,8 @@ func (e *Engine) UpdateSite(folder string, p SitePatch) error {
 				errs = append(errs, "Variable names use letters, digits and _: "+k)
 			case reservedEnv[strings.ToUpper(k)]:
 				errs = append(errs, k+" is set by LocalSites")
+			case loaderEnv(k):
+				errs = append(errs, k+" isn't allowed: it makes programs load extra code")
 			case strings.ContainsAny(v, "\n\r\x00") || len(v) > 4000:
 				errs = append(errs, k+": the value must be a single line")
 			default:
@@ -792,10 +801,10 @@ func (e *Engine) builtinConnections() []dbclient.Conn {
 	for _, a := range e.Addons() {
 		if a.ID == "postgres" && a.Enabled && a.Installed {
 			out = append(out, dbclient.Conn{ID: "localsites-pg", Name: "LocalSites PostgreSQL", Driver: "postgres", Host: "127.0.0.1", Port: a.Port, User: "postgres",
-				Database: "postgres", SSLMode: "disable", ReadOnly: true, HasPassword: true, Note: "The PostgreSQL add-on (local connections only)."})
+				Database: "postgres", SSLMode: "disable", ReadOnly: true, HasPassword: true, PasswordKey: secretAddon("postgres"), Note: "The PostgreSQL add-on (local connections only)."})
 			for _, db := range e.pgNames() { // one connection per database, so each can be browsed
 				out = append(out, dbclient.Conn{ID: PGConnID(db), Name: "PostgreSQL · " + db, Driver: "postgres", Host: "127.0.0.1", Port: a.Port, User: "postgres",
-					Database: db, SSLMode: "disable", ReadOnly: true, HasPassword: true, Note: "A database in the PostgreSQL add-on."})
+					Database: db, SSLMode: "disable", ReadOnly: true, HasPassword: true, PasswordKey: secretAddon("postgres"), Note: "A database in the PostgreSQL add-on."})
 			}
 		}
 	}

@@ -66,7 +66,10 @@ var ErrNotRepo = errors.New("not a git repository")
 func run(dir string, timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir, "-c", "color.ui=false", "-c", "core.quotepath=false"}, args...)...)
+	// A project's own .git/config and hooks can name programs to run (a folder from a zip or a
+	// colleague may carry them), so LocalSites' git commands never run hooks, fsmonitor or ext:: remotes.
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir, "-c", "color.ui=false", "-c", "core.quotepath=false",
+		"-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-c", "protocol.ext.allow=never", "-c", "diff.external="}, args...)...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_ASKPASS=/usr/bin/false", "SSH_ASKPASS=/usr/bin/false",
 		"GIT_SSH_COMMAND=ssh -o BatchMode=yes -o ConnectTimeout=10", "LC_ALL=C")
 	cmd.Stdin = nil

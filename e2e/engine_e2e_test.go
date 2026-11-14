@@ -1213,12 +1213,18 @@ func TestShareRealSite(t *testing.T) {
 	if _, err := ev.e.StartShare("hello", "cloudflared", "", 5, false); err == nil {
 		t.Fatal("shared without a password and without asking for that")
 	}
-	s, err := ev.e.StartShare("hello", "cloudflared", "pw", 5, false)
+	if _, err := ev.e.StartShare("hello", "cloudflared", "pw", 5, false); err == nil {
+		t.Fatal("a 2-character share password was accepted")
+	}
+	if _, err := ev.e.StartShare("hello", "bore", "", 5, true); err == nil {
+		t.Fatal("a bore share without a password was accepted")
+	}
+	s, err := ev.e.StartShare("hello", "cloudflared", "pw-long-enough", 5, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	req, _ := http.NewRequest("GET", "http://"+s.Gateway+"/", nil)
-	req.SetBasicAuth("x", "pw")
+	req.SetBasicAuth("x", "pw-long-enough")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)

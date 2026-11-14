@@ -56,7 +56,7 @@ func readEnv(file string) ([]string, map[string]string, error) {
 }
 
 // projectEnv reads database settings from <project>/.env, if any.
-func projectEnv(path string) *EnvInfo {
+func projectEnv(path, backupDir string) *EnvInfo {
 	file := filepath.Join(path, ".env")
 	_, vals, err := readEnv(file)
 	if err != nil {
@@ -73,9 +73,29 @@ func projectEnv(path string) *EnvInfo {
 	if info.Style == "" {
 		return nil
 	}
-	backups, _ := filepath.Glob(filepath.Join(path, envBackupPrefix+"*"))
-	info.Backups = len(backups)
+	info.Backups = len(envBackups(path, backupDir))
 	return info
+}
+
+// envBackupDir holds a project's .env backups, outside the project (they contain its passwords, and
+// a project folder may be served, shared or committed).
+func (e *Engine) envBackupDir(folder string) string {
+	return filepath.Join(e.P.Backups, "env", fileKey(folder))
+}
+
+// envBackups lists a project's .env backups, oldest first: LocalSites' own folder, plus regular files
+// left in the project by versions before 1.2 (never links, which could point anywhere).
+func envBackups(path, backupDir string) []string {
+	var out []string
+	own, _ := filepath.Glob(filepath.Join(backupDir, envBackupPrefix+"*"))
+	legacy, _ := filepath.Glob(filepath.Join(path, envBackupPrefix+"*"))
+	for _, f := range append(legacy, own...) {
+		if st, err := os.Lstat(f); err == nil && st.Mode().IsRegular() {
+			out = append(out, f)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return filepath.Base(out[i]) < filepath.Base(out[j]) })
+	return out
 }
 
 // ConnectDatabase points a project at a database in LocalSites MySQL: backs up .env, writes the
@@ -89,7 +109,7 @@ func (e *Engine) ConnectDatabase(folder, database string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s is not a LocalSites database with its own login; copy or create it first", database)
 	}
-	info := projectEnv(s.Path)
+	info := projectEnv(s.Path, e.envBackupDir(folder))
 	if info == nil {
 		return nil, errors.New("this project has no .env with database settings; copy the login from Databases instead")
 	}
@@ -105,13 +125,28 @@ func (e *Engine) ConnectDatabase(folder, database string) ([]string, error) {
 		want[keys["host"]] = "localhost" // the project's PHP pool sends "localhost" to LocalSites MySQL
 	}
 
-	backup := filepath.Join(s.Path, envBackupPrefix+time.Now().Format("20060102-150405"))
+	if st, err := os.Lstat(info.File); err != nil || !st.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is a link or not a regular file, so LocalSites won't change it", filepath.Base(info.File))
+	}
+	dir := e.envBackupDir(folder)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	backup := filepath.Join(dir, envBackupPrefix+time.Now().Format("20060102-150405"))
 	orig, err := os.ReadFile(info.File)
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(backup, orig, 0o600); err != nil {
+	bf, err := os.OpenFile(backup, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
 		return nil, err
+	}
+	_, werr := bf.Write(orig)
+	if cerr := bf.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return nil, werr
 	}
 	done := map[string]bool{}
 	for i, line := range lines {
@@ -153,11 +188,10 @@ func (e *Engine) RestoreEnv(folder string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	backups, _ := filepath.Glob(filepath.Join(s.Path, envBackupPrefix+"*"))
+	backups := envBackups(s.Path, e.envBackupDir(folder))
 	if len(backups) == 0 {
 		return nil, errors.New("no .env backup made by LocalSites")
 	}
-	sort.Strings(backups)
 	last := backups[len(backups)-1]
 	b, err := os.ReadFile(last)
 	if err != nil {
@@ -185,14 +219,33 @@ func (e *Engine) site(folder string) (SiteView, error) {
 	return SiteView{}, fmt.Errorf("no project folder named %q", folder)
 }
 
+// writeFileAtomic replaces file through a new temporary file with an unpredictable name (O_EXCL), so a
+// link planted in the project can't redirect the write. It refuses when file itself is a link.
 func writeFileAtomic(file string, data []byte) error {
 	mode := os.FileMode(0o644)
-	if st, err := os.Stat(file); err == nil {
+	if st, err := os.Lstat(file); err == nil {
+		if !st.Mode().IsRegular() {
+			return fmt.Errorf("%s is a link or not a regular file, so LocalSites won't change it", filepath.Base(file))
+		}
 		mode = st.Mode().Perm()
 	}
-	tmp := file + ".localsites-tmp"
-	if err := os.WriteFile(tmp, data, mode); err != nil {
+	f, err := os.CreateTemp(filepath.Dir(file), "."+filepath.Base(file)+".*.localsites-tmp")
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, file)
+	tmp := f.Name()
+	_, err = f.Write(data)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Chmod(tmp, mode)
+	}
+	if err == nil {
+		err = os.Rename(tmp, file)
+	}
+	if err != nil {
+		_ = os.Remove(tmp)
+	}
+	return err
 }

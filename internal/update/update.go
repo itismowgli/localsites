@@ -326,6 +326,9 @@ func (u *Updater) newest(channel string) (*Manifest, []byte, []byte, string, map
 			lastErr = fmt.Errorf("release %s: its manifest says %s", v, m.Version)
 			continue
 		}
+		if m.Channel == "beta" && channel != "beta" { // signed as a beta: never offered as stable, whatever GitHub says
+			continue
+		}
 		best, bestRaw, bestSig, bestURL, bestAssets = m, raw, sig, r.HTMLURL, assets
 	}
 	if best == nil && lastErr != nil {

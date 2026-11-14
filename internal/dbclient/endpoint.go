@@ -3,7 +3,7 @@ package dbclient
 import "fmt"
 
 // Endpoint is how command-line tools (mysqldump, pg_dump, sqlite3) reach a connection: the address
-// after any SSH tunnel, and the login. The password is only ever passed in the environment.
+// after any SSH tunnel, and the login. The password never goes on a command line.
 type Endpoint struct {
 	Driver   string
 	Host     string // "" with Socket
@@ -14,6 +14,7 @@ type Endpoint struct {
 	Database string // default database (Postgres)
 	File     string // SQLite
 	ReadOnly bool
+	SSLMode  string // PostgreSQL, for pg_dump/psql (PGSSLMODE)
 	Name     string
 	Builtin  bool
 	ID       string
@@ -37,6 +38,9 @@ func (m *Manager) Endpoint(id string) (Endpoint, error) {
 	pw, _ := m.secrets.Get(key)
 	ep := Endpoint{Driver: c.Driver, Host: c.Host, Port: c.Port, Socket: c.Socket, User: c.User, Password: pw, Database: c.Database,
 		File: c.File, ReadOnly: c.ReadOnly, Name: c.Name, Builtin: c.Builtin, ID: c.ID}
+	if c.Driver == "postgres" {
+		ep.SSLMode = orDefaultS(c.SSLMode, pgSSLDefault(c))
+	}
 	switch c.Driver {
 	case "mysql":
 		ep.Port = orDefault(c.Port, 3306)
@@ -44,11 +48,15 @@ func (m *Manager) Endpoint(id string) (Endpoint, error) {
 		ep.Port = orDefault(c.Port, 5432)
 	}
 	if c.SSHHost != "" && c.Driver != "sqlite" {
-		lp, err := tunnelFor(c, ep.Port)
+		addr, err := tunnelFor(c, ep.Port)
 		if err != nil {
 			return Endpoint{}, fmt.Errorf("SSH tunnel: %w", err)
 		}
-		ep.Host, ep.Port, ep.Socket = "127.0.0.1", lp, ""
+		if c.Driver == "postgres" { // pg_dump/psql: --host=<folder> --port=<port> finds the socket
+			ep.Host, ep.Socket = addr, ""
+		} else {
+			ep.Host, ep.Socket = "", addr
+		}
 	}
 	if ep.Host == "" && ep.Socket == "" && c.Driver != "sqlite" {
 		ep.Host = "127.0.0.1"

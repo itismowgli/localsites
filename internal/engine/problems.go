@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -60,14 +61,14 @@ func (e *Engine) problemAdded(p problems.Problem) {
 	e.Changes.Bump()
 	if p.Kind != problems.KindCrash && p.Kind != problems.KindUpdate { // services and installs already notify; page errors stay quiet
 		if e.reportMode() == "auto" && p.Kind != problems.KindUI && reportDSN() != "" {
-			go func() { _, _ = e.SendProblem(p.ID, false) }()
+			go func() { _, _ = e.sendProblem(p.ID, false, true) }()
 		}
 		return
 	}
 	switch e.reportMode() {
 	case "auto":
 		if reportDSN() != "" {
-			go func() { _, _ = e.SendProblem(p.ID, false) }()
+			go func() { _, _ = e.sendProblem(p.ID, false, true) }()
 		}
 	case "ask", "off":
 		if time.Since(lastProblemNote) > 10*time.Minute {
@@ -98,7 +99,18 @@ func (e *Engine) cleaner(keepNames bool) problems.Cleaner {
 		c.User = u.Username
 	}
 	for _, s := range e.Sites() {
-		c.Projects = append(c.Projects, s.Folder, s.Name)
+		c.Projects = append(c.Projects, s.Folder, s.Name, s.Database, strings.TrimSuffix(s.Domain, "."+e.Store.Get().Settings.TLD))
+	}
+	if e.Data != nil { // saved connections: their names, hosts, users and databases
+		for _, cn := range e.Data.List() {
+			if !cn.Builtin {
+				for _, v := range []string{cn.Name, cn.Host, cn.User, cn.Database, cn.SSHHost} {
+					if v != "root" && v != "postgres" && v != "localhost" && v != "127.0.0.1" {
+						c.Projects = append(c.Projects, v)
+					}
+				}
+			}
+		}
 	}
 	return c
 }
@@ -109,13 +121,25 @@ func (e *Engine) PreviewProblem(id string, bundle, keepNames bool) (map[string]a
 	if err != nil {
 		return nil, err
 	}
-	r := problems.Build(p, e.cleaner(keepNames))
+	c := e.cleaner(keepNames)
+	r := problems.Build(p, c)
 	r.Bundle = bundle
-	return map[string]any{"text": r.Text(), "can_send": reportDSN() != ""}, nil
+	out := map[string]any{"text": r.Text(), "can_send": reportDSN() != ""}
+	if bundle { // name every file that would go along, so the person sees all of it before agreeing
+		names, _ := e.writeBundle(io.Discard, func(s string) string { return s })
+		out["bundle_files"] = names
+	}
+	return out, nil
 }
 
 // SendProblem sends the cleaned report, with a cleaned debug bundle when asked.
 func (e *Engine) SendProblem(id string, bundle bool) (string, error) {
+	return e.sendProblem(id, bundle, false)
+}
+
+// sendProblem: auto is a report nobody reviewed (report mode "auto"). It goes without the log lines
+// a service problem carries (they can hold database rows or request data), only the error itself.
+func (e *Engine) sendProblem(id string, bundle, auto bool) (string, error) {
 	d := reportDSN()
 	if d == "" {
 		return "", errors.New("this build has no report address. Copy the report and open a GitHub issue instead")
@@ -126,11 +150,14 @@ func (e *Engine) SendProblem(id string, bundle bool) (string, error) {
 		return "", err
 	}
 	c := e.cleaner(false)
+	if auto {
+		p.Detail, _, _ = strings.Cut(p.Detail, "\n\nEnd of ")
+	}
 	r := problems.Build(p, c)
 	var zip []byte
 	if bundle {
 		var buf bytes.Buffer
-		if err := e.writeBundle(&buf, func(s string) string { return c.Clean(secretLine.ReplaceAllString(s, "$1$2[removed]")) }); err == nil && buf.Len() < 15<<20 {
+		if _, err := e.writeBundle(&buf, func(s string) string { return c.Clean(secretLine.ReplaceAllString(s, "$1$2[removed]")) }); err == nil && buf.Len() < 15<<20 {
 			zip, r.Bundle = buf.Bytes(), true
 		}
 	}

@@ -16,3 +16,14 @@ func TestReadOnlyAllowlist(t *testing.T) {
 		}
 	}
 }
+
+func TestSideEffectReadsNeedWrite(t *testing.T) {
+	for _, q := range []string{"SELECT * FROM t INTO OUTFILE '/tmp/x'", "select pg_terminate_backend(123)", "SELECT nextval('s')", "select dblink_exec('x','drop table t')"} {
+		if !sideEffectRe.MatchString(q) {
+			t.Errorf("%q passes as read-only", q)
+		}
+	}
+	if sideEffectRe.MatchString("SELECT outfile, next_value FROM t") {
+		t.Error("plain select flagged")
+	}
+}

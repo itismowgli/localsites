@@ -26,7 +26,7 @@ var (
 	// password in a query string
 	queryPw = regexp.MustCompile(`(?i)([?&](?:password|pass|pwd|token|key|secret)=)[^&\s]+`)
 	// long random-looking strings (API keys, session ids): 32+ chars of base64/hex
-	longToken = regexp.MustCompile(`\b[A-Za-z0-9_+/=-]{40,}\b`)
+	longToken = regexp.MustCompile(`\b[A-Za-z0-9_+/=-]{32,}\b`)
 	email     = regexp.MustCompile(`[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`)
 	ipv4      = regexp.MustCompile(`\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b`)
 )

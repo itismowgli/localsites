@@ -51,12 +51,20 @@ type Method struct {
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
 	Params      []Param `json:"params,omitempty"`
-	Mutates     bool    `json:"mutates"`     // changes config or starts/stops things
-	Destructive bool    `json:"destructive"` // can take sites offline or lose work: agents must confirm
-	Sensitive   bool    `json:"sensitive"`   // takes or returns secrets
+	Mutates     bool    `json:"mutates"`           // changes config or starts/stops things
+	Destructive bool    `json:"destructive"`       // can take sites offline or lose work: agents must confirm
+	Approve     bool    `json:"approve,omitempty"` // not destructive, but data leaves or code may run: agents must confirm too
+	Sensitive   bool    `json:"sensitive"`         // takes or returns secrets
 }
 
 var (
+	pConnID     = Param{Name: "id", Type: "string", Description: "Connection id, from data.connections", Required: true}
+	pSchema     = Param{Name: "schema", Type: "string", Description: "Database (MySQL) or schema (PostgreSQL)"}
+	pTable      = Param{Name: "table", Type: "string", Required: true}
+	dataChanges = []Param{pConnID, pSchema, pTable,
+		{Name: "updates", Type: "array", Description: "[{key: {column: value}, set: {column: value}}]"},
+		{Name: "deletes", Type: "array", Description: "[{column: value}] identifying one row each"},
+		{Name: "inserts", Type: "array", Description: "[{column: value}]"}}
 	pFolder    = Param{Name: "folder", Type: "string", Description: "Project folder name, as listed by sites.list", Required: true}
 	pDB        = Param{Name: "name", Type: "string", Description: "Database name (letters, digits, _)", Required: true}
 	pFile      = Param{Name: "file", Type: "string", Description: "Full path of a .sql, .sql.gz or .zip file", Required: true}
@@ -104,23 +112,28 @@ var Methods = []Method{
 		{Name: "default_php", Type: "string", Description: "PHP version for new projects (empty = newest)"},
 		{Name: "start_at_login", Type: "boolean", Description: "Start LocalSites when you log in (macOS)"},
 	}},
-	{Name: "sites.connect_db", Description: "Point a project at a LocalSites database: backs up .env, writes the database's own login, switches MySQL to LocalSites", Mutates: true,
+	{Name: "sites.connect_db", Approve: true, Description: "Point a project at a LocalSites database: backs up .env, writes the database's own login, switches MySQL to LocalSites", Mutates: true,
 		Params: []Param{pFolder, {Name: "name", Type: "string", Description: "LocalSites database name", Required: true}}},
-	{Name: "sites.restore_env", Description: "Undo sites.connect_db: restore the last .env backup and switch back to MAMP's MySQL", Mutates: true, Params: []Param{pFolder}},
+	{Name: "sites.restore_env", Approve: true, Description: "Undo sites.connect_db: restore the last .env backup and switch back to MAMP's MySQL", Mutates: true, Params: []Param{pFolder}},
 	{Name: "data.connections", Description: "Database browser connections (MAMP PRO MySQL, LocalSites MySQL, saved MySQL/PostgreSQL/SQLite)"},
-	{Name: "data.connection.save", Description: "Add or change a saved connection: {connection, password?}", Mutates: true, Sensitive: true},
-	{Name: "data.connection.delete", Description: "Remove a saved connection (the database itself is not touched)", Mutates: true, Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}}},
-	{Name: "data.password", Description: "Remember the password for a connection: {id, password}", Mutates: true, Sensitive: true},
+	{Name: "data.connection.save", Description: "Add or change a saved connection: {connection, password?}", Mutates: true, Sensitive: true, Approve: true, Params: []Param{
+		{Name: "connection", Type: "object", Description: "id?, name, driver (mysql|postgres|sqlite), host, port, user, database, socket, file, read_only, ssh_host, ssh_port, ssl_mode", Required: true},
+		{Name: "password", Type: "string", Description: "Saved in the keychain"}}},
+	{Name: "data.connection.delete", Approve: true, Description: "Remove a saved connection (the database itself is not touched)", Mutates: true, Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}}},
+	{Name: "data.password", Description: "Remember the password for a connection: {id, password}", Mutates: true, Sensitive: true, Params: []Param{pConnID, {Name: "password", Type: "string", Required: true}}},
 	{Name: "data.readonly", Description: "Turn writing off (read_only=true) or on for a connection", Mutates: true, Destructive: true,
 		Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "read_only", Type: "boolean", Description: "true = block all changes", Required: true}}},
 	{Name: "data.test", Description: "Check a connection works and show the server version", Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}}},
 	{Name: "data.schemas", Description: "Databases (MySQL) or schemas (PostgreSQL) on a connection", Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}}},
 	{Name: "data.tables", Description: "Tables and views with row estimates and sizes", Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "schema", Type: "string", Description: "Database or schema", Required: true}}},
 	{Name: "data.structure", Description: "Columns and indexes of a table", Params: []Param{{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "schema", Type: "string", Description: "Database or schema", Required: true}, {Name: "table", Type: "string", Description: "Table", Required: true}}},
-	{Name: "data.rows", Description: "Rows of a table, paged, sorted and filtered (read-only)", Sensitive: true},
-	{Name: "data.query", Description: "Run one SQL statement. Read-only unless the connection allows changes and allow_write is true", Mutates: true, Destructive: true, Sensitive: true},
-	{Name: "data.preview", Description: "Show the SQL that saving staged row edits would run", Sensitive: true},
-	{Name: "data.save", Description: "Save staged row edits in one transaction (each update/delete must match exactly one row)", Mutates: true, Destructive: true, Sensitive: true},
+	{Name: "data.rows", Description: "Rows of a table, paged, sorted and filtered (read-only)", Sensitive: true, Params: []Param{pConnID, pSchema, pTable,
+		{Name: "limit", Type: "integer"}, {Name: "offset", Type: "integer"}, {Name: "order_by", Type: "string"}, {Name: "desc", Type: "boolean"},
+		{Name: "filters", Type: "array", Description: "[{column, op (eq|ne|contains|starts|gt|lt|null|notnull), value}]"}}},
+	{Name: "data.query", Description: "Run one SQL statement. Read-only unless the connection allows changes and allow_write is true", Mutates: true, Destructive: true, Sensitive: true, Params: []Param{pConnID, pSchema,
+		{Name: "sql", Type: "string", Required: true}, {Name: "allow_write", Type: "boolean"}}},
+	{Name: "data.preview", Description: "Show the SQL that saving staged row edits would run", Sensitive: true, Params: dataChanges},
+	{Name: "data.save", Description: "Save staged row edits in one transaction (each update/delete must match exactly one row)", Mutates: true, Destructive: true, Sensitive: true, Params: dataChanges},
 	{Name: "git.status", Description: "A project's branch, upstream, ahead/behind and changed files", Params: []Param{pFolder}},
 	{Name: "git.hosting", Description: "Open pull requests and recent CI runs for the project's current branch (GitHub, through the gh CLI's login)", Params: []Param{pFolder}},
 	{Name: "git.branches", Description: "Local and remote branches of a project", Params: []Param{pFolder}},
@@ -168,7 +181,7 @@ var Methods = []Method{
 	{Name: "db.create", Description: "Create a database with its own login limited to that database", Mutates: true, Params: []Param{pDB}},
 	{Name: "db.backup", Description: "Write a compressed backup of a database and return its file path", Mutates: true, Params: []Param{pDB}},
 	{Name: "db.credentials", Description: "Login (including password) for a project database", Sensitive: true, Params: []Param{pDB}},
-	{Name: "db.export", Description: "Export a LocalSites MySQL database to a .sql or .sql.gz file (mode: full, structure or data)", Mutates: true, Params: []Param{pDB, pFile, pMode, pOverwrite}},
+	{Name: "db.export", Approve: true, Description: "Export a LocalSites MySQL database to a .sql or .sql.gz file (mode: full, structure or data)", Mutates: true, Params: []Param{pDB, pFile, pMode, pOverwrite}},
 	{Name: "db.import", Description: "Load a .sql, .sql.gz or .zip file into a LocalSites MySQL database (a backup is made first)", Mutates: true, Destructive: true, Params: []Param{pDB, pFile}},
 	{Name: "db.backups", Description: "Saved backups of a LocalSites MySQL database, newest first", Params: []Param{pDB}},
 	{Name: "db.restore", Description: "Replace a database with one of its backups (what is there now is backed up first)", Mutates: true, Destructive: true, Params: []Param{pDB, pFile}},
@@ -177,12 +190,12 @@ var Methods = []Method{
 	{Name: "db.drop", Description: "Delete a database and its login (backed up first)", Mutates: true, Destructive: true, Params: []Param{pDB}},
 	{Name: "pg.list", Description: "Databases in the PostgreSQL add-on with sizes"},
 	{Name: "pg.create", Description: "Create a database in the PostgreSQL add-on", Mutates: true, Params: []Param{pDB}},
-	{Name: "pg.export", Description: "Export a PostgreSQL add-on database to a .sql or .sql.gz file", Mutates: true, Params: []Param{pDB, pFile, pMode, pOverwrite}},
+	{Name: "pg.export", Approve: true, Description: "Export a PostgreSQL add-on database to a .sql or .sql.gz file", Mutates: true, Params: []Param{pDB, pFile, pMode, pOverwrite}},
 	{Name: "pg.import", Description: "Load a .sql, .sql.gz or .zip file into a PostgreSQL add-on database (backed up first)", Mutates: true, Destructive: true, Params: []Param{pDB, pFile}},
 	{Name: "pg.duplicate", Description: "Copy a PostgreSQL add-on database into a new one", Mutates: true, Params: []Param{pDB, pNewName}},
 	{Name: "pg.empty", Description: "Remove every table from a PostgreSQL add-on database (backed up first)", Mutates: true, Destructive: true, Params: []Param{pDB}},
 	{Name: "pg.drop", Description: "Delete a PostgreSQL add-on database (backed up first)", Mutates: true, Destructive: true, Params: []Param{pDB}},
-	{Name: "data.export", Description: "Export a database (MySQL), schema (PostgreSQL) or SQLite file from a saved connection to a .sql or .sql.gz file. Only reads", Mutates: true, Params: []Param{
+	{Name: "data.export", Approve: true, Description: "Export a database (MySQL), schema (PostgreSQL) or SQLite file from a saved connection to a .sql or .sql.gz file. Only reads", Mutates: true, Params: []Param{
 		{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "schema", Type: "string"}, pFile, pMode, pOverwrite}},
 	{Name: "data.import", Description: "Load a .sql, .sql.gz or .zip file through a saved connection that allows changes (what is there is exported first)", Mutates: true, Destructive: true, Params: []Param{
 		{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "schema", Type: "string"}, pFile}},
@@ -313,7 +326,7 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	case method == "approvals.list":
 		res = s.pending.list()
 	case method == "approvals.decide":
-		if client == "mcp" {
+		if !TrustedClient(client) {
 			err = errors.New("only the person using LocalSites can approve requests")
 			break
 		}
@@ -324,11 +337,11 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		_ = json.Unmarshal(body, &d)
 		err = s.pending.decide(d.ID, d.Approve)
 		res = map[string]any{"ok": err == nil}
-	case client == "mcp" && (method == "update.install" || method == "update.rollback"):
+	case !TrustedClient(client) && (method == "update.install" || method == "update.rollback"):
 		err = errors.New("only the person using LocalSites can install updates, from the app")
-	case client == "mcp" && (method == "problems.send" || method == "problems.ui"):
+	case !TrustedClient(client) && (method == "problems.send" || method == "problems.ui"):
 		err = errors.New("only the person using LocalSites can send problem reports, from the app")
-	case client == "mcp" && isDestructive(method):
+	case NeedsApproval(client, method, body):
 		if err = s.pending.wait(method, client, body, r.Context().Done()); err == nil {
 			res, err = s.call(method, body)
 		}
@@ -815,7 +828,57 @@ func (c *Client) Call(method string, params any) (json.RawMessage, error) {
 func isDestructive(method string) bool {
 	for _, m := range Methods {
 		if m.Name == method {
-			return m.Destructive
+			return m.Destructive || m.Approve
+		}
+	}
+	return false
+}
+
+// TrustedClient: the person using LocalSites directly (the app, the dev UI, the CLI typed in a
+// terminal). Agents (mcp), scripts and unnamed callers are not.
+func TrustedClient(client string) bool {
+	return client == "app" || client == "devui" || client == "cli"
+}
+
+// approvalFields: fields of an ordinary call that need the person's approval when an agent sends them
+// (a start command or environment runs code; these settings change what is served or sent).
+var approvalFields = map[string]func(k string) bool{
+	"sites.update": func(k string) bool { return k == "command" || k == "kind" || k == "env_vars" },
+	"settings.update": func(k string) bool {
+		return k == "sites_root" || k == "start_at_login" || k == "report_mode" || strings.HasPrefix(k, "update_")
+	},
+}
+
+// ApprovalFields lists, for the MCP tool descriptions, which fields of method need approval.
+func ApprovalFields(method string, names []string) []string {
+	f, ok := approvalFields[method]
+	if !ok {
+		return nil
+	}
+	var out []string
+	for _, n := range names {
+		if f(n) {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// NeedsApproval reports whether a call waits for the person to approve it in the app.
+func NeedsApproval(client, method string, body []byte) bool {
+	if TrustedClient(client) {
+		return false
+	}
+	if isDestructive(method) {
+		return true
+	}
+	if f, ok := approvalFields[method]; ok {
+		var m map[string]json.RawMessage
+		_ = json.Unmarshal(body, &m)
+		for k := range m {
+			if f(k) {
+				return true
+			}
 		}
 	}
 	return false

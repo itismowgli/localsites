@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -137,6 +138,35 @@ func TestDatabaseToolsMySQL(t *testing.T) {
 		}
 	})
 
+	t.Run("an import can't reach other databases or make logins; DEFINER dumps still load", func(t *testing.T) {
+		if _, err := e.CreateDatabase("victim"); err != nil {
+			t.Fatal(err)
+		}
+		f := filepath.Join(dir, "evil.sql")
+		os.WriteFile(f, []byte("SELECT 1; DROP DATABASE victim;\n"), 0o600)
+		if _, err := e.ImportFile("tools", f); err == nil {
+			t.Fatal("a statement that drops another database was allowed")
+		}
+		os.WriteFile(f, []byte("CREATE USER 'evil'@'%' IDENTIFIED BY 'x';\n"), 0o600)
+		if _, err := e.ImportFile("tools", f); err == nil {
+			t.Fatal("a dump created a login")
+		}
+		if n := count(t, ev, "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name='victim'"); n != 1 {
+			t.Fatal("the other database is gone")
+		}
+		if n := count(t, ev, "SELECT COUNT(*) FROM mysql.user WHERE user='evil'"); n != 0 {
+			t.Fatal("the dump's login exists")
+		}
+		os.WriteFile(f, []byte("SET @@SESSION.SQL_LOG_BIN= 0;\nSET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '3E11FA47-71CA-11E1-9E33-C80AA9429562:1-5';\n"+
+			"/*!50001 CREATE ALGORITHM=UNDEFINED */\n/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */\n/*!50001 VIEW `v2` AS select 1 AS `one` */;\n"), 0o600)
+		if _, err := e.ImportFile("tools", f); err != nil {
+			t.Fatalf("a mysqldump with DEFINER and GTID lines: %v", err)
+		}
+		if n := count(t, ev, "SELECT COUNT(*) FROM information_schema.views WHERE table_schema='tools' AND table_name='v2'"); n != 1 {
+			t.Fatal("the view didn't load")
+		}
+	})
+
 	t.Run("empty, then restore the backup made before emptying", func(t *testing.T) {
 		if _, err := e.EmptyDatabase("tools"); err != nil {
 			t.Fatal(err)
@@ -224,6 +254,23 @@ func TestDatabaseToolsSQLiteAndPostgres(t *testing.T) {
 		if _, err := e.ImportConnection(a.ID, "", r.File); err == nil {
 			t.Fatal("imported into a read-only connection")
 		}
+		// a dump that tries to run a command or write another file
+		marker := filepath.Join(dir, "sqlite-ran")
+		evil := filepath.Join(dir, "evil-lite.sql")
+		os.WriteFile(evil, []byte("CREATE TABLE z (x);\n.shell touch "+marker+"\n"), 0o600)
+		if _, err := e.ImportConnection(b.ID, "", evil); err == nil {
+			t.Fatal("a dump with .shell imported")
+		}
+		os.WriteFile(evil, []byte("ATTACH '"+filepath.Join(dir, "other.db")+"' AS o;\nCREATE TABLE o.t (x);\n"), 0o600)
+		if _, err := e.ImportConnection(b.ID, "", evil); err == nil {
+			t.Fatal("a dump with ATTACH imported")
+		}
+		if _, err := os.Stat(marker); err == nil {
+			t.Fatal("the dump ran a command")
+		}
+		if _, err := os.Stat(filepath.Join(dir, "other.db")); err == nil {
+			t.Fatal("the dump wrote another file")
+		}
 	})
 
 	if _, err := os.Stat("/opt/homebrew/opt/postgresql@17/bin/postgres"); err != nil {
@@ -238,6 +285,33 @@ func TestDatabaseToolsSQLiteAndPostgres(t *testing.T) {
 	t.Run("postgres add-on: create, import, export, duplicate, empty, delete", func(t *testing.T) {
 		if _, err := e.PGCreate("shop"); err != nil {
 			t.Fatal(err)
+		}
+		// a dump can't run commands: psql's \! is off and the import has no superuser rights
+		marker := filepath.Join(dir, "pg-ran")
+		evil := filepath.Join(dir, "evil-pg.sql")
+		for _, body := range []string{"SELECT 1;\n\\! touch " + marker + "\n", "SELECT 1; \\! touch " + marker + "\n",
+			"COPY (SELECT 1) TO PROGRAM 'touch " + marker + "';\n", "\\unrestrict x\n\\! touch " + marker + "\n"} {
+			os.WriteFile(evil, []byte(body), 0o600)
+			if _, err := e.PGImport("shop", evil); err == nil {
+				t.Fatalf("imported %q", body)
+			}
+		}
+		if _, err := os.Stat(marker); err == nil {
+			t.Fatal("a dump ran a command")
+		}
+		// over TCP the superuser needs the keychain password
+		if bin, err := exec.LookPath("/opt/homebrew/opt/libpq/bin/psql"); err == nil {
+			cmd := exec.Command(bin, "--host=127.0.0.1", fmt.Sprintf("--port=%d", pg), "--username=postgres", "--no-password", "--dbname=postgres", "--command=SELECT 1")
+			cmd.Env = append(os.Environ(), "PGPASSWORD=")
+			if out, err := cmd.CombinedOutput(); err == nil {
+				t.Fatalf("logged in over TCP without a password: %s", out)
+			}
+			pw, _ := e.Secrets.Get("addon-postgres")
+			cmd = exec.Command(bin, "--host=127.0.0.1", fmt.Sprintf("--port=%d", pg), "--username=postgres", "--no-password", "--dbname=postgres", "--command=SELECT 1")
+			cmd.Env = append(os.Environ(), "PGPASSWORD="+pw)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("the keychain password doesn't work over TCP: %s", out)
+			}
 		}
 		f := filepath.Join(dir, "pg.sql")
 		os.WriteFile(f, []byte("\\connect other\nCREATE TABLE products (id serial PRIMARY KEY, title text);\nINSERT INTO products (title) VALUES ('a'),('b');\n"), 0o600)

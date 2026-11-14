@@ -58,11 +58,7 @@ func (a *approvals) wait(method, client string, body []byte, done <-chan struct{
 	_, _ = rand.Read(b)
 	var params map[string]any
 	_ = json.Unmarshal(body, &params)
-	for k := range params {
-		if strings.Contains(strings.ToLower(k), "password") { // never show secrets in the prompt
-			params[k] = "••••"
-		}
-	}
+	maskSecrets(params) // never show secrets in the prompt
 	sum, _ := json.Marshal(params)
 	p := &Approval{ID: hex.EncodeToString(b), Method: method, Client: client, Summary: string(sum), Created: time.Now(), Expires: time.Now().Add(approvalWait), answer: make(chan bool, 1)}
 	a.mu.Lock()
@@ -90,12 +86,44 @@ func (a *approvals) wait(method, client string, body []byte, done <-chan struct{
 func (a *approvals) decide(id string, approve bool) error {
 	a.mu.Lock()
 	p, ok := a.pending[id]
+	delete(a.pending, id) // a second answer to the same request finds nothing
 	a.mu.Unlock()
 	if !ok {
 		return errors.New("that request is no longer waiting")
 	}
-	p.answer <- approve
+	select {
+	case p.answer <- approve:
+	default:
+	}
+	a.changed()
 	return nil
+}
+
+// secretKey: parameter names whose values are never shown or logged.
+func secretKey(k string) bool {
+	k = strings.ToLower(k)
+	for _, w := range []string{"password", "secret", "token", "key"} {
+		if strings.Contains(k, w) {
+			return true
+		}
+	}
+	return false
+}
+
+// maskSecrets hides passwords and every environment variable value (often API keys), keeping the names.
+func maskSecrets(m map[string]any) {
+	for k, v := range m {
+		switch {
+		case k == "env_vars":
+			if env, ok := v.(map[string]any); ok {
+				for ek := range env {
+					env[ek] = "••••"
+				}
+			}
+		case secretKey(k):
+			m[k] = "••••"
+		}
+	}
 }
 
 func humanMethod(m string) string {

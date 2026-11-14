@@ -925,8 +925,11 @@ async function pollApprovals() {
 
 /* --- sharing a site on the internet --- */
 const SF = { prov: '', mins: 60, pw: '', open: false }; // share form, kept across refreshes
-function newSharePassword() { const w = ['amber', 'basil', 'cedar', 'delta', 'ember', 'fjord', 'grove', 'harbor', 'iris', 'juniper', 'kelp', 'lumen', 'maple', 'nova', 'orbit', 'pine'];
-  const r = crypto.getRandomValues(new Uint32Array(3)); return `${w[r[0] % w.length]}-${w[r[1] % w.length]}-${100 + r[2] % 900}`; }
+// four of 256 words and a number: about 39 bits, far beyond what the gateway's guess limits allow in a day
+const SHARE_WORDS = ['acorn', 'actor', 'agent', 'album', 'alarm', 'alpha', 'amber', 'angle', 'apple', 'apron', 'arena', 'arrow', 'aspen', 'atlas', 'attic', 'autumn', 'badge', 'bagel', 'baker', 'bamboo', 'banjo', 'barley', 'basil', 'basin', 'beach', 'beacon', 'berry', 'bison', 'blade', 'blaze', 'bloom', 'board', 'bonus', 'brave', 'bread', 'brick', 'bridge', 'brook', 'brush', 'bucket', 'bugle', 'cabin', 'cable', 'cactus', 'camel', 'canal', 'candle', 'canoe', 'canvas', 'carbon', 'cargo', 'carrot', 'castle', 'cedar', 'cello', 'chalk', 'charm', 'cherry', 'chess', 'chief', 'cider', 'cinema', 'circle', 'citrus', 'clay', 'cliff', 'cloud', 'clover', 'coast', 'cobalt', 'cocoa', 'comet', 'copper', 'coral', 'cotton', 'crane', 'crater', 'cricket', 'crown', 'crystal', 'cube', 'daisy', 'dance', 'delta', 'denim', 'desert', 'diesel', 'dolphin', 'domino', 'dragon', 'drum', 'dune', 'eagle', 'earth', 'echo', 'ember', 'engine', 'falcon', 'fable', 'feather', 'fern', 'fiddle', 'field', 'fig', 'flame', 'flint', 'flute', 'forest', 'fossil', 'fox', 'frost', 'fudge', 'galaxy', 'garden', 'garnet', 'gecko', 'ginger', 'glacier', 'globe', 'gold', 'grape', 'gravel', 'grove', 'guitar', 'habit', 'harbor', 'harvest', 'hazel', 'helmet', 'heron', 'hiking', 'honey', 'horizon', 'hotel', 'husky', 'igloo', 'indigo', 'iris', 'island', 'ivory', 'jacket', 'jaguar', 'jasmine', 'jelly', 'jewel', 'jungle', 'kayak', 'kelp', 'kettle', 'kiwi', 'koala', 'ladder', 'lagoon', 'lantern', 'lava', 'lemon', 'lily', 'linen', 'lion', 'lobster', 'lotus', 'lumen', 'lunar', 'magnet', 'mango', 'maple', 'marble', 'meadow', 'melon', 'mesa', 'meteor', 'mint', 'mirror', 'mocha', 'moon', 'mosaic', 'moss', 'motor', 'mountain', 'muffin', 'nectar', 'needle', 'nickel', 'noodle', 'nova', 'oak', 'oasis', 'ocean', 'olive', 'onyx', 'opal', 'orbit', 'orchid', 'otter', 'owl', 'paddle', 'palm', 'panda', 'paper', 'parrot', 'pastel', 'peach', 'pearl', 'pebble', 'pepper', 'piano', 'pilot', 'pine', 'pixel', 'planet', 'plum', 'polar', 'pony', 'poppy', 'prism', 'pumpkin', 'quartz', 'quill', 'rabbit', 'radar', 'radio', 'rain', 'raven', 'reef', 'ribbon', 'river', 'robin', 'rocket', 'rose', 'ruby', 'saddle', 'saffron', 'salmon', 'sand', 'sapphire', 'satin', 'scarf', 'shell', 'sierra', 'silk', 'silver', 'sketch', 'sky', 'slate', 'snow', 'solar', 'spark', 'spice', 'spruce', 'squid', 'star', 'stone', 'storm', 'sugar', 'summit', 'sunset'];
+function newSharePassword() {
+  const r = crypto.getRandomValues(new Uint32Array(5)), w = i => SHARE_WORDS[r[i] % 256];
+  return `${w(0)}-${w(1)}-${w(2)}-${w(3)}-${10 + r[4] % 90}`; }
 const SHARE_MINUTES = [[15, '15 minutes'], [60, '1 hour'], [240, '4 hours'], [1440, '24 hours']];
 function minsLeft(t) { const m = Math.max(0, Math.round((new Date(t) - Date.now()) / 60000)); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; }
 function sharePane(s) {
@@ -1578,6 +1581,7 @@ function connectionDialog() {
       <label class="net">Password<input class="input" id="cPass" type="password" placeholder="Saved in the keychain"></label>
       <label class="net">Database<input class="input" id="cDb" placeholder="optional for MySQL"></label>
       <label class="my">Socket<input class="input" id="cSock" placeholder="optional, e.g. /tmp/mysql.sock"></label>
+      <label class="pg" hidden>Encryption<select class="input" id="cSSL"><option value="">Required for remote servers (recommended)</option><option value="require">Always required</option><option value="verify-full">Required, and check the certificate</option><option value="disable">Off (server without TLS)</option></select></label>
       <label class="lite" hidden>File<input class="input" id="cFile" placeholder="/path/to/database.sqlite"></label>
       <label class="net full"><span class="form-row" style="gap:6px"><input type="checkbox" id="cSSH"> Connect through an SSH tunnel</span></label>
       <label class="ssh" hidden>SSH host<input class="input" id="cSSHHost" placeholder="user@server.example.com"></label>
@@ -2043,11 +2047,14 @@ async function reviewProblem(id) {
   const canSend = S.prob?.report?.can_send;
   const ov = $('#keysOverlay'), box = $('#keysDialog');
   let bundle = false, text = '';
-  const load = async () => { const r = await act(() => bridge.call('problems.preview', { id, bundle }), 'Report'); text = r?.text || ''; const pre = box.querySelector('pre'); if (pre) pre.textContent = text; };
+  const load = async () => {
+    const r = await act(() => bridge.call('problems.preview', { id, bundle }), 'Report'); text = r?.text || '';
+    const files = r?.bundle_files?.length ? `\n\nFiles in the debug bundle (cleaned the same way; saved connections and web access logs are left out):\n${r.bundle_files.map(f => '  ' + f).join('\n')}` : '';
+    const pre = box.querySelector('pre'); if (pre) pre.textContent = text + files; };
   box.innerHTML = `<h3>${canSend ? 'Send a problem report?' : 'Problem report'}</h3>
     <p class="note">This is exactly what ${canSend ? 'will be sent' : 'you can copy'}. Passwords, tokens, e-mail addresses, IP addresses and your user name were removed; project names are replaced with codes.</p>
     <pre class="report-preview" tabindex="0" aria-label="Report">Loading…</pre>
-    ${canSend ? `<label class="form-row note" style="gap:8px;margin-top:10px"><input type="checkbox" id="repBundle"> Attach a debug bundle (logs and settings, cleaned the same way)</label>` : '<p class="note">This build can’t send reports. Copy it into a GitHub issue instead.</p>'}
+    ${canSend ? `<label class="form-row note" style="gap:8px;margin-top:10px"><input type="checkbox" id="repBundle"> Attach a debug bundle (logs and settings, cleaned the same way; its files are listed above)</label>` : '<p class="note">This build can’t send reports. Copy it into a GitHub issue instead.</p>'}
     <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-r="cancel">Cancel</button><button class="btn" data-r="copy">${icon.copy}Copy</button>${canSend ? `<button class="btn primary" data-r="send">${icon.send}Send report</button>` : ''}</div>`;
   ov.classList.add('open');
   const close = () => { ov.classList.remove('open'); ov.onmousedown = null; box.onkeydown = null; };
@@ -2609,7 +2616,7 @@ async function command(cmd, opts = {}) {
       const p = connectionDialog();
       const box = $('#keysDialog');
       const sync = () => { const dr = box.querySelector('#cDriver').value, ssh = box.querySelector('#cSSH').checked && dr !== 'sqlite';
-        box.querySelectorAll('.net').forEach(l => l.hidden = dr === 'sqlite'); box.querySelector('.my').hidden = dr !== 'mysql' || ssh; box.querySelector('.lite').hidden = dr !== 'sqlite';
+        box.querySelectorAll('.net').forEach(l => l.hidden = dr === 'sqlite'); box.querySelector('.my').hidden = dr !== 'mysql' || ssh; box.querySelector('.lite').hidden = dr !== 'sqlite'; box.querySelector('.pg').hidden = dr !== 'postgres';
         box.querySelectorAll('.ssh').forEach(l => l.hidden = !ssh); };
       box.querySelector('#cDriver').onchange = sync; box.querySelector('#cSSH').onchange = sync; sync();
       box.querySelector('#cName').onkeydown = null; // Enter must not submit the half-filled form
@@ -2617,6 +2624,7 @@ async function command(cmd, opts = {}) {
       box.querySelector('#cSave').onclick = async () => {
         const v = (id) => box.querySelector(id).value.trim();
         const conn = { name: v('#cName'), driver: v('#cDriver'), host: v('#cHost'), port: Number(v('#cPort')) || 0, user: v('#cUser'), database: v('#cDb'), socket: v('#cSock'), file: v('#cFile'), read_only: box.querySelector('#cRO').checked };
+        if (conn.driver === 'postgres' && v('#cSSL')) conn.ssl_mode = v('#cSSL');
         if (box.querySelector('#cSSH').checked && conn.driver !== 'sqlite') { conn.ssh_host = v('#cSSHHost'); conn.ssh_port = Number(v('#cSSHPort')) || 0; conn.socket = ''; }
         try {
           const saved = await bridge.call('data.connection.save', { connection: conn, password: box.querySelector('#cPass').value || null });

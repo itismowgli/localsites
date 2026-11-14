@@ -108,9 +108,11 @@ LocalSites is an MCP server. Connect **Claude Desktop, Claude Code, Cursor, VS C
 resources and ready-made prompts to diagnose a project.
 
 - Read-only tools run freely
-- **Risky tools wait for you**: stopping services, sharing a site, saving data edits and emptying a cache
-  show an Approve button in the app, with a macOS notification. Agents can't approve themselves
-- Tools that reveal passwords stay off unless you start the server with `--allow-secrets`
+- **Risky tools wait for you**: stopping services, sharing a site, saving data edits, emptying a cache,
+  exporting or importing a database, editing a project's `.env`, and setting a start command or environment
+  variables show an Approve button in the app, with a macOS notification. Agents can't approve themselves
+- Tools that reveal passwords stay off unless you start the server with `--allow-secrets`. Without it, agents
+  see the names of a project's environment variables but not their values
 
 ### Fast from the keyboard
 
@@ -321,7 +323,7 @@ make test-all   # all of the above
 ```
 
 The tests never touch your own sites, Keychain, Valet or MAMP. `go run ./cmd/devui ./bin/localsites` opens the
-desktop UI in a normal browser for UI work. Architecture notes are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+desktop UI in a normal browser for UI work (open the link it prints; it answers no other program). Architecture notes are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## License
 

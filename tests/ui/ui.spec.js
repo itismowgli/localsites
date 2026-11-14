@@ -508,7 +508,7 @@ test('window dragging: empty header areas drag the window, controls stay clickab
 });
 
 test('native drag regions: headers drag, controls and open dialogs never do', async ({ browser }) => {
-  const ctx = await browser.newContext();
+  const ctx = await browser.newContext({ storageState: path.join(require('os').tmpdir(), 'lsui-auth.json') });
   const page = await ctx.newPage();
   page.on('pageerror', e => { throw e; });
   await page.addInitScript(() => {
@@ -543,7 +543,7 @@ test('share: project panel offers sharing (install a tunnel first when none is i
   if (st.share_providers.some(p => p.installed)) {
     await expect(page.locator('#detail [data-sharestart="hello"]')).toBeVisible();
     await page.locator('#detail [data-cmd="sharegenpw"]').click();
-    await expect(page.locator('#sharePw')).toHaveValue(/^[a-z]+-[a-z]+-\d{3}$/);
+    await expect(page.locator('#sharePw')).toHaveValue(/^[a-z]+-[a-z]+-[a-z]+-[a-z]+-\d{2}$/);
   } else {
     await expect(page.locator('#detail [data-shareinstall="cloudflared"]')).toBeVisible();
   }
@@ -812,4 +812,11 @@ test('buttons never show an icon name as text (a missing icon used to print "dow
   await page.waitForTimeout(500);
   const texts = await page.locator('.btn').allTextContents();
   expect(texts.filter(t => /^(download|import|external|plus|copy)[A-Z]/.test(t.trim()))).toEqual([]);
+});
+
+test('dev UI server answers only the browser that opened its link', async () => {
+  const r = await fetch(process.env.LS_UI_URL + '/__call/status', { method: 'POST', body: '{}' }); // another program on this Mac
+  expect(r.status).toBe(403);
+  const bad = await fetch(process.env.LS_UI_URL + '/__call/status', { method: 'POST', body: '{}', headers: { Cookie: 'lsdevui=guess' } });
+  expect(bad.status).toBe(403);
 });

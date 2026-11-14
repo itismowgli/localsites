@@ -60,15 +60,32 @@ func (e *Engine) exportPath(file string, overwrite bool) error {
 	if !strings.HasSuffix(low, ".sql") && !strings.HasSuffix(low, ".sql.gz") {
 		return errors.New("the file name must end in .sql or .sql.gz")
 	}
-	home := e.P.Home
-	if home != "" && !strings.HasPrefix(file, home+string(os.PathSeparator)) && !strings.HasPrefix(file, os.TempDir()) && !strings.HasPrefix(file, "/tmp/") && !strings.HasPrefix(file, "/private/") {
-		return errors.New("save exports inside your home folder")
-	}
 	if st, err := os.Stat(filepath.Dir(file)); err != nil || !st.IsDir() {
 		return errors.New("that folder doesn't exist")
 	}
-	if _, err := os.Stat(file); err == nil && !overwrite {
-		return fmt.Errorf("%s already exists", filepath.Base(file))
+	// where the folder really is (links followed), inside the home folder or a temporary folder
+	dir, err := filepath.EvalSymlinks(filepath.Dir(file))
+	if err != nil {
+		return errors.New("that folder doesn't exist")
+	}
+	if home := e.P.Home; home != "" {
+		ok := false
+		for _, root := range []string{home, os.TempDir(), "/tmp", "/private/tmp"} {
+			if r, err := filepath.EvalSymlinks(root); err == nil && (dir == r || strings.HasPrefix(dir, r+string(os.PathSeparator))) {
+				ok = true
+			}
+		}
+		if !ok {
+			return errors.New("save exports inside your home folder")
+		}
+	}
+	if st, err := os.Lstat(file); err == nil {
+		if st.Mode()&os.ModeSymlink != 0 || !st.Mode().IsRegular() {
+			return fmt.Errorf("%s is a link or not a file; choose another name", filepath.Base(file))
+		}
+		if !overwrite {
+			return fmt.Errorf("%s already exists", filepath.Base(file))
+		}
 	}
 	return nil
 }
@@ -95,6 +112,7 @@ func (e *Engine) ExportDatabase(name, file, mode string, overwrite bool) (Export
 	if err != nil {
 		return ExportResult{}, err
 	}
+	w.NoReplace = !overwrite
 	if err := m.Dump(pw, name, mode, w); err != nil {
 		w.Abort()
 		return ExportResult{}, err
@@ -135,12 +153,17 @@ func (e *Engine) ImportFile(name, file string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, m, pw, err := e.admin()
+	_, m, _, err := e.admin()
+	if err != nil {
+		return nil, err
+	}
+	// the database's own login, which can only reach this database (made now if it has none)
+	own, err := e.CreateDatabase(name)
 	if err != nil {
 		return nil, err
 	}
 	start := time.Now()
-	if err := m.Import(pw, sqlfile.KeepInDatabase(r), name); err != nil {
+	if err := m.ImportAs(own.User, own.Password, sqlfile.ForMySQL(r), name); err != nil {
 		return []string{"Backup made first: " + before}, fmt.Errorf("%v. The database may be partly imported; Restore puts back the backup made just before", err)
 	}
 	return []string{

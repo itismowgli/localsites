@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"github.com/localsites/localsites/internal/config"
+	"github.com/localsites/localsites/internal/secrets"
+	"github.com/localsites/localsites/internal/services"
 	"github.com/localsites/localsites/internal/sqlfile"
 )
 
-// Database tools for the PostgreSQL add-on (local, user "postgres", no password: local trust login).
+// Database tools for the PostgreSQL add-on. They log in as "postgres" over the add-on's socket, which is
+// in a folder only this Mac user can open (TCP logins need the keychain password).
 // The same rules as LocalSites MySQL: removing or replacing data makes a backup first.
 
 // PGDatabase is one database in the add-on.
@@ -45,7 +48,7 @@ func (e *Engine) pgRun(db string, stdin []byte, args ...string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	full := append([]string{"--host=127.0.0.1", "--port=" + strconv.Itoa(port), "--username=postgres", "--dbname=" + db, "--no-password", "--quiet", "--set=ON_ERROR_STOP=1"}, args...)
+	full := append([]string{"--host=" + e.pgSocketDir(), "--port=" + strconv.Itoa(port), "--username=postgres", "--dbname=" + db, "--no-password", "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1"}, args...)
 	var out bytes.Buffer
 	var in *bytes.Reader
 	if stdin != nil {
@@ -58,6 +61,9 @@ func (e *Engine) pgRun(db string, stdin []byte, args ...string) (string, error) 
 	}
 	return out.String(), err
 }
+
+// pgSocketDir is where the add-on's socket is (its own 0700 folder).
+func (e *Engine) pgSocketDir() string { return filepath.Join(e.P.Data, "addons", "postgres") }
 
 // PGConnID is the data browser connection for one add-on database.
 func PGConnID(db string) string {
@@ -133,6 +139,9 @@ func (e *Engine) PGCreate(name string) ([]string, error) {
 	if _, err := e.pgRun("postgres", nil, "--command=CREATE DATABASE \""+name+"\" ENCODING 'UTF8'"); err != nil {
 		return nil, err
 	}
+	if _, err := e.pgOwner(name); err != nil {
+		return nil, err
+	}
 	port, _ := e.pgPort()
 	return []string{fmt.Sprintf("Created %s. Connect with postgresql://postgres@127.0.0.1:%d/%s", name, port, name)}, nil
 }
@@ -146,7 +155,7 @@ func (e *Engine) pgDump(name, mode string, w *sqlfile.Writer) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"--host=127.0.0.1", "--port=" + strconv.Itoa(port), "--username=postgres", "--dbname=" + name, "--no-password", "--no-owner", "--no-privileges"}
+	args := []string{"--host=" + e.pgSocketDir(), "--port=" + strconv.Itoa(port), "--username=postgres", "--dbname=" + name, "--no-password", "--no-owner", "--no-privileges"}
 	switch mode {
 	case "structure":
 		args = append(args, "--schema-only")
@@ -156,14 +165,56 @@ func (e *Engine) pgDump(name, mode string, w *sqlfile.Writer) error {
 	return run(bin, args, nil, nil, w)
 }
 
+// pgOwner makes sure a database has its own login without superuser rights ("ls_<name>") that owns
+// it and everything in it. Imports run as that login, so a file can't use superuser powers (COPY …
+// TO PROGRAM runs commands on this Mac). The login has no password: it can only log in over the
+// add-on's private socket.
+func (e *Engine) pgOwner(name string) (string, error) {
+	role := services.UserFor(name)
+	if _, err := e.pgRun("postgres", []byte(fmt.Sprintf(`DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '%[1]s') THEN
+    CREATE ROLE "%[1]s" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+  END IF;
+END $$;
+ALTER DATABASE "%[2]s" OWNER TO "%[1]s";
+`, role, name)), "--file=-"); err != nil {
+		return "", err
+	}
+	// tables, views, sequences (not those that belong to a column) and schemas made by the superuser
+	_, err := e.pgRun(name, []byte(fmt.Sprintf(`DO $$ DECLARE r record; BEGIN
+  FOR r IN SELECT n.nspname, c.relname, c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%%'
+        AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f') AND pg_get_userbyid(c.relowner) <> '%[1]s'
+        AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype IN ('a', 'i'))
+  LOOP
+    EXECUTE format('ALTER %%s %%I.%%I OWNER TO %%I', CASE r.relkind WHEN 'v' THEN 'VIEW' WHEN 'm' THEN 'MATERIALIZED VIEW' WHEN 'S' THEN 'SEQUENCE' WHEN 'f' THEN 'FOREIGN TABLE' ELSE 'TABLE' END, r.nspname, r.relname, '%[1]s');
+  END LOOP;
+  FOR r IN SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('pg_catalog', 'information_schema') AND nspname NOT LIKE 'pg\_%%'
+      AND pg_get_userbyid(nspowner) NOT IN ('%[1]s', 'pg_database_owner')
+  LOOP
+    EXECUTE format('ALTER SCHEMA %%I OWNER TO %%I', r.nspname, '%[1]s');
+  END LOOP;
+END $$;
+`, role)), "--file=-")
+	return role, err
+}
+
 // pgBackup saves a compressed dump in the backups folder ("pg-<name>-<time>.sql.gz").
 func (e *Engine) pgBackup(name, note string) (string, error) {
 	_ = os.MkdirAll(e.P.Backups, 0o700)
-	f := filepath.Join(e.P.Backups, "pg-"+name+"-"+time.Now().Format("20060102-150405")+".sql.gz")
+	stamp := time.Now().Format("20060102-150405")
+	f := filepath.Join(e.P.Backups, "pg-"+name+"-"+stamp+".sql.gz")
+	for i := 2; i < 100; i++ { // two backups in the same second: "-2", "-3" …
+		if _, err := os.Lstat(f); err != nil {
+			break
+		}
+		f = filepath.Join(e.P.Backups, fmt.Sprintf("pg-%s-%s-%d.sql.gz", name, stamp, i))
+	}
 	w, err := sqlfile.Create(f)
 	if err != nil {
 		return "", err
 	}
+	w.NoReplace = true
 	if err := e.pgDump(name, "full", w); err != nil {
 		w.Abort()
 		return "", fmt.Errorf("couldn't make a backup first, so nothing was changed: %v", err)
@@ -192,6 +243,7 @@ func (e *Engine) PGExport(name, file, mode string, overwrite bool) (ExportResult
 	if err != nil {
 		return ExportResult{}, err
 	}
+	w.NoReplace = !overwrite
 	if err := e.pgDump(name, mode, w); err != nil {
 		w.Abort()
 		return ExportResult{}, err
@@ -218,12 +270,17 @@ func (e *Engine) PGImport(name, file string) ([]string, error) {
 		return nil, err
 	}
 	port, _ := e.pgPort()
-	bin, err := pgTool("psql")
+	bin, err := psqlRestricted()
 	if err != nil {
 		return nil, err
 	}
-	err = run(bin, []string{"--host=127.0.0.1", "--port=" + strconv.Itoa(port), "--username=postgres", "--dbname=" + name, "--no-password", "--quiet", "--set=ON_ERROR_STOP=1", "--file=-"},
-		nil, sqlfile.KeepInDatabase(r), nil)
+	role, err := e.pgOwner(name)
+	if err != nil {
+		return nil, err
+	}
+	// as the database's owner (no superuser rights) and with psql's own commands off
+	err = run(bin, []string{"--host=" + e.pgSocketDir(), "--port=" + strconv.Itoa(port), "--username=" + role, "--dbname=" + name, "--no-password", "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1", "--file=-"},
+		nil, sqlfile.ForPsql(r, secrets.Generate(32)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("%v. It stopped at the first error; the backup from just before is %s", err, filepath.Base(before))
 	}
