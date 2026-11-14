@@ -515,7 +515,7 @@ function collapseActivity(items) {
   }
   return out;
 }
-const CLIENTS = { app: ['A', 'App'], cli: ['>', 'CLI'], mcp: ['✦', 'AI agent'], devui: ['D', 'Dev'], unknown: ['?', 'Unknown'] };
+const CLIENTS = { app: ['A', 'App'], cli: ['>', 'CLI'], 'cli-script': ['>', 'Script'], mcp: ['✦', 'AI agent'], devui: ['D', 'Dev'], unknown: ['?', 'Unknown'] };
 function activityRows(items, empty) {
   if (!items.length) return `<div class="ov-empty">${esc(empty)}</div>`;
   return collapseActivity(items).slice(0, 10).map(a => { const [ch, who] = CLIENTS[a.client] || CLIENTS.unknown;
@@ -529,7 +529,7 @@ function ovSection(title, count, body, link) {
 // they make up the number on the Dock icon (the service counts the same things for the badge).
 function needsYou() {
   const out = [], ap = (S.approvals || []).length, pr = probNew(), u = S.upd;
-  if (ap) out.push({ ic: 'agent', title: ap === 1 ? 'An agent request is waiting for you' : `${ap} agent requests are waiting for you`, text: 'An AI agent wants to do something that needs your OK. Approve or deny it in the request card.', action: '' });
+  if (ap) out.push({ ic: 'agent', title: ap === 1 ? 'An agent request is waiting for you' : `${ap} agent requests are waiting for you`, text: 'An AI agent or a script wants to do something that needs your OK. Approve or deny it in the request card.', action: '' });
   if (pr) { const last = (S.prob?.problems || []).find(p => !p.sent && p.kind !== 'ui');
     out.push({ ic: 'alertCircle', title: pr === 1 ? 'A problem to look at' : `${pr} problems to look at`, text: last?.title || 'Something went wrong, such as a crash or a failed install.', action: `<button class="btn sm" data-cmd="openproblems">Review</button>` }); }
   if (u?.latest && !u.skipped && ['available', 'ready'].includes(u.phase))
@@ -908,7 +908,7 @@ function renderApprovals(list) {
   box.innerHTML = list.map(a => {
     let p = {}; try { p = JSON.parse(a.summary || '{}'); } catch (_) { /* summary may be empty */ }
     const what = describe({ method: a.method, summary: a.summary }) || a.method;
-    return `<div class="approval" role="alertdialog" aria-label="Approve ${esc(a.method)}"><div class="ap-h">${icon.agent}<b>An AI agent wants to:</b><span class="spacer"></span><span class="note" data-left="${esc(a.expires)}"></span></div>
+    return `<div class="approval" role="alertdialog" aria-label="Approve ${esc(a.method)}"><div class="ap-h">${icon.agent}<b>${a.client === 'mcp' ? 'An AI agent' : 'A script or command (no terminal)'} wants to:</b><span class="spacer"></span><span class="note" data-left="${esc(a.expires)}"></span></div>
       <div class="ap-what">${esc(what === a.method ? a.method.replace('.', ' ') : what)}</div>
       ${Object.keys(p).length ? `<pre class="mini">${esc(JSON.stringify(p, null, 2))}</pre>` : ''}
       <div class="form-row" style="justify-content:flex-end">${UI.btn('Deny', { attrs: `data-approve="${a.id}|0"` })}${UI.btn('Approve', { kind: 'primary', attrs: `data-approve="${a.id}|1"` })}</div></div>`;

@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.2.1",
+    "date": "2026-11-14",
+    "title": "Clearer approval requests",
+    "items": [
+      "Approval requests and notifications say \"A script or command\" when the request didn't come from an AI agent, for example a localsites command run without a terminal",
+      "Recent activity shows such calls as \"Script\" instead of \"Unknown\""
+    ]
+  },
+  {
     "version": "1.2.0",
     "date": "2026-11-14",
     "title": "Security fixes: AI agents ask first, imports can't run anything",

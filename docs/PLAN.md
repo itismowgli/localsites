@@ -164,6 +164,8 @@ on macOS, Windows and Linux, with optional Docker per project.
 | Share a site on the internet (tunnel) | ✅ cloudflared, bore; password, expiry, gateway |
 | MCP resources (logs, configs) + prompts ("diagnose site") | ✅ |
 | Agent activity: approve/deny queue for destructive calls in the app | ✅ |
+| Security review (4 parallel reviewers, 2026-11-14): approvals for code-running and data-moving calls, safe imports, PostgreSQL password, share fixes (v1.2.0) | ✅ |
+| macOS keychain items readable by any program of the same user (needs Security.framework + Developer ID signing) | ⏳ |
 
 ## 5. Phase 3: Windows, Linux, public release
 

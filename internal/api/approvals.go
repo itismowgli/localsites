@@ -69,7 +69,7 @@ func (a *approvals) wait(method, client string, body []byte, done <-chan struct{
 	a.mu.Unlock()
 	a.changed()
 	defer func() { a.mu.Lock(); delete(a.pending, p.ID); a.mu.Unlock(); a.changed() }()
-	notify("An AI agent is waiting for your approval", humanMethod(method)+". Open LocalSites to approve or deny.")
+	notify(requester(client)+" is waiting for your approval", humanMethod(method)+". Open LocalSites to approve or deny.")
 	select {
 	case ok := <-p.answer:
 		if !ok {
@@ -124,6 +124,15 @@ func maskSecrets(m map[string]any) {
 			m[k] = "••••"
 		}
 	}
+}
+
+// requester names who asked, for the notification: an agent over MCP, or a command run without a
+// terminal (a script, or an agent using the shell).
+func requester(client string) string {
+	if client == "mcp" {
+		return "An AI agent"
+	}
+	return "A script or command"
 }
 
 func humanMethod(m string) string {
