@@ -455,7 +455,7 @@ func hideEnvValues(v any) any {
 	return v
 }
 
-// phpFix is the command in a PHP warning ("… Run: brew install icu4c@77 …"), or the fallback.
+// phpFix is the command in a PHP warning ("… Run: brew reinstall php@7.4"), or the fallback.
 func phpFix(w, fallback string) string {
 	if _, cmd, ok := strings.Cut(w, "Run: "); ok {
 		return cmd

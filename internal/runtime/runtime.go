@@ -79,7 +79,7 @@ func PHPVersions() []PHP {
 			p := PHP{Version: mm, Full: verRe.FindString(full), FPM: fpm, CLI: cli}
 			// startup warnings go to stdout for the CLI, so read both streams
 			if out, errOut := runCombined(cli, "-v"); strings.Contains(out+errOut, "Unable to load") || strings.Contains(out+errOut, "Warning") {
-				p.Warning = extensionWarning(out+errOut, filepath.Base(dir))
+				p.Warning = extensionWarning(out+errOut, dir)
 			}
 			seen[mm] = p
 		}
@@ -110,35 +110,57 @@ var (
 // brokenBuild explains why a PHP build didn't start, from dyld's message.
 func brokenBuild(dir, cli, out string) BrokenPHP {
 	formula := filepath.Base(dir) // php@7.2
-	b := BrokenPHP{Version: strings.TrimPrefix(formula, "php@"), Path: cli, Reason: "it doesn't start", Fix: "brew reinstall " + formula}
+	b := BrokenPHP{Version: strings.TrimPrefix(formula, "php@"), Path: cli, Reason: "it doesn't start", Fix: reinstall(dir)}
 	if formula == "php" {
 		b.Version = "latest"
 	}
 	if m := missingLib.FindStringSubmatch(out); m != nil {
 		b.Reason = filepath.Base(m[1]) + " is missing"
 		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
-			b.Fix = "brew install " + f[1] + " (or: brew reinstall " + formula + ")"
+			b.Reason = filepath.Base(m[1]) + " (from " + f[1] + ") is missing"
 		}
 	}
 	return b
 }
 
+// reinstall is the command that rebuilds a PHP install against the libraries Homebrew has now. A
+// reinstall works even when the missing library was retired (icu4c@77, libjpeg 9), where installing
+// the library can't. PHP from a third-party tap (shivammathur/php) has to be trusted first.
+func reinstall(dir string) string {
+	formula := filepath.Base(dir)
+	var receipt struct {
+		Source struct {
+			Tap string `json:"tap"`
+		} `json:"source"`
+	}
+	if b, err := os.ReadFile(filepath.Join(dir, "INSTALL_RECEIPT.json")); err == nil && json.Unmarshal(b, &receipt) == nil {
+		if tap := receipt.Source.Tap; tap != "" && tap != "homebrew/core" && validTap.MatchString(tap) {
+			full := tap + "/" + formula
+			return "brew trust --formula " + full + " && brew reinstall " + full
+		}
+	}
+	return "brew reinstall " + formula
+}
+
+var validTap = regexp.MustCompile(`^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$`)
+
 // extensionWarning names the extensions that fail to load and, when it can tell, the missing library.
-func extensionWarning(out, formula string) string {
+func extensionWarning(out, dir string) string {
+	fix := reinstall(dir)
 	var exts []string
 	for _, m := range failedExt.FindAllStringSubmatch(out, -1) {
 		exts = append(exts, strings.TrimSuffix(filepath.Base(m[1]), ".so"))
 	}
 	if len(exts) == 0 {
-		return "PHP prints a warning when it starts; run: brew reinstall " + formula
+		return "PHP prints a warning when it starts. Run: " + fix
 	}
 	w := strings.Join(exts, ", ") + " can't load"
 	if m := missingLib.FindStringSubmatch(out); m != nil { // the library dyld couldn't find, not the extension's own path
 		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
-			return w + " (" + f[1] + " is missing). Run: brew install " + f[1] + " (or: brew reinstall " + formula + ")"
+			w += " (" + f[1] + " is missing)"
 		}
 	}
-	return w + ". Run: brew reinstall " + formula
+	return w + ". Run: " + fix
 }
 
 // A build that crashed at launch is remembered for an hour (per build), so LocalSites, the CLI and
