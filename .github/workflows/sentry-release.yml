@@ -63,7 +63,9 @@ jobs:
             echo "mode=auto" >> "$GITHUB_OUTPUT" # the first release: no earlier tag
           fi
       - name: Create the Sentry release, link commits, finalize, record the deploy
+        id: linked
         if: steps.token.outputs.ok == 'true'
+        continue-on-error: true # linking commits needs Sentry's GitHub integration; see the next step
         uses: getsentry/action-release@v3
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -78,3 +80,18 @@ jobs:
           commit: ${{ steps.name.outputs.commit }}
           previous_commit: ${{ steps.name.outputs.previous }}
           ignore_missing: true
+      - name: Create the release without commits (Sentry doesn't know this repository yet)
+        if: steps.token.outputs.ok == 'true' && steps.linked.outcome == 'failure'
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: pixel-perfection-ru
+          SENTRY_PROJECT: localsites
+        with:
+          release: ${{ steps.name.outputs.release }}
+          environment: production
+          finalize: true
+          set_commits: skip
+      - name: Say how to get commits on releases
+        if: steps.token.outputs.ok == 'true' && steps.linked.outcome == 'failure'
+        run: echo "::warning::The Sentry release was created without commits, because Sentry isn't connected to ${GITHUB_REPOSITORY}. In Sentry, open Settings → Integrations → GitHub, install it for this repository (or add the repository there), then rerun this workflow for the tag."
