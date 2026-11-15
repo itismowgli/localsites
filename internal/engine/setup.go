@@ -15,7 +15,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/localsites/localsites/internal/addons"
@@ -242,7 +241,7 @@ func rootOwnedIn(prefix string) func(string) ([]string, []string) {
 					return nil
 				}
 				if info, err := d.Info(); err == nil {
-					if st, ok := info.Sys().(*syscall.Stat_t); ok && st.Uid != uid {
+					if owner, ok := fileOwner(info); ok && owner != uid {
 						paths = append(paths, cellar)
 						return fs.SkipAll
 					}
