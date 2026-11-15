@@ -7,7 +7,7 @@ import (
 )
 
 // Version of LocalSites (semantic versioning).
-const Version = "1.2.3"
+const Version = "1.2.4"
 
 //go:embed changelog.json
 var changelogJSON []byte

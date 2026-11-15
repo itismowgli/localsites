@@ -587,6 +587,28 @@ func (e *Engine) Apply() []string {
 	byVer := map[string][]services.FPMPool{}
 	mailAdmin := e.mailAdmin()     // Mailpit on: PHP's mail() is delivered to it
 	xdebugVer := map[string]bool{} // PHP versions where a project wants Xdebug
+	for _, s := range sites {
+		if s.Enabled && s.ServedBy == "" && s.Runtime == "php" && !s.PHPMissing && s.Xdebug {
+			xdebugVer[s.PHP] = true
+		}
+	}
+	// xdebugOn: Xdebug is loaded in this PHP version (by php.ini, or by LocalSites for a project that
+	// wants it). Only then do pools get xdebug.* settings: PHP logs an error for each one otherwise.
+	xdebugLoaded := map[string]bool{}
+	xdebugOn := func(ver string) bool {
+		if on, ok := xdebugLoaded[ver]; ok {
+			return on
+		}
+		on := false
+		for _, v := range runtime.PHPVersions() {
+			if v.Version == ver {
+				info := runtime.Info(v)
+				on = info.XdebugLoaded || xdebugVer[ver] && info.XdebugFile != ""
+			}
+		}
+		xdebugLoaded[ver] = on
+		return on
+	}
 	var enabled []SiteView
 	var apps []SiteView
 	for _, s := range sites {
@@ -603,13 +625,14 @@ func (e *Engine) Apply() []string {
 		enabled = append(enabled, s)
 		tmp := filepath.Join(e.P.Run, "tmp", config.Slug(s.Folder))
 		_ = os.MkdirAll(tmp, 0o700)
+		admin := mailAdmin
+		if xdebugOn(s.PHP) {
+			admin = mergeIni(mailAdmin, xdebugAdmin(s))
+		}
 		byVer[s.PHP] = append(byVer[s.PHP], services.FPMPool{
 			Name: config.Slug(s.Folder), Socket: e.fpmSock(s.Folder), MySQLSocket: e.mysqlSocketFor(s),
-			ErrorLog: filepath.Join(e.P.SiteLogs, fileKey(s.Folder)+"-php.log"), TmpDir: tmp, Overrides: mergeIni(cfg.Settings.PHPIni, s.PHPIni), Admin: mergeIni(mailAdmin, xdebugAdmin(s)),
+			ErrorLog: filepath.Join(e.P.SiteLogs, fileKey(s.Folder)+"-php.log"), TmpDir: tmp, Overrides: mergeIni(cfg.Settings.PHPIni, s.PHPIni), Admin: admin,
 		})
-		if s.Xdebug {
-			xdebugVer[s.PHP] = true
-		}
 	}
 	// Built-in web tools (Adminer)
 	if s, ok := e.adminerSite(); ok {

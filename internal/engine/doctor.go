@@ -64,10 +64,23 @@ func (e *Engine) Doctor() []Check {
 	}
 	for _, v := range versions {
 		if v.Warning != "" {
-			out = append(out, warn("Runtime", "PHP "+v.Version, v.Full+": "+v.Warning, "brew reinstall php@"+v.Version))
+			out = append(out, warn("Runtime", "PHP "+v.Version, v.Full+": "+v.Warning, phpFix(v.Warning, "brew reinstall php@"+v.Version)))
 		} else {
 			out = append(out, ok("Runtime", "PHP "+v.Version, v.Full))
 		}
+	}
+	for _, b := range runtime.BrokenPHPVersions() {
+		users := 0
+		for _, s := range e.Sites() {
+			if s.PHP == b.Version {
+				users++
+			}
+		}
+		detail := "installed but can't start: " + b.Reason
+		if users > 0 {
+			detail += fmt.Sprintf(". %d project(s) are set to PHP %s", users, b.Version)
+		}
+		out = append(out, warn("Runtime", "PHP "+b.Version, detail, b.Fix))
 	}
 
 	// Services
@@ -440,4 +453,12 @@ func hideEnvValues(v any) any {
 		}
 	}
 	return v
+}
+
+// phpFix is the command in a PHP warning ("… Run: brew install icu4c@77 …"), or the fallback.
+func phpFix(w, fallback string) string {
+	if _, cmd, ok := strings.Cut(w, "Run: "); ok {
+		return cmd
+	}
+	return fallback
 }

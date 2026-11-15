@@ -4,6 +4,7 @@
 package runtime
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 var brewPrefixes = []string{"/opt/homebrew", "/usr/local"}
@@ -24,11 +26,20 @@ type PHP struct {
 	Warning string `json:"warning,omitempty"`
 }
 
+// BrokenPHP is an installed PHP build that can't start (usually a library Homebrew removed).
+type BrokenPHP struct {
+	Version string `json:"version"` // from the folder name: "7.2"
+	Path    string `json:"path"`
+	Reason  string `json:"reason"` // "libXpm.4.dylib is missing"
+	Fix     string `json:"fix"`    // a command
+}
+
 var (
-	phpOnce  sync.Mutex
-	phpCache []PHP
-	phpSig   string
-	verRe    = regexp.MustCompile(`^\d+\.\d+\.\d+`)
+	phpOnce   sync.Mutex
+	phpCache  []PHP
+	phpBroken []BrokenPHP
+	phpSig    string
+	verRe     = regexp.MustCompile(`^\d+\.\d+\.\d+`)
 )
 
 // PHPVersions lists usable PHP versions, oldest first. Results are cached for a minute.
@@ -41,6 +52,7 @@ func PHPVersions() []PHP {
 		return phpCache
 	}
 	seen := map[string]PHP{}
+	var broken []BrokenPHP
 	for _, prefix := range brewPrefixes {
 		dirs, _ := filepath.Glob(filepath.Join(prefix, "opt", "php@*"))
 		dirs = append(dirs, filepath.Join(prefix, "opt", "php"))
@@ -49,17 +61,25 @@ func PHPVersions() []PHP {
 			if !isExec(fpm) || !isExec(cli) {
 				continue
 			}
-			full := run(cli, "-n", "-r", "echo PHP_VERSION;")
+			if b, ok := knownBroken(dir, fpm); ok {
+				broken = append(broken, b)
+				continue // don't start it again: each try leaves a macOS crash report
+			}
+			full, startErr := runCombined(cli, "-n", "-r", "echo PHP_VERSION;")
 			if !verRe.MatchString(full) {
-				continue // broken build (e.g. crashes on start)
+				b := brokenBuild(dir, cli, startErr+full)
+				broken = append(broken, b)
+				rememberBroken(dir, fpm, b)
+				continue
 			}
 			mm := strings.Join(strings.SplitN(full, ".", 3)[:2], ".")
 			if _, dup := seen[mm]; dup && filepath.Base(dir) == "php" {
 				continue // prefer the versioned php@X.Y path
 			}
 			p := PHP{Version: mm, Full: verRe.FindString(full), FPM: fpm, CLI: cli}
-			if out := runStderr(cli, "-v"); strings.Contains(out, "Unable to load") || strings.Contains(out, "Warning") {
-				p.Warning = "Some extensions fail to load; run: brew reinstall php@" + mm
+			// startup warnings go to stdout for the CLI, so read both streams
+			if out, errOut := runCombined(cli, "-v"); strings.Contains(out+errOut, "Unable to load") || strings.Contains(out+errOut, "Warning") {
+				p.Warning = extensionWarning(out+errOut, filepath.Base(dir))
 			}
 			seen[mm] = p
 		}
@@ -69,8 +89,112 @@ func PHPVersions() []PHP {
 		list = append(list, p)
 	}
 	sort.Slice(list, func(i, j int) bool { return versionLess(list[i].Version, list[j].Version) })
-	phpCache, phpSig = list, sig
+	phpCache, phpBroken, phpSig = list, broken, sig
 	return list
+}
+
+// BrokenPHPVersions lists installed PHP builds that can't start.
+func BrokenPHPVersions() []BrokenPHP {
+	PHPVersions()
+	phpOnce.Lock()
+	defer phpOnce.Unlock()
+	return append([]BrokenPHP(nil), phpBroken...)
+}
+
+var (
+	missingLib = regexp.MustCompile(`Library not loaded: (\S+)`)
+	failedExt  = regexp.MustCompile(`Unable to load dynamic library '([^']+)'`)
+	optFormula = regexp.MustCompile(`/opt/([A-Za-z0-9@._+-]+)/lib/`)
+)
+
+// brokenBuild explains why a PHP build didn't start, from dyld's message.
+func brokenBuild(dir, cli, out string) BrokenPHP {
+	formula := filepath.Base(dir) // php@7.2
+	b := BrokenPHP{Version: strings.TrimPrefix(formula, "php@"), Path: cli, Reason: "it doesn't start", Fix: "brew reinstall " + formula}
+	if formula == "php" {
+		b.Version = "latest"
+	}
+	if m := missingLib.FindStringSubmatch(out); m != nil {
+		b.Reason = filepath.Base(m[1]) + " is missing"
+		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
+			b.Fix = "brew install " + f[1] + " (or: brew reinstall " + formula + ")"
+		}
+	}
+	return b
+}
+
+// extensionWarning names the extensions that fail to load and, when it can tell, the missing library.
+func extensionWarning(out, formula string) string {
+	var exts []string
+	for _, m := range failedExt.FindAllStringSubmatch(out, -1) {
+		exts = append(exts, strings.TrimSuffix(filepath.Base(m[1]), ".so"))
+	}
+	if len(exts) == 0 {
+		return "PHP prints a warning when it starts; run: brew reinstall " + formula
+	}
+	w := strings.Join(exts, ", ") + " can't load"
+	if m := missingLib.FindStringSubmatch(out); m != nil { // the library dyld couldn't find, not the extension's own path
+		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
+			return w + " (" + f[1] + " is missing). Run: brew install " + f[1] + " (or: brew reinstall " + formula + ")"
+		}
+	}
+	return w + ". Run: brew reinstall " + formula
+}
+
+// A build that crashed at launch is remembered for an hour (per build), so LocalSites, the CLI and
+// the app don't start it again and again: macOS writes a crash report every time.
+type brokenEntry struct {
+	Key   string    `json:"key"`
+	Until time.Time `json:"until"`
+	B     BrokenPHP `json:"b"`
+}
+
+func brokenFile() string {
+	d, err := os.UserCacheDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(d, "LocalSites", "php-broken.json")
+}
+
+func buildKey(dir, fpm string) string {
+	real, _ := filepath.EvalSymlinks(dir)
+	k := real
+	if st, err := os.Stat(fpm); err == nil {
+		k += "|" + st.ModTime().UTC().Format(time.RFC3339Nano)
+	}
+	return k
+}
+
+func readBroken() map[string]brokenEntry {
+	m := map[string]brokenEntry{}
+	if f := brokenFile(); f != "" {
+		if b, err := os.ReadFile(f); err == nil {
+			_ = json.Unmarshal(b, &m)
+		}
+	}
+	return m
+}
+
+func knownBroken(dir, fpm string) (BrokenPHP, bool) {
+	e, ok := readBroken()[dir]
+	if !ok || e.Key != buildKey(dir, fpm) || time.Now().After(e.Until) {
+		return BrokenPHP{}, false
+	}
+	return e.B, true
+}
+
+func rememberBroken(dir, fpm string, b BrokenPHP) {
+	f := brokenFile()
+	if f == "" {
+		return
+	}
+	m := readBroken()
+	m[dir] = brokenEntry{Key: buildKey(dir, fpm), Until: time.Now().Add(time.Hour), B: b}
+	if out, err := json.Marshal(m); err == nil {
+		_ = os.MkdirAll(filepath.Dir(f), 0o700)
+		_ = os.WriteFile(f, out, 0o600)
+	}
 }
 
 // phpSignature names every PHP build and its modification time: cheap stat calls only.
@@ -171,6 +295,15 @@ func isExec(p string) bool {
 func run(name string, args ...string) string {
 	out, _ := exec.Command(name, args...).Output()
 	return strings.TrimSpace(string(out))
+}
+
+// runCombined returns stdout and stderr separately (both trimmed of surrounding space).
+func runCombined(name string, args ...string) (string, string) {
+	cmd := exec.Command(name, args...)
+	var o, e strings.Builder
+	cmd.Stdout, cmd.Stderr = &o, &e
+	_ = cmd.Run()
+	return strings.TrimSpace(o.String()), strings.TrimSpace(e.String())
 }
 
 func runStderr(name string, args ...string) string {

@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.2.4",
+    "date": "2026-11-15",
+    "title": "Doctor finds broken PHP installs",
+    "items": [
+      "Doctor lists PHP versions that are installed but can't start, says which library is missing, how many projects use that version, and the command that fixes it",
+      "Doctor names PHP extensions that fail to load (for example intl when icu4c is missing) instead of marking that PHP as fine",
+      "A PHP build that can't start isn't started again for an hour, so macOS no longer saves a crash report every time LocalSites or a localsites command looks for PHP",
+      "PHP logs no longer fill with \"Unable to set php_admin_value 'xdebug.mode'\" errors: Xdebug settings are only written where Xdebug is loaded"
+    ]
+  },
+  {
     "version": "1.2.3",
     "date": "2026-11-15",
     "title": "One LocalSites in your apps list",
