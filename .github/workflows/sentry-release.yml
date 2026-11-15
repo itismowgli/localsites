@@ -45,10 +45,23 @@ jobs:
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0 # linking commits needs the full history
-      - name: Release name
+      - name: Release name and commit range
         if: steps.token.outputs.ok == 'true'
         id: name
-        run: echo "release=localsites@${TAG#v}" >> "$GITHUB_OUTPUT"
+        # The range is given explicitly (the previous version tag up to this one). Sentry's automatic
+        # range starts from the commit it stored for the last release, and that commit no longer exists
+        # after a history rewrite (2026-11-14), which made "set-commits --auto" fail.
+        run: |
+          echo "release=localsites@${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse "${TAG}^{commit}")" >> "$GITHUB_OUTPUT"
+          prev=$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)
+          if [ -n "$prev" ]; then
+            echo "previous=$(git rev-parse "${prev}^{commit}")" >> "$GITHUB_OUTPUT"
+            echo "mode=manual" >> "$GITHUB_OUTPUT"
+            echo "Commits from $prev to $TAG"
+          else
+            echo "mode=auto" >> "$GITHUB_OUTPUT" # the first release: no earlier tag
+          fi
       - name: Create the Sentry release, link commits, finalize, record the deploy
         if: steps.token.outputs.ok == 'true'
         uses: getsentry/action-release@v3
@@ -60,3 +73,8 @@ jobs:
           release: ${{ steps.name.outputs.release }}
           environment: production
           finalize: true
+          set_commits: ${{ steps.name.outputs.mode }}
+          repo: ${{ github.repository }}
+          commit: ${{ steps.name.outputs.commit }}
+          previous_commit: ${{ steps.name.outputs.previous }}
+          ignore_missing: true
