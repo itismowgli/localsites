@@ -219,6 +219,16 @@ func rememberBroken(dir, fpm string, b BrokenPHP) {
 	}
 }
 
+// ForgetBroken drops the remembered crashes, so the next look tries every build again (after a repair).
+func ForgetBroken() {
+	if f := brokenFile(); f != "" {
+		_ = os.Remove(f)
+	}
+	phpOnce.Lock()
+	phpCache, phpSig = nil, ""
+	phpOnce.Unlock()
+}
+
 // phpSignature names every PHP build and its modification time: cheap stat calls only.
 func phpSignature() string {
 	var b strings.Builder

@@ -983,3 +983,13 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .dp-tools { gap: 4px; margin: 6px 0 2px; }
 .dp-tools .btn { flex: 1; justify-content: center; }
 .menu button.danger, .menu button.danger svg { color: var(--red); }
+
+/* Setup: missing or broken Homebrew software, fixed with one click */
+.ov-sec.setup { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.setup-h { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.setup-h h2 { font-size: 14px; font-weight: 600; margin: 0 0 2px; }
+.setup-h .note { margin: 0; }
+.setup .ov-row .chip { min-width: 58px; justify-content: center; }
+.setup-cmds { margin: 8px 0; }
+.setup-cmds summary { cursor: pointer; }
+.setup .form-row { margin-top: 10px; }

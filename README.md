@@ -169,13 +169,24 @@ localsites import database xampp blog_db
 > compile for both, but there is no app or installer for them yet. See the [roadmap](#roadmap).
 
 **Download:** get `LocalSites.app` from the [latest release](https://github.com/itismowgli/localsites/releases/latest).
-LocalSites uses PHP, Apache and MySQL from Homebrew:
+Unzip the download and drag **LocalSites.app** into your Applications folder, then open it.
+
+You don't need to install anything else first. LocalSites runs Apache, MySQL and PHP from Homebrew, and the
+Overview page sets them up for you:
+
+- **No Homebrew?** Click **Install Homebrew**. LocalSites downloads Homebrew's official installer, checks that
+  Apple has notarized it, and opens it. Click Continue and enter your Mac password.
+- **Then click Fix everything.** LocalSites installs Apache, MySQL 8.4, PHP and every PHP version your projects
+  use (old ones such as 7.4 or 5.6 come from the `shivammathur/php` tap), and repairs PHP versions that are
+  installed but broken, for example after Homebrew removed a library they need. If some Homebrew files belong
+  to root, macOS asks for your password once to give them back. Projects restart by themselves when it's done.
+
+The same list is in Doctor (a **Repair** button on each broken PHP) and in the terminal: `localsites setup`
+shows it, `localsites setup fix` does it. If you prefer to do it yourself:
 
 ```sh
 brew install httpd mysql@8.4 php        # plus any php@X.Y versions you want
 ```
-
-Unzip the download and drag **LocalSites.app** into your Applications folder.
 
 ### First launch: "Apple could not verify LocalSites"
 

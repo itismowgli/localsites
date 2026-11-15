@@ -167,10 +167,14 @@ var Methods = []Method{
 	{Name: "activity", Description: "Recent changes made through the app, CLI and AI agents (newest first)"},
 	{Name: "sites.install", Description: "Install a project's dependencies in the background (composer or npm/pnpm/yarn/bun)", Mutates: true, Params: []Param{pFolder}},
 	{Name: "sites.check", Description: "Test one project end to end: DNS, PHP pool, database socket, HTTPS response and certificate trust", Params: []Param{pFolder}},
+	{Name: "setup.status", Description: "What LocalSites needs from Homebrew and isn't there or is broken (Apache, MySQL, Nginx, the PHP versions projects use), with the commands that fix each, and the progress of a running fix"},
+	{Name: "setup.run", Description: "Install and repair everything setup.status lists (or only the given ids) in the background with Homebrew. May ask for the Mac password once when Homebrew files belong to root", Mutates: true, Approve: true, Params: []Param{
+		{Name: "ids", Type: "array", Description: "Item ids from setup.status (formulas such as php@7.4); empty: all"}}},
+	{Name: "setup.homebrew", Description: "Download Homebrew's official installer, check Apple's notarization and open it. The app only", Mutates: true, Approve: true},
 	{Name: "doctor", Description: "Full health check of LocalSites with a fix for each problem"},
 	{Name: "attention", Description: "How many things need the person: folders waiting for macOS access, failed Doctor checks (from the last run) and running projects with a problem"},
 	{Name: "logs", Description: "Last lines of a log", Params: []Param{
-		{Name: "kind", Type: "string", Description: "Which log", Required: true, Enum: []string{"apache", "mysql", "site-error", "site-access", "site-php", "site-app", "site-install", "addon", "addon-install"}},
+		{Name: "kind", Type: "string", Description: "Which log", Required: true, Enum: []string{"apache", "mysql", "site-error", "site-access", "site-php", "site-app", "site-install", "addon", "addon-install", "setup"}},
 		{Name: "folder", Type: "string", Description: "Project folder (for site-* logs) or add-on id (for addon logs)"},
 		{Name: "lines", Type: "integer", Description: "How many lines (default 300, max 5000)"},
 	}},
@@ -339,6 +343,8 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		res = map[string]any{"ok": err == nil}
 	case !TrustedClient(client) && (method == "update.install" || method == "update.rollback"):
 		err = errors.New("only the person using LocalSites can install updates, from the app")
+	case !TrustedClient(client) && method == "setup.homebrew":
+		err = errors.New("only the person using LocalSites can install Homebrew, from the app")
 	case !TrustedClient(client) && (method == "problems.send" || method == "problems.ui"):
 		err = errors.New("only the person using LocalSites can send problem reports, from the app")
 	case NeedsApproval(client, method, body):
@@ -366,29 +372,30 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 type args struct {
-	Folder     string `json:"folder"`
-	Name       string `json:"name"`
-	Kind       string `json:"kind"`
-	Lines      int    `json:"lines"`
-	Source     string `json:"source"`
-	User       string `json:"user"`
-	Password   string `json:"password"`
-	App        string `json:"app"`
-	ID         string `json:"id"`
-	Schema     string `json:"schema"`
-	Table      string `json:"table"`
-	Provider   string `json:"provider"`
-	Minutes    int    `json:"minutes"`
-	NoPassword bool   `json:"no_password"`
-	AppPath    string `json:"app_path"`
-	File       string `json:"file"`
-	Mode       string `json:"mode"`
-	Overwrite  bool   `json:"overwrite"`
-	NewName    string `json:"new_name"`
-	AppPID     int    `json:"app_pid"`
-	Then       string `json:"then"`
-	Bundle     bool   `json:"bundle"`
-	Message    string `json:"message"`
+	Folder     string   `json:"folder"`
+	Name       string   `json:"name"`
+	Kind       string   `json:"kind"`
+	Lines      int      `json:"lines"`
+	Source     string   `json:"source"`
+	User       string   `json:"user"`
+	Password   string   `json:"password"`
+	App        string   `json:"app"`
+	ID         string   `json:"id"`
+	Schema     string   `json:"schema"`
+	Table      string   `json:"table"`
+	Provider   string   `json:"provider"`
+	Minutes    int      `json:"minutes"`
+	NoPassword bool     `json:"no_password"`
+	AppPath    string   `json:"app_path"`
+	File       string   `json:"file"`
+	Mode       string   `json:"mode"`
+	Overwrite  bool     `json:"overwrite"`
+	NewName    string   `json:"new_name"`
+	AppPID     int      `json:"app_pid"`
+	Then       string   `json:"then"`
+	Bundle     bool     `json:"bundle"`
+	Message    string   `json:"message"`
+	IDs        []string `json:"ids"`
 	engine.SitePatch
 }
 
@@ -479,6 +486,13 @@ func (s *Server) call(method string, body []byte) (any, error) {
 	case "share.install":
 		logf, err := e.InstallShareProvider(a.Provider)
 		return map[string]any{"log": []string{"Installing… progress: " + logf}}, err
+	case "setup.status":
+		return e.Setup(), nil
+	case "setup.run":
+		return e.RunSetup(a.IDs)
+	case "setup.homebrew":
+		msg, err := e.InstallHomebrew()
+		return map[string]any{"log": []string{msg}}, err
 	case "addons.list":
 		return e.Addons(), nil
 	case "addons.update":

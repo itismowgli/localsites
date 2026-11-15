@@ -207,6 +207,15 @@ function showKeys() {
 /* -------------------------------------------------------------------- data */
 async function loadStatus() { S.status = await bridge.call('status'); }
 async function loadSites() { S.sites = await bridge.call('sites.list') || []; }
+async function loadSetup() {
+  const was = S.setup?.running;
+  try { S.setup = await bridge.call('setup.status'); } catch { S.setup = null; }
+  if (was && S.setup && !S.setup.running) { // a fix just finished: say how it went and check again
+    const bad = Object.entries(S.setup.results || {}).filter(([, v]) => v !== 'ok' && v !== 'opened');
+    toast(bad.length ? `Setup finished, but ${bad.map(([k]) => k).join(', ')} didn’t work; see Overview` : 'Everything is installed and repaired', bad.length ? 'warn' : 'ok');
+    command('doctor', { quiet: true });
+  }
+}
 async function loadActivity() { S.activity = await bridge.call('activity') || []; }
 async function loadVersion() { S.version = await bridge.call('version'); }
 async function loadSettings() { S.settings = await bridge.call('settings.get'); S.settingsErr = null; }
@@ -239,7 +248,7 @@ function loadDBs() {
   return dbsInFlight;
 }
 async function refresh() {
-  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity()]));
+  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadSetup()]));
   render();
 }
 async function updateSite(folder, patch) {
@@ -414,7 +423,7 @@ function renderHead() {
   } else if (t.view === 'services') {
     right = `<button class="btn" data-cmd="restart" title="Restart all">${icon.refresh}<span class="lbl">Restart all</span></button><button class="btn danger" data-cmd="stop" title="Stop all">${icon.stop}<span class="lbl">Stop all</span></button>`;
   } else if (t.view === 'logs') {
-    const opts = [['apache', '', 'Apache'], ['mysql', '', 'MySQL']];
+    const opts = [['apache', '', 'Apache'], ['mysql', '', 'MySQL'], ['setup', '', 'Setup (Homebrew)']];
     for (const a of (S.status?.addons || []).filter(a => a.installed || a.installing)) opts.push(['addon', a.id, a.name], ['addon-install', a.id, `${a.name} · install`]);
     if (!opts.some(([k, f]) => k === S.log.kind && f === S.log.folder) && S.log.kind.startsWith('addon')) opts.push([S.log.kind, S.log.folder, S.log.folder]);
     for (const s of S.sites.filter(s => s.enabled)) opts.push(['site-error', s.folder, `${s.folder} · errors`], ['site-php', s.folder, `${s.folder} · PHP`], ['site-access', s.folder, `${s.folder} · visits`]);
@@ -522,6 +531,28 @@ function activityRows(items, empty) {
     return `<div class="ov-row"><span class="avatar ${a.client}" title="${who}">${ch}</span><span class="ov-title">${esc(describe(a))}${a.n > 1 ? ` ×${a.n}` : ''}</span>
       <span class="note">${who}</span>${a.error ? '<span class="chip warn">failed</span>' : ''}<span class="spacer"></span><span class="note" title="${esc(new Date(a.time).toLocaleString())}">${ago(a.time)}</span></div>`; }).join('');
 }
+// Setup: what LocalSites needs from Homebrew and isn't there or is broken, fixed with one click.
+function setupCard() {
+  const su = S.setup; if (!su) return '';
+  const res = su.results || {}, failed = Object.entries(res).filter(([k, v]) => v !== 'ok' && v !== 'opened');
+  if (su.running) return `<section class="ov-sec setup"><div class="setup-h"><span class="spinner"></span><div><h2>Getting LocalSites ready</h2>
+    <p class="note">${esc(su.step || 'Working…')}</p></div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
+    <p class="note">This can take a few minutes. You can keep using LocalSites; projects restart by themselves when it’s done.</p></section>`;
+  if (!su.homebrew) return `<section class="ov-sec setup"><div class="setup-h"><span class="st-ic">${icon.download2}</span><div><h2>One step before your projects run</h2>
+    <p class="note">LocalSites runs Apache, MySQL and PHP from Homebrew, the free installer most Mac developers use. LocalSites downloads Homebrew’s official installer, checks Apple has verified it, and opens it: click Continue and enter your Mac password.</p></div></div>
+    ${res.homebrew === 'opened' ? '<p class="note">Finish the Homebrew installer, then come back here: the next step appears by itself.</p>' : res.homebrew ? `<p class="note warn">${esc(res.homebrew)}</p>` : ''}
+    <div class="form-row">${UI.btn(res.homebrew === 'opened' ? 'Open the installer again' : 'Install Homebrew', { ic: 'download2', kind: 'primary', attrs: 'data-cmd="setuphomebrew"' })}</div></section>`;
+  if (!su.items.length) return failed.length ? `<section class="ov-sec setup"><div class="setup-h"><span class="bad">${icon.alertCircle}</span><div><h2>Some fixes didn’t finish</h2>
+    ${failed.map(([k, v]) => `<p class="note">${esc(k)}: ${esc(v)}</p>`).join('')}</div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div></section>` : '';
+  const need = su.items.filter(i => i.required).length, pw = su.items.some(i => i.password);
+  const title = need ? `${need === 1 ? 'One thing needs' : `${need} things need`} fixing before every project can run` : 'LocalSites can fix these for you';
+  return `<section class="ov-sec setup"><div class="setup-h"><span class="${need ? 'bad' : 'note'}">${icon.alertCircle}</span><div><h2>${esc(title)}</h2>
+    <p class="note">One click installs or repairs everything below with Homebrew${pw ? '. macOS asks for your Mac password once, to fix file owners' : ''}.</p></div></div>
+    ${su.items.map(i => `<div class="ov-row"><span class="chip">${i.kind === 'repair' ? 'Repair' : 'Install'}</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
+      ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span>` : ''}</div>`).join('')}
+    <details class="setup-cmds"><summary class="note">Commands it runs</summary><pre class="mini">${esc(su.items.flatMap(i => i.steps).join('\n'))}</pre></details>
+    <div class="form-row">${UI.btn(need ? 'Fix everything' : 'Fix these', { ic: 'wrench', kind: 'primary', attrs: 'data-cmd="setuprun"' })}${failed.length ? UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' }) : ''}</div></section>`;
+}
 function ovSection(title, count, body, link) {
   return `<section class="ov-sec"><div class="ov-sec-h"><h2>${esc(title)}</h2>${count !== '' ? `<span class="n">${count}</span>` : ''}<span class="spacer"></span>${link || ''}</div>${body}</section>`;
 }
@@ -588,6 +619,7 @@ function viewOverview() {
       ...(st.addons || []).filter(a => a.enabled).map(a => [a.name, a.running])].map(([n, ok]) => `<button class="pchip" data-view="services"><span class="dot ${ok ? 'on' : 'off'}"></span>${esc(n)}</button>`).join('') : ''}
       ${d ? `<button class="pchip" data-view="doctor">${fails.length ? icon.alertCircle : icon.status}${fails.length ? plural(fails.length, 'problem') : 'All good'}</button>` : ''}
       ${(st?.roots || []).map(r => `<button class="pchip" data-scope="root" data-val="${esc(r.label)}">${icon.folder}${esc(r.label)} <span class="note">${S.sites.filter(s => s.root === r.label).length}</span></button>`).join('')}</div>
+    ${setupCard()}
     ${attention.length ? ovSection('Needs attention', attention.length, `<p class="note ov-why">${esc(badgeWhy(attention.length, {
         access: (st?.waiting_for_access || []).length, checks: fails.filter(c => c.name !== 'Folder access').length,
         sites: S.sites.filter(s => s.enabled && s.problems?.length).length }))}</p>` + attention.map(a => `<div class="ov-row"><span class="bad">${icon[a.ic]}</span><span class="ov-title">${esc(a.title)}</span><span class="note ellipsis">${esc(a.text || '')}</span><span class="spacer"></span>${a.action}</div>`).join('')) : ''}
@@ -752,12 +784,21 @@ function row(s) {
 
 /* --- detail panel --- */
 const statusIcon = { ok: '<span class="ok">✓</span>', warn: '<span class="warnc">!</span>', fail: '<span class="bad">✗</span>', skip: '<span class="note">-</span>' };
+// The setup item that fixes a Doctor check (Apache, MySQL or a PHP version), when there is one.
+function setupFor(c) {
+  if (c.status === 'ok' || !S.setup || S.setup.running) return null;
+  const m = /^PHP (\d+\.\d+|latest)$/.exec(c.name);
+  const id = { 'Apache installed': 'httpd', 'MySQL 8.4 installed': 'mysql@8.4', PHP: 'php' }[c.name] || (m && (m[1] === 'latest' ? 'php' : 'php@' + m[1]));
+  return (S.setup.items || []).find(i => i.id === id) || null;
+}
 function checksTable(checks, withArea = true) {
   let area = '', h = '';
   for (const c of checks) {
     if (withArea && c.area !== area) { area = c.area; h += `<tr><td colspan="3" class="note" style="height:32px;padding-top:12px"><b>${esc(area)}</b></td></tr>`; }
     const copyable = /^(sudo|brew|valet|localsites) /.test(c.fix || '');
-    const fix = c.fix && c.status !== 'ok' ? `<div class="note" style="margin:2px 0 6px">${esc(c.fix)}${copyable ? ` <button class="btn ghost" data-copy="${esc(c.fix)}" style="height:22px">${icon.copy}Copy</button>` : ''}</div>` : '';
+    const su = setupFor(c);
+    const fix = su ? `<div class="note" style="margin:2px 0 6px"><button class="btn sm primary" data-setupfix="${esc(su.id)}">${icon.wrench}${su.kind === 'repair' ? 'Repair' : 'Install'} ${esc(su.title)}</button>${su.password ? ' <span class="note">asks for your Mac password once</span>' : ''}</div>`
+      : c.fix && c.status !== 'ok' ? `<div class="note" style="margin:2px 0 6px">${esc(c.fix)}${copyable ? ` <button class="btn ghost" data-copy="${esc(c.fix)}" style="height:22px">${icon.copy}Copy</button>` : ''}</div>` : '';
     h += `<tr><td style="width:30px;text-align:center">${statusIcon[c.status] || ''}</td><td style="width:38%"><span style="font-weight:500">${esc(c.name)}</span></td><td class="note">${esc(c.detail || '')}${fix}</td></tr>`;
   }
   return `<table class="t checks"><tbody>${h}</tbody></table>`;
@@ -2182,7 +2223,7 @@ function viewSettings() {
 /* ------------------------------------------------------------------ events */
 const CLICKABLE = ['twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
-  'rootdel', 'rootpick', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
+  'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
 // Slide-over sidebar: a press outside it only closes it. The press, and the click that follows, never reach
 // whatever is underneath (a row, a tab, a button).
@@ -2266,6 +2307,11 @@ document.addEventListener('click', async (e) => {
   if (d.sqlh !== undefined) { const h = store.get('sqlHistory', []).filter(x => x.conn === S.data.conn)[+d.sqlh]; $('#menu').classList.remove('open'); if (h) { S.data.sql = h.sql; renderView(); $('#dSQL')?.focus(); } return; }
   if (d.sqlhclear) { store.set('sqlHistory', store.get('sqlHistory', []).filter(x => x.conn !== S.data.conn)); $('#menu').classList.remove('open'); return toast('History cleared'); }
   if (d.ac !== undefined) return acAccept($('#dSQL'), +d.ac);
+  if (d.setupfix) {
+    const r = await act(() => bridge.call('setup.run', { ids: [d.setupfix] }), 'Setup');
+    if (r) { S.setup = r; toast('Working on it in the background; Overview shows the progress'); render(); }
+    return;
+  }
   if (d.addoninstall) {
     const a = S.status.addons.find(x => x.id === d.addoninstall);
     if (!await confirmBox(`Install ${a.name}?`, `This runs “${a.install_command}” in the background. ${a.name} is open source (${a.license}). It only runs when you switch it on, and only this Mac can reach it.`, 'Install')) return;
@@ -2751,6 +2797,17 @@ async function command(cmd, opts = {}) {
       void w; SF.pw = newSharePassword(); $('#sharePw').value = SF.pw; return; }
     case 'addontestmail': return logToast(await act(() => bridge.call('addons.test_mail'), 'Test email'));
     case 'agentsetup': S.setSec = 'agents'; return navigate('settings');
+    case 'setuprun': {
+      const r = await act(() => bridge.call('setup.run', {}), 'Setup');
+      if (r) { S.setup = r; toast('Installing and repairing in the background'); render(); }
+      return;
+    }
+    case 'setuphomebrew': {
+      const r = await act(() => bridge.call('setup.homebrew'), 'Homebrew');
+      if (r) { await act(loadSetup); render(); }
+      return;
+    }
+    case 'setuplog': S.log = { ...S.log, kind: 'setup', folder: '' }; return navigate('logs');
     case 'dnewconnview': navigate('data'); return command('dnewconn');
     case 'agentexamples': {
       const ex = ['switch primec to php 8.3', 'why is myproject broken', 'create database shop', 'new project demo', 'doctor'];
@@ -3014,8 +3071,8 @@ async function refreshAll() {
   if (busyUI()) { stale = true; return; } // a dialog is open: refresh when it closes
   stale = false; lastPoll = Date.now();
   if (document.activeElement?.matches('input,select,textarea') || $('#menu').classList.contains('open')) { await act(() => Promise.all([loadStatus(), loadActivity()])); renderStatus(); stale = true; return; }
-  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadProblems()]));
-  const snap = JSON.stringify([S.status, S.sites, S.activity[0]?.time, S.prob?.problems?.length, probNew()]);
+  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadProblems(), loadSetup()]));
+  const snap = JSON.stringify([S.status, S.sites, S.activity[0]?.time, S.prob?.problems?.length, probNew(), S.setup]);
   if (snap !== lastSnap) { lastSnap = snap; render(); } else renderStatus();
   if (legacy) pollApprovals();
 }

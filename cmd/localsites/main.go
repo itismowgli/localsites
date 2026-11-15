@@ -284,6 +284,11 @@ func run(c *api.Client, a []string) error {
 		return srv.Serve(os.Stdin, os.Stdout)
 	case "doctor":
 		return show(c, "doctor", nil, printChecks)
+	case "setup":
+		if len(a) > 1 && a[1] == "fix" {
+			return show(c, "setup.run", map[string]any{"ids": a[2:]}, printSetup)
+		}
+		return show(c, "setup.status", nil, printSetup)
 	case "check":
 		if err := need(2, "check <folder>"); err != nil {
 			return err
@@ -465,6 +470,48 @@ func printReport(b []byte) error {
 	return nil
 }
 
+func printSetup(b []byte) error {
+	var v struct {
+		Homebrew bool              `json:"homebrew"`
+		Running  bool              `json:"running"`
+		Step     string            `json:"step"`
+		Log      string            `json:"log"`
+		Results  map[string]string `json:"results"`
+		Items    []struct {
+			ID, Title, Why, Kind string
+			Steps                []string
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch {
+	case !v.Homebrew:
+		fmt.Println("Homebrew isn't installed. Install it from the LocalSites app (Overview), or from https://brew.sh")
+	case v.Running:
+		fmt.Println("Working on it:", v.Step)
+		fmt.Println("Progress:", v.Log)
+		return nil
+	case len(v.Items) == 0:
+		fmt.Println("Nothing to install or repair.")
+	}
+	for _, it := range v.Items {
+		fmt.Printf("%-8s %-14s %s\n", it.Kind, it.Title, it.Why)
+		for _, s := range it.Steps {
+			fmt.Println("           " + s)
+		}
+	}
+	for id, r := range v.Results {
+		if r != "ok" {
+			fmt.Printf("last run: %s: %s\n", id, r)
+		}
+	}
+	if len(v.Items) > 0 {
+		fmt.Println("\nRun “localsites setup fix” to do all of it, or name ids (php@7.4).")
+	}
+	return nil
+}
+
 func printChecks(b []byte) error {
 	var checks []engine.Check
 	if err := json.Unmarshal(b, &checks); err != nil {
@@ -568,6 +615,7 @@ func usage() {
   localsites restore-env <folder>        undo connect-db
   localsites version                     version and what's new
   localsites doctor                      health check of everything, with fixes
+  localsites setup [fix [id…]]           what's missing or broken in Homebrew (Apache, MySQL, PHP); fix installs and repairs it
   localsites check <folder>              test one project: DNS, PHP, database, HTTPS, certificate
   localsites debug-bundle                zip of logs + configs (secrets removed) for bug reports
   localsites mcp [--allow-secrets]       MCP server for AI agents (stdio)

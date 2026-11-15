@@ -820,3 +820,37 @@ test('dev UI server answers only the browser that opened its link', async () => 
   const bad = await fetch(process.env.LS_UI_URL + '/__call/status', { method: 'POST', body: '{}', headers: { Cookie: 'lsdevui=guess' } });
   expect(bad.status).toBe(403);
 });
+
+test('setup card lists broken and missing software and fixes it with one click', async ({ page }) => {
+  const items = [
+    { id: 'php@7.4', title: 'PHP 7.4', why: "intl can't load (icu4c@77 is missing) · 15 projects use it", kind: 'repair', required: true, password: true, steps: ['give php@7.4’s files back to you (asks for your Mac password)', 'brew reinstall shivammathur/php/php@7.4'] },
+    { id: 'php@5.6', title: 'PHP 5.6', why: 'not installed · 1 project uses it', kind: 'install', required: true, password: false, steps: ['brew install shivammathur/php/php@5.6'] }];
+  let running = false, runBody = null;
+  await page.route('**/__call/setup.status', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(running
+    ? { homebrew: true, items, running: true, step: 'PHP 7.4: brew reinstall shivammathur/php/php@7.4', log: '' }
+    : { homebrew: true, items, running: false, log: '' }) }));
+  await page.route('**/__call/setup.run', r => { runBody = r.request().postData(); running = true;
+    return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ homebrew: true, items, running: true, step: 'PHP 7.4: brew reinstall shivammathur/php/php@7.4', log: '' }) }); });
+  await page.locator('#side a[data-view="overview"]').click();
+  const card = page.locator('.ov-sec.setup');
+  await expect(card).toContainText('2 things need fixing');
+  await expect(card).toContainText('PHP 7.4');
+  await expect(card).toContainText('asks for your Mac password once');
+  await card.locator('summary').click();
+  await expect(card.locator('pre')).toContainText('brew install shivammathur/php/php@5.6');
+  await card.locator('[data-cmd="setuprun"]').click();
+  await expect(card).toContainText('Getting LocalSites ready');
+  await expect(card).toContainText('brew reinstall shivammathur/php/php@7.4');
+  expect(JSON.parse(runBody || '{}')).toEqual({});
+  await page.unroute('**/__call/setup.status'); await page.unroute('**/__call/setup.run');
+});
+
+test('without Homebrew the setup card offers its installer', async ({ page }) => {
+  await page.route('**/__call/setup.status', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ homebrew: false, items: [], running: false, log: '' }) }));
+  await page.locator('#side a[data-view="overview"]').click();
+  await expect(page.locator('.ov-sec.setup [data-cmd="setuphomebrew"]')).toBeVisible();
+  // the sandbox never installs anything on this Mac
+  const r = await page.evaluate(async () => { const x = await fetch('/__call/setup.homebrew', { method: 'POST', body: '{}' }); return x.text(); });
+  expect(r).toMatch(/already installed|turned off/);
+  await page.unroute('**/__call/setup.status');
+});

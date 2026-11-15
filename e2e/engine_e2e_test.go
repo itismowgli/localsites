@@ -113,6 +113,7 @@ func setup(t *testing.T) *env {
 	}
 	t.Setenv("LOCALSITES_HOME", home)
 	t.Setenv("LOCALSITES_SECRETS", "file")
+	t.Setenv("LOCALSITES_NO_BREW", "1")
 	sites := filepath.Join(home, "sites")
 
 	write(t, filepath.Join(sites, "hello", "index.php"), `<?php echo "php=" . PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION . " via=" . ($_GET["via"] ?? "direct");`)

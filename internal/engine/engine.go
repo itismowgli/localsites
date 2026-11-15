@@ -63,6 +63,7 @@ type Engine struct {
 	mysqlMu     sync.Mutex        // MySQL setup must never run twice at once (it generates the root password)
 	mysqlUsed   atomic.Int64      // last time something used LocalSites MySQL (unix nanoseconds)
 	doctorFails atomic.Int64      // failed checks in the last Doctor run, for the Dock badge
+	setup       setupState        // installing and repairing Homebrew software (see setup.go)
 }
 
 // New loads config, CA and picks the front door.
@@ -1175,6 +1176,8 @@ func (e *Engine) Log(kind, folder string, lines int) (string, error) {
 		file = filepath.Join(e.P.Logs, name+".log")
 	case "site-install":
 		file = filepath.Join(e.P.SiteLogs, folder+"-install.log")
+	case "setup":
+		file = e.setupLog()
 	default:
 		return "", errors.New("unknown log")
 	}
