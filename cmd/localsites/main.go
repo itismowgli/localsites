@@ -163,11 +163,31 @@ func run(c *api.Client, a []string) error {
 	case "import":
 		return importCmd(c, a[1:])
 	case "open":
-		if err := need(3, "open <folder> finder|terminal|vscode|cursor|browser"); err != nil {
+		// localsites open <folder> [editor|terminal|browser|<app id>] [--remember]
+		if err := need(2, "open <folder> [editor|terminal|browser|<app id>] [--remember]"); err != nil {
 			return err
 		}
-		_, err := c.Call("open", map[string]any{"folder": a[1], "app": a[2]})
+		p := map[string]any{"folder": a[1]}
+		for _, x := range a[2:] {
+			if x == "--remember" {
+				p["remember"] = true
+			} else {
+				p["app"] = x
+			}
+		}
+		_, err := c.Call("open", p)
 		return err
+	case "apps":
+		// localsites apps                         installed apps and the chosen defaults
+		// localsites apps default editor <id>     choose (ask = every time, none = forget)
+		if len(a) >= 4 && a[1] == "default" {
+			id := a[3]
+			if id == "none" {
+				id = ""
+			}
+			return show(c, "apps.default", map[string]any{"kind": a[2], "app": id}, printLog)
+		}
+		return show(c, "apps.list", nil, printApps)
 	case "methods":
 		return show(c, "methods", nil, printJSON)
 	case "version":
@@ -385,6 +405,44 @@ func printJSON(b []byte) error {
 	_ = json.Unmarshal(b, &v)
 	out, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(out))
+	return nil
+}
+
+func printApps(b []byte) error {
+	var r struct {
+		Apps []struct {
+			ID, Name, Kind string
+		}
+		Defaults map[string]string
+	}
+	if err := json.Unmarshal(b, &r); err != nil {
+		return err
+	}
+	for _, kind := range []string{"editor", "terminal", "git", "database", "browser", "files"} {
+		var line []string
+		for _, x := range r.Apps {
+			if x.Kind != kind {
+				continue
+			}
+			n := x.Name + " (" + x.ID + ")"
+			if r.Defaults[kind] == x.ID {
+				n += " ← default"
+			}
+			line = append(line, n)
+		}
+		if len(line) == 0 {
+			continue
+		}
+		fmt.Printf("%-9s %s\n", kind, strings.Join(line, ", "))
+	}
+	for _, kind := range []string{"editor", "terminal"} {
+		switch d := r.Defaults[kind]; d {
+		case "":
+			fmt.Printf("\nNo default %s chosen yet: localsites apps default %s <id>\n", kind, kind)
+		case "ask":
+			fmt.Printf("\nThe app asks which %s to use each time.\n", kind)
+		}
+	}
 	return nil
 }
 
@@ -607,7 +665,8 @@ func usage() {
   localsites import sources
   localsites import databases <source> [--user root]
   localsites import database <source> <name> [--user root]   copy + verify, original untouched
-  localsites open <folder> finder|terminal|vscode|cursor|browser
+  localsites open <folder> [app] [--remember]   open in your code editor (or terminal, browser, an app id)
+  localsites apps [default editor|terminal <id>|ask|none]   installed apps; choose the default editor or terminal
   localsites settings [key=value ...]    show or change settings (php.memory_limit=256M, mysql_port=3308, ...)
   localsites folders [add <path> [label] [auto|flat|groups] | remove <label>]   projects folders
   localsites install <project>           install dependencies (composer / npm / pnpm / yarn / bun)

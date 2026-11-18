@@ -91,6 +91,9 @@ type Settings struct {
 	UpdateLater     string `json:"update_later,omitempty"`   // a version the person chose to install when they quit
 	// Problem reports: "off" (default: nothing is sent), "ask" (send after I review), "auto" (send cleaned reports by themselves)
 	ReportMode string `json:"report_mode,omitempty"`
+	// Default apps chosen by the person, by kind ("editor", "terminal"): an app id, or "ask" to choose
+	// every time. Nothing is set until the person picks; LocalSites never guesses.
+	Apps map[string]string `json:"apps,omitempty"`
 }
 
 // Addon is the saved state of one add-on service.

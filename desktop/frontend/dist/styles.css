@@ -993,3 +993,10 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .setup-cmds { margin: 8px 0; }
 .setup-cmds summary { cursor: pointer; }
 .setup .form-row { margin-top: 10px; }
+
+/* Open menu: "Make default" shows on hover; chooser for the code editor / terminal */
+.menu .kb.mkdef { visibility: hidden; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.menu button:hover .kb.mkdef, .menu button:focus-visible .kb.mkdef { visibility: visible; }
+.app-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 12px 0; }
+.app-pick .btn { justify-content: flex-start; }
+.app-remember { gap: 8px; font-size: 13px; }

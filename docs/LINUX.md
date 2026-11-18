@@ -1,5 +1,10 @@
 # LocalSites for Linux: plan
 
+> **Updated 2026-11-18:** the runtime decision below is replaced. LocalSites uses **Homebrew on Linux too**
+> (installed and run by LocalSites), not static PHP builds. See the Linux section of `docs/PLAN-1.4.md` for the
+> comparison, the facts behind it and the safety rules. The rest of this page (DNS, certificates, passwords, tray,
+> packages) still applies.
+
 Status: started 2026-11-09 on the `phase-1` branch. `master` stays on the released macOS version until Linux is
 ready to ship.
 

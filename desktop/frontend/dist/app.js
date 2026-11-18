@@ -37,6 +37,8 @@ window.addEventListener('unhandledrejection', (e) => reportError('promise', e.re
 
 const isMac = /Mac/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent);
 const MOD = isMac ? '⌘' : 'Ctrl+';
+const OS_NAME = isMac ? 'Mac' : 'computer';
+const FILES_APP = isMac ? { id: 'finder', name: 'Finder' } : { id: 'files', name: 'Files' };
 
 /* ------------------------------------------------------------------- icons */
 const TRI = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3h7L5 7.5z" fill="currentColor"/></svg>';
@@ -777,8 +779,8 @@ function row(s) {
     ${P.has('domain') ? `<span class="meta">${live && s.url ? `<a data-openurl="${esc(s.folder)}">${esc(s.domain)}</a>` : esc(s.runtime === 'none' ? (s.group || s.root) : s.domain)}</span>` : '<span class="meta"></span>'}
     <div class="right"><div class="hover-actions">
       ${live ? `<button class="icon-btn" title="Open in browser (O)" data-openurl="${esc(s.folder)}">${icon.globe}</button>` : ''}
-      <button class="icon-btn" title="Show in Finder" data-app="finder" data-folder="${esc(s.folder)}">${icon.folder}</button>
-      <button class="icon-btn" title="Open in ${esc(prefApp('editor').name)}" data-app="${prefApp('editor').id}" data-folder="${esc(s.folder)}">${icon.code}</button>
+      <button class="icon-btn" title="Show in ${FILES_APP.name}" data-app="${FILES_APP.id}" data-folder="${esc(s.folder)}">${icon.folder}</button>
+      <button class="icon-btn" title="${prefApp('editor') ? 'Open in ' + esc(prefApp('editor').name) : 'Open in your code editor'}" data-openwith="editor" data-folder="${esc(s.folder)}">${icon.code}</button>
     </div>${chips.join('')}</div></div>`;
 }
 
@@ -889,9 +891,9 @@ function detailsPane(s) {
       <div class="st">Open<span class="spacer"></span><button class="btn ghost sm" data-openmore="${esc(s.folder)}">More apps${icon.caret}</button></div>
       <div class="grid2">
         <button class="btn" data-openurl="${esc(s.folder)}" ${s.enabled || valet ? '' : 'disabled'}>${icon.globe}Browser</button>
-        <button class="btn" data-app="finder" data-folder="${esc(s.folder)}">${icon.folder}Finder</button>
-        <button class="btn" data-app="${prefApp('terminal').id}" data-folder="${esc(s.folder)}">${icon.terminal}${esc(prefApp('terminal').name)}</button>
-        <button class="btn" data-app="${prefApp('editor').id}" data-folder="${esc(s.folder)}">${icon.code}${esc(prefApp('editor').name)}</button></div>
+        <button class="btn" data-app="${FILES_APP.id}" data-folder="${esc(s.folder)}">${icon.folder}${FILES_APP.name}</button>
+        <button class="btn" data-openwith="terminal" data-folder="${esc(s.folder)}">${icon.terminal}${esc(prefLabel('terminal'))}</button>
+        <button class="btn" data-openwith="editor" data-folder="${esc(s.folder)}">${icon.code}${esc(prefLabel('editor'))}</button></div>
       ${s.git ? `<div class="st">Git<span class="spacer"></span><button class="btn ghost sm" data-dpane="git">${icon.branch}Open git</button></div>
         <div class="kv"><span>Branch</span><code>${esc(s.git.branch || 'none')}</code></div>
         ${s.git.account ? `<div class="kv"><span>Account</span><span class="form-row" style="gap:6px">${hostIcon(s.git.host)}${esc(s.git.account)}${s.git.host && !/\./.test(s.git.host) ? ` <span class="note">(SSH alias ${esc(s.git.host)})</span>` : ''}</span></div>` : ''}
@@ -914,18 +916,68 @@ function xdebugHint(ver) {
 }
 
 /* --- open in the apps you use --- */
-const APP_FALLBACK = { editor: { id: 'vscode', name: 'VS Code' }, terminal: { id: 'terminal', name: 'Terminal' } };
+// The person chooses their code editor and terminal; nothing is guessed. The choice is saved in LocalSites
+// settings, so the CLI and agents use it too. "ask" means show the chooser every time.
+const KIND_NAME = { editor: 'code editor', terminal: 'terminal' };
+const appsOf = (kind) => (S.apps || []).filter(a => a.kind === kind);
+// The chosen app for a kind, or null when nothing (usable) is chosen.
 function prefApp(kind) {
-  const list = (S.apps || []).filter(a => a.kind === kind), want = store.get('app.' + kind, '');
-  return list.find(a => a.id === want) || list[0] || APP_FALLBACK[kind];
+  const id = (S.appDefaults || {})[kind];
+  return id && id !== 'ask' ? appsOf(kind).find(a => a.id === id) || null : null;
 }
-async function loadApps() { S.apps = await bridge.call('apps.list').catch(() => []) || []; }
+// Button label: the chosen app's name, or a prompt to choose one.
+const prefLabel = (kind) => prefApp(kind)?.name || (kind === 'editor' ? 'Code editor' : 'Terminal');
+async function loadApps() {
+  const r = await bridge.call('apps.list').catch(() => null);
+  S.apps = Array.isArray(r) ? r : r?.apps || []; // an older service returns a plain list
+  S.appDefaults = Array.isArray(r) ? {} : r?.defaults || {};
+  // A choice saved by an older version in this window's storage moves to settings once.
+  for (const kind of ['editor', 'terminal']) {
+    const old = store.get('app.' + kind, '');
+    if (!old) continue;
+    store.set('app.' + kind, '');
+    if (!S.appDefaults[kind] && appsOf(kind).some(a => a.id === old)) {
+      try { await bridge.call('apps.default', { kind, app: old }); S.appDefaults[kind] = old; } catch (_) { /* kept unchosen */ }
+    }
+  }
+}
+async function setDefaultApp(kind, id, quiet) {
+  await bridge.call('apps.default', { kind, app: id });
+  S.appDefaults = { ...S.appDefaults }; if (id) S.appDefaults[kind] = id; else delete S.appDefaults[kind];
+  if (!quiet) toast(id === 'ask' ? `LocalSites will ask which ${KIND_NAME[kind]} to use each time` : id ? `${appsOf(kind).find(a => a.id === id)?.name || id} is now your ${KIND_NAME[kind]}` : `No default ${KIND_NAME[kind]}`);
+  render();
+}
+// Open a project in the chosen editor or terminal; ask first when nothing is chosen.
+async function openWith(kind, folder) {
+  const a = prefApp(kind);
+  if (a) return act(() => bridge.call('open', { folder, app: a.id }), 'Open');
+  const list = appsOf(kind);
+  if (!list.length) return toast(`No ${KIND_NAME[kind]} found on this ${OS_NAME}. Install one, then try again.`, 'warn');
+  const saved = (S.appDefaults || {})[kind], ask = saved === 'ask';
+  const gone = saved && !ask ? `<p class="note">The ${KIND_NAME[kind]} you chose before (${esc(saved)}) isn’t installed anymore.</p>` : '';
+  const pick = await dialog(`<h3>Which ${KIND_NAME[kind]} do you want to use?</h3>${gone}
+    <div class="app-pick">${list.map(x => `<button class="btn" data-dlg="${esc(x.id)}">${kind === 'editor' ? icon.code : icon.terminal}${esc(x.name)}</button>`).join('')}</div>
+    <label class="form-row app-remember"><input type="checkbox" id="appRemember" ${ask ? '' : 'checked'}> Remember my choice</label>
+    <p class="note">You can change it any time in Settings → General.</p>
+    <div class="form-row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" data-dlg="cancel">Cancel</button></div>`);
+  const chosen = list.find(x => x.id === pick);
+  if (!chosen) return;
+  const remember = !!$('#appRemember')?.checked;
+  await act(async () => {
+    await bridge.call('open', { folder, app: chosen.id, remember });
+    if (remember) { S.appDefaults = { ...S.appDefaults, [kind]: chosen.id }; toast(`${chosen.name} is now your ${KIND_NAME[kind]}`); render(); }
+  }, 'Open');
+}
 const APP_KINDS = [['editor', 'Editors'], ['terminal', 'Terminals'], ['git', 'Git apps'], ['browser', 'Browsers']];
 function showOpenMenu(anchor, folder) {
   const s = site(folder), live = s.enabled || s.served_by === 'valet';
-  const groups = APP_KINDS.map(([k, label]) => { const list = (S.apps || []).filter(a => a.kind === k); if (!list.length) return '';
-    return `<div class="label2">${label}</div>` + list.map(a => `<button data-app="${a.id}" data-folder="${esc(folder)}" ${k === 'browser' && !live ? 'disabled title="Switch the project on first"' : ''}><span>${esc(a.name)}</span>${(k === 'editor' || k === 'terminal') && prefApp(k).id === a.id ? '<span class="kb">default</span>' : ''}</button>`).join(''); }).join('');
-  menuAt(anchor, groups || '<div class="menu-empty">No supported apps found in /Applications.</div>');
+  const groups = APP_KINDS.map(([k, label]) => { const list = appsOf(k); if (!list.length) return '';
+    return `<div class="label2">${label}</div>` + list.map(a => {
+      const def = (k === 'editor' || k === 'terminal') && prefApp(k)?.id === a.id;
+      const mk = (k === 'editor' || k === 'terminal') && !def ? `<span class="kb mkdef" data-mkdefault="${k}:${esc(a.id)}" title="Use ${esc(a.name)} for the Open buttons">Make default</span>` : '';
+      return `<button data-app="${a.id}" data-folder="${esc(folder)}" ${k === 'browser' && !live ? 'disabled title="Switch the project on first"' : ''}><span>${esc(a.name)}</span>${def ? '<span class="kb">default</span>' : mk}</button>`;
+    }).join(''); }).join('');
+  menuAt(anchor, groups || `<div class="menu-empty">No supported apps found on this ${OS_NAME}.</div>`);
 }
 
 /* --- AI agents: connect and approve --- */
@@ -2141,8 +2193,9 @@ function viewSettings() {
     page = `<h2>General</h2><p class="lead">Where your projects live and how LocalSites starts.</p>
       ${settingRow('Start at login', st.start_at_login_supported ? 'Start Apache, PHP and MySQL when you log in, so sites are always ready.' : 'Available on macOS for now.',
         `<label class="switch"><input type="checkbox" data-setting="start_at_login" ${setVal('start_at_login') ? 'checked' : ''} ${st.start_at_login_supported ? '' : 'disabled'}><span></span></label>`, 'start_at_login')}
-      ${['editor', 'terminal'].map(k => { const list = (S.apps || []).filter(a => a.kind === k); return list.length ? settingRow(k === 'editor' ? 'Code editor' : 'Terminal', `Used by the Open buttons and the project row. ${list.length} found on this Mac.`,
-        `<select class="input" data-prefapp="${k}">${list.map(a => `<option value="${a.id}" ${prefApp(k).id === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>`) : ''; }).join('')}
+      ${['editor', 'terminal'].map(k => { const list = appsOf(k), saved = (S.appDefaults || {})[k] || '', ok = saved === 'ask' || list.some(a => a.id === saved);
+        return settingRow(k === 'editor' ? 'Code editor' : 'Terminal', list.length ? `Used by the Open buttons, <code>localsites open</code> and AI agents. ${list.length} found on this ${OS_NAME}.` : `None found on this ${OS_NAME}. Install one and it shows up here.`,
+          list.length ? `<select class="input" data-prefapp="${k}">${!ok ? `<option value="" selected disabled>${saved ? 'Not installed anymore: choose' : 'Not chosen yet'}</option>` : ''}${list.map(a => `<option value="${a.id}" ${saved === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}<option value="ask" ${saved === 'ask' ? 'selected' : ''}>Ask every time</option></select>` : ''); }).join('')}
       ${settingRow('Appearance', 'Saved on this computer only.', `<div class="seg" role="group" aria-label="Appearance">${[['system', 'System', 'monitor'], ['dark', 'Dark', 'moon'], ['light', 'Light', 'sun']]
         .map(([v, l, ic]) => `<button data-theme-set="${v}" class="${S.theme === v ? 'on' : ''}">${icon[ic]}${l}</button>`).join('')}</div>`)}
       ${saveBar()}`;
@@ -2221,7 +2274,7 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+const CLICKABLE = ['openwith', 'mkdefault', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
@@ -2386,6 +2439,8 @@ document.addEventListener('click', async (e) => {
   if (d.sect) { if (d.sect.startsWith('g:')) { S.closed[d.sect] = !S.closed[d.sect]; saveUI(); return renderView(); } return toggleSect(d.sect); }
   if (d.fav) { S.favs.has(d.fav) ? S.favs.delete(d.fav) : S.favs.add(d.fav); saveUI(); return render(); }
   if (d.toggle) { e.stopPropagation(); const s = site(d.toggle); return updateSite(s.folder, { enabled: !s.enabled }); }
+  if (d.mkdefault) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); const [k, id] = d.mkdefault.split(':'); return act(() => setDefaultApp(k, id), 'Save'); }
+  if (d.openwith) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); return openWith(d.openwith, d.folder); }
   if (d.app) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); return act(() => bridge.call('open', { folder: d.folder, app: d.app }), 'Open'); }
   if (d.row) return navigate('projects', cur().sel === d.row ? null : d.row);
   if (d.dbbackup) { const r = await act(() => bridge.call('db.backup', { name: d.dbbackup })); if (r) toast('Backup saved:\n' + r.file); return; }
@@ -2481,7 +2536,7 @@ document.addEventListener('change', async (e) => {
   if (e.target.id === 'orderBy') { S.order = e.target.value; saveUI(); return renderView(); }
   if (e.target.id === 'dConn') { const v = e.target.value; if (!await guardEdits()) { e.target.value = S.data.conn; return; } S.data.conn = v; dataConnect(); }
   if (e.target.id === 'dSchema') { const v = e.target.value; if (!await guardEdits()) { e.target.value = S.data.schema; return; } S.data.schema = v; act(dataLoadTables).then(() => { renderView(); renderSide(); }); }
-  if (e.target.dataset.prefapp) { store.set('app.' + e.target.dataset.prefapp, e.target.value); toast(`${e.target.selectedOptions[0].textContent} is now your ${e.target.dataset.prefapp === 'editor' ? 'code editor' : 'terminal'}`); return render(); }
+  if (e.target.dataset.prefapp) return act(() => setDefaultApp(e.target.dataset.prefapp, e.target.value), 'Save');
   if (e.target.id === 'shareProv') SF.prov = e.target.value;
   if (e.target.id === 'shareOpen') { SF.open = e.target.checked; return renderDetail(); }
   if (e.target.id === 'shareMins') SF.mins = +e.target.value;
@@ -2903,7 +2958,7 @@ function commands() {
   for (const s of S.sites) {
     c.push({ sect: 'Projects', label: s.enabled ? `Switch off ${s.folder}` : `Switch on ${s.folder}`, icon: 'power', run: () => updateSite(s.folder, { enabled: !s.enabled }) });
     if (s.enabled) c.push({ sect: 'Projects', label: `Open ${s.folder} in browser`, icon: 'globe', hint: s.domain, run: () => bridge.call('open', { folder: s.folder, app: 'browser' }) });
-    c.push({ sect: 'Projects', label: `Open ${s.folder} in VS Code`, icon: 'code', run: () => bridge.call('open', { folder: s.folder, app: 'vscode' }) });
+    c.push({ sect: 'Projects', label: `Open ${s.folder} in ${prefApp('editor')?.name || 'your code editor'}`, icon: 'code', run: () => openWith('editor', s.folder) });
     c.push({ sect: 'Projects', label: `Show ${s.folder}`, icon: 'site', run: () => navigate('projects', s.folder) });
     c.push({ sect: 'Projects', label: `Open ${s.folder} in a new tab`, icon: 'plus', run: () => navigate('projects', s.folder, { newTab: true }) });
     for (const p of S.status?.php || []) if (p.version !== s.php) c.push({ sect: 'PHP', label: `${s.folder} → PHP ${p.version}`, icon: 'php', run: () => updateSite(s.folder, { php: p.version }) });

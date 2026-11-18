@@ -208,8 +208,9 @@ var Methods = []Method{
 	{Name: "import.database", Description: "Copy one database read-only from another tool into LocalSites and verify every row. Never overwrites.", Mutates: true, Sensitive: true,
 		Params: []Param{pSource, pSrcUser, pSrcPass, pDB}},
 	{Name: "debug.bundle", Description: "Zip logs, generated configs and a doctor report (secrets removed) for a bug report; returns the file path", Mutates: true},
-	{Name: "open", Description: "Open a project in an app on this computer", Params: []Param{pFolder,
-		{Name: "app", Type: "string", Description: "App id from apps.list (editor, terminal, git app, browser), or \"browser\" for the default browser", Required: true}}},
+	{Name: "open", Description: "Open a project in an app on this computer. Without app it opens the person's chosen code editor; if none is chosen the error lists the installed ones (ask the person which, then pass app and remember)", Params: []Param{pFolder,
+		{Name: "app", Type: "string", Description: "\"editor\" or \"terminal\" for the person's chosen one (the default is editor), an app id from apps.list, or \"browser\" for the default browser"},
+		{Name: "remember", Type: "boolean", Description: "Also make this app the default code editor or terminal"}}},
 	{Name: "tools.adminer", Description: "Switch Adminer (web database tool, like phpMyAdmin) on or off at https://adminer.test. The first time, a pinned release is downloaded and checked", Mutates: true, Params: []Param{{Name: "enabled", Type: "boolean", Required: true}}},
 	{Name: "mysql.root_password", Description: "Change the LocalSites MySQL root password (random and strong if none is given); kept in the keychain", Mutates: true, Destructive: true, Sensitive: true,
 		Params: []Param{{Name: "password", Type: "string", Description: "New password (optional, at least 12 characters)"}}},
@@ -238,7 +239,9 @@ var Methods = []Method{
 	{Name: "agents.disconnect", Description: "Remove LocalSites from an agent app's MCP settings", Mutates: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "approvals.list", Description: "Requests from AI agents waiting for the user's approval in the app"},
 	{Name: "approvals.decide", Description: "Approve or deny a waiting request (the app only; agents can't)", Params: []Param{{Name: "id", Type: "string", Required: true}, {Name: "approve", Type: "boolean", Required: true}}},
-	{Name: "apps.list", Description: "Editors, terminals, git apps, database apps and browsers installed on this Mac (for open)"},
+	{Name: "apps.list", Description: "Editors, terminals, git apps, database apps and browsers installed on this computer (for open), and the default editor and terminal the person chose"},
+	{Name: "apps.default", Description: "Choose the default code editor or terminal for the Open buttons (app \"\" forgets the choice, \"ask\" asks every time). Only when the person asked for it", Mutates: true, Params: []Param{
+		{Name: "kind", Type: "string", Required: true, Enum: []string{"editor", "terminal"}}, {Name: "app", Type: "string", Description: "App id from apps.list, \"ask\" or \"\"", Required: true}}},
 	{Name: "db.open_in", Description: "Open a LocalSites database in TablePlus or Sequel Ace (host, port, user and database filled in; the password is not passed on the command line)", Params: []Param{pDB,
 		{Name: "app", Type: "string", Required: true, Enum: []string{"tableplus", "sequelace"}}}},
 	{Name: "quit", Description: "Stop all services and the LocalSites background service", Mutates: true, Destructive: true},
@@ -396,6 +399,7 @@ type args struct {
 	Bundle     bool     `json:"bundle"`
 	Message    string   `json:"message"`
 	IDs        []string `json:"ids"`
+	Remember   bool     `json:"remember"`
 	engine.SitePatch
 }
 
@@ -694,16 +698,18 @@ func (s *Server) call(method string, body []byte) (any, error) {
 	case "agents.disconnect":
 		return map[string]any{"log": []string{"Disconnected"}}, agentcfg.Disconnect(a.ID)
 	case "apps.list":
-		return apps.Installed(), nil
+		return e.InstalledApps(), nil
+	case "apps.default":
+		return map[string]any{"log": []string{"Saved"}}, e.SetDefaultApp(a.Kind, a.App)
 	case "db.open_in":
 		return map[string]any{"log": []string{"Opened " + a.Name}}, openDatabaseIn(e, a.Name, a.App)
 	case "open":
-		return nil, openProject(e, a.Folder, a.App)
+		return nil, openProject(e, a.Folder, a.App, a.Remember)
 	}
 	return nil, fmt.Errorf("unknown method %q (see methods)", method)
 }
 
-func openProject(e *engine.Engine, folder, app string) error {
+func openProject(e *engine.Engine, folder, app string, remember bool) error {
 	var site *engine.SiteView
 	for _, s := range e.Sites() {
 		if s.Folder == folder {
@@ -720,10 +726,14 @@ func openProject(e *engine.Engine, folder, app string) error {
 		}
 		return openURL(site.URL)
 	}
-	if runtime.GOOS != "darwin" {
-		return errors.New("opening apps is only supported on macOS for now")
+	if app == "" {
+		app = "editor"
 	}
-	a, err := apps.Find(app)
+	id, err := e.ResolveApp(app)
+	if err != nil {
+		return err
+	}
+	a, err := apps.Find(id)
 	if err != nil {
 		return err
 	}
@@ -736,7 +746,16 @@ func openProject(e *engine.Engine, folder, app string) error {
 	case "database":
 		return errors.New("open a database from Databases instead")
 	}
-	return apps.Open(a, site.Path)
+	if err := apps.Open(a, site.Path); err != nil {
+		return err
+	}
+	if remember {
+		if !apps.IsDefaultKind(a.Kind) {
+			return errors.New("only a code editor or a terminal can be the default")
+		}
+		return e.SetDefaultApp(a.Kind, a.ID)
+	}
+	return nil
 }
 
 // openDatabaseIn opens a LocalSites database in a database app, without the password (it never goes on a command line).

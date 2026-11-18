@@ -550,7 +550,7 @@ test('share: project panel offers sharing (install a tunnel first when none is i
 });
 
 test('open in: preferred editor in settings, more apps menu in the project panel', async ({ page }) => {
-  const apps = await call(page, 'apps.list');
+  const { apps } = await call(page, 'apps.list');
   await page.goto('/#projects/hello');
   await page.locator('#detail [data-openmore]').click();
   await expect(page.locator('#menu.open')).toBeVisible();
@@ -853,4 +853,66 @@ test('without Homebrew the setup card offers its installer', async ({ page }) =>
   const r = await page.evaluate(async () => { const x = await fetch('/__call/setup.homebrew', { method: 'POST', body: '{}' }); return x.text(); });
   expect(r).toMatch(/already installed|turned off/);
   await page.unroute('**/__call/setup.status');
+});
+
+// The Open buttons never guess an editor: the first click asks, Remember saves it, Settings changes it.
+test('first Open asks which editor to use and remembers the choice', async ({ page }) => {
+  const list = [{ id: 'finder', name: 'Finder', kind: 'files' }, { id: 'cursor', name: 'Cursor', kind: 'editor' }, { id: 'zed', name: 'Zed', kind: 'editor' }, { id: 'iterm', name: 'iTerm2', kind: 'terminal' }];
+  let defaults = {}; const opened = [], saved = [];
+  await page.route('**/__call/apps.list', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ apps: list, defaults }) }));
+  await page.route('**/__call/apps.default', r => { const b = JSON.parse(r.request().postData()); saved.push(b);
+    if (b.app) defaults = { ...defaults, [b.kind]: b.app }; else delete defaults[b.kind];
+    return r.fulfill({ contentType: 'application/json', body: '{"log":["Saved"]}' }); });
+  await page.route('**/__call/open', r => { const b = JSON.parse(r.request().postData()); opened.push(b);
+    if (b.remember) defaults = { ...defaults, editor: b.app };
+    return r.fulfill({ contentType: 'application/json', body: 'null' }); });
+  await page.goto('/#projects/hello'); await page.reload();
+
+  const btn = page.locator('#detail [data-openwith="editor"]');
+  await expect(btn).toHaveText('Code editor'); // nothing chosen yet
+  await btn.click();
+  const dlg = page.locator('#keysDialog');
+  await expect(dlg).toContainText('Which code editor do you want to use?');
+  await expect(dlg.locator('#appRemember')).toBeChecked();
+  await dlg.locator('[data-dlg="zed"]').click();
+  await expect.poll(() => opened.length).toBe(1);
+  expect(opened[0]).toEqual({ folder: 'hello', app: 'zed', remember: true });
+  await expect(btn).toHaveText('Zed');
+
+  // Now it opens straight away, no question
+  await btn.click();
+  await expect.poll(() => opened.length).toBe(2);
+  expect(opened[1]).toEqual({ folder: 'hello', app: 'zed' });
+  await expect(page.locator('#keysOverlay')).not.toHaveClass(/open/);
+
+  // Make default from More apps
+  await page.locator('#detail [data-openmore]').click();
+  await page.locator('#menu [data-mkdefault="editor:cursor"]').click({ force: true });
+  await expect.poll(() => saved.at(-1)).toEqual({ kind: 'editor', app: 'cursor' });
+  await expect(btn).toHaveText('Cursor');
+
+  // Settings: Ask every time brings the chooser back, with Remember off
+  await page.goto('/#settings');
+  const sel = page.locator('select[data-prefapp="editor"]');
+  await expect(sel).toHaveValue('cursor');
+  await sel.selectOption('ask');
+  await expect.poll(() => saved.at(-1)).toEqual({ kind: 'editor', app: 'ask' });
+  await page.goto('/#projects/hello');
+  await page.locator('#detail [data-openwith="editor"]').click();
+  await expect(page.locator('#appRemember')).not.toBeChecked();
+  await page.locator('#keysDialog [data-dlg="cancel"]').click();
+
+  // The terminal is chosen separately and still unchosen
+  await expect(page.locator('#detail [data-openwith="terminal"]')).toHaveText('Terminal');
+  for (const u of ['apps.list', 'apps.default', 'open']) await page.unroute('**/__call/' + u);
+});
+
+test('open without a chosen editor explains what to do (CLI and agents)', async ({ page }) => {
+  // the real service: nothing chosen in the sandbox, so it lists what's installed instead of guessing
+  const r = await page.evaluate(async () => { const x = await fetch('/__call/open', { method: 'POST', body: JSON.stringify({ folder: 'hello' }) }); return [x.status, (await x.json()).error]; });
+  expect(r[0]).toBe(400);
+  expect(r[1]).toMatch(/No code editor chosen yet|no code editor found/);
+  const apps = await call(page, 'apps.list');
+  expect(apps).toHaveProperty('defaults');
+  expect(Array.isArray(apps.apps)).toBe(true);
 });
