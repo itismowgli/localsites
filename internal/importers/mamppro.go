@@ -34,10 +34,15 @@ type Source struct {
 	Name      string   `json:"name"`
 	Found     bool     `json:"found"`
 	HostConfs []string `json:"-"`
-	MySQLSock string   `json:"mysql_socket"`
-	MySQLBin  string   `json:"-"` // directory with mysqldump/mysql of the source's MySQL version
-	MySQLUp   bool     `json:"mysql_running"`
-	SameAs    string   `json:"same_mysql_as,omitempty"` // shares its MySQL with another listed tool
+	// MainConf is the tool's main httpd.conf (MAMP, XAMPP). When set, a virtual-host file is only read if
+	// httpd.conf includes it, and the folders in its DocumentRoot (htdocs) count as projects too.
+	MainConf  string `json:"-"`
+	DocRoot   string `json:"docroot,omitempty"`          // htdocs, where MAMP and XAMPP projects usually live
+	DocRootN  int    `json:"docroot_projects,omitempty"` // folders in it
+	MySQLSock string `json:"mysql_socket"`
+	MySQLBin  string `json:"-"` // directory with mysqldump/mysql of the source's MySQL version
+	MySQLUp   bool   `json:"mysql_running"`
+	SameAs    string `json:"same_mysql_as,omitempty"` // shares its MySQL with another listed tool
 }
 
 // Sources lists supported tools and whether they are installed.
@@ -48,14 +53,26 @@ func Sources() []Source {
 			"/Library/Application Support/appsolute/MAMP PRO/conf/httpd-ssl.conf",
 		}, MySQLSock: "/Applications/MAMP/tmp/mysql/mysql.sock", MySQLBin: "/Applications/MAMP/Library/bin"},
 		{ID: "mamp", Name: "MAMP", HostConfs: []string{"/Applications/MAMP/conf/apache/extra/httpd-vhosts.conf"},
+			MainConf:  "/Applications/MAMP/conf/apache/httpd.conf",
 			MySQLSock: "/Applications/MAMP/tmp/mysql/mysql.sock", MySQLBin: "/Applications/MAMP/Library/bin"},
 		{ID: "xampp", Name: "XAMPP", HostConfs: []string{"/Applications/XAMPP/xamppfiles/etc/extra/httpd-vhosts.conf"},
+			MainConf:  "/Applications/XAMPP/xamppfiles/etc/httpd.conf",
 			MySQLSock: "/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock", MySQLBin: "/Applications/XAMPP/xamppfiles/bin"},
 	}
 	for i := range list {
-		for _, f := range list[i].HostConfs {
-			if _, err := os.Stat(f); err == nil {
+		for _, f := range append(list[i].HostConfs, list[i].MainConf) {
+			if _, err := os.Stat(f); f != "" && err == nil {
 				list[i].Found = true
+			}
+		}
+		if list[i].MainConf != "" {
+			list[i].DocRoot, _, _ = readMain(list[i].MainConf)
+			if entries, err := os.ReadDir(list[i].DocRoot); err == nil && list[i].DocRoot != "" {
+				for _, de := range entries {
+					if de.IsDir() && !strings.HasPrefix(de.Name(), ".") {
+						list[i].DocRootN++
+					}
+				}
 			}
 		}
 		if _, err := os.Stat(list[i].MySQLSock); err == nil {
@@ -85,12 +102,60 @@ var (
 	rootRe  = regexp.MustCompile(`(?m)^\s*DocumentRoot\s+"?([^"\n]+?)"?\s*$`)
 	nameRe  = regexp.MustCompile(`(?m)^\s*ServerName\s+(\S+)`)
 	phpRe   = regexp.MustCompile(`php(\d+\.\d+\.\d+)\.fcgi`)
+	// main httpd.conf (MAMP, XAMPP)
+	serverRootRe = regexp.MustCompile(`(?m)^\s*ServerRoot\s+"?([^"\n]+?)"?\s*$`)
+	includeRe    = regexp.MustCompile(`(?m)^\s*Include(?:Optional)?\s+"?([^"\n]+?)"?\s*$`)
+	modPHPRe     = regexp.MustCompile(`(?m)^\s*LoadModule\s+php\S*\s+\S*/php(\d+\.\d+\.\d+)/`)
 )
+
+// readMain reads a main httpd.conf: its DocumentRoot, the files it includes, and the PHP version of its
+// PHP module ("" when it doesn't say).
+func readMain(conf string) (docroot string, includes map[string]bool, php string) {
+	includes = map[string]bool{}
+	b, err := os.ReadFile(conf)
+	if err != nil {
+		return "", includes, ""
+	}
+	text := string(b)
+	root := filepath.Dir(conf)
+	if m := serverRootRe.FindStringSubmatch(text); m != nil {
+		root = m[1]
+	}
+	abs := func(p string) string {
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(root, p)
+		}
+		return filepath.Clean(p)
+	}
+	for _, m := range includeRe.FindAllStringSubmatch(text, -1) {
+		includes[abs(m[1])] = true
+	}
+	// the server's DocumentRoot is the first one outside any <VirtualHost> block
+	if m := rootRe.FindStringSubmatch(vhostRe.ReplaceAllString(text, "")); m != nil {
+		docroot = strings.TrimRight(abs(m[1]), "/")
+	}
+	if m := modPHPRe.FindStringSubmatch(text); m != nil {
+		php = m[1]
+	}
+	return docroot, includes, php
+}
+
+// exampleHost: Apache's sample virtual hosts, shipped (switched off) by MAMP and XAMPP.
+func exampleHost(h Host) bool {
+	return strings.Contains(h.Name, "dummy-host") || strings.Contains(h.Docroot, "dummy-host")
+}
 
 // Hosts reads virtual hosts from the source's Apache config (read-only).
 func (s Source) Hosts() []Host {
 	byRoot := map[string]Host{}
+	docroot, includes, php := "", map[string]bool{}, ""
+	if s.MainConf != "" {
+		docroot, includes, php = readMain(s.MainConf)
+	}
 	for _, f := range s.HostConfs {
+		if s.MainConf != "" && !includes[filepath.Clean(f)] {
+			continue // httpd.conf doesn't load this file (MAMP and XAMPP ship it switched off)
+		}
 		b, err := os.ReadFile(f)
 		if err != nil {
 			continue
@@ -107,8 +172,23 @@ func (s Source) Hosts() []Host {
 			if p := phpRe.FindStringSubmatch(m[1]); p != nil {
 				h.PHP = p[1]
 			}
+			if exampleHost(h) {
+				continue
+			}
 			if _, seen := byRoot[h.Docroot]; !seen || strings.Contains(f, "ssl") {
 				byRoot[h.Docroot] = h
+			}
+		}
+	}
+	if docroot != "" { // every folder in htdocs is a project, served at localhost:8888/<folder>
+		entries, _ := os.ReadDir(docroot)
+		for _, de := range entries {
+			p := filepath.Join(docroot, de.Name())
+			if strings.HasPrefix(de.Name(), ".") || !de.IsDir() {
+				continue
+			}
+			if _, seen := byRoot[p]; !seen {
+				byRoot[p] = Host{Docroot: p, PHP: php, Source: s.ID}
 			}
 		}
 	}

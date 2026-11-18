@@ -1962,6 +1962,11 @@ function viewImport() {
     actions: `<button class="btn" data-cmd="addfolder">${icon.folderPlus}Add a projects folder</button>` });
   const srcChips = srcs.length ? srcs.map(s => `<span class="chip"><span class="dot ${s.mysql_running ? 'on' : 'off'}"></span>${esc(s.name)} ${s.mysql_running ? '· MySQL running' : '· MySQL stopped'}</span>`).join(' ') : '<span class="note">No MAMP, MAMP PRO or XAMPP found.</span>';
   const hosts = S.sites.filter(s => s.imported_from).length;
+  // MAMP and XAMPP keep projects in htdocs: offer to add it as a projects folder
+  const htdocs = st.import_sources.filter(s => s.found && s.docroot && s.docroot_projects && !S.sites.some(x => x.path.startsWith(s.docroot + '/')));
+  const htdocsPart = htdocs.map(s => `<div class="callout">${icon.folderPlus}<div><b>${s.docroot_projects === 1 ? '1 project' : s.docroot_projects + ' projects'} in ${esc(s.name)}’s htdocs folder</b>
+    <p class="note">${esc(s.docroot)} isn’t one of your projects folders yet. Add it and LocalSites lists those projects, with the PHP version ${esc(s.name)} used. Nothing in it is changed.</p>
+    <button class="btn sm" data-addroot="${esc(s.docroot)}" data-addrootlabel="${esc(s.id)}-htdocs">${icon.folderPlus}Add as a projects folder</button></div></div>`).join('');
   let dbPart = `<div class="form-row">
       <select class="input" id="impSource">${srcs.map(s => `<option value="${s.id}" ${s.id === im.source ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
       <input class="input" id="impUser" value="${esc(im.user)}" placeholder="MySQL user" style="width:120px">
@@ -1985,7 +1990,7 @@ function viewImport() {
   }
   return `<div class="pad">
     <div class="card"><div class="ch"><h3>Found on this computer</h3></div><div class="cb">${srcChips}
-      <p class="note" style="margin-bottom:0">${hosts} project${hosts === 1 ? '' : 's'} picked up their PHP version and web root from these tools.</p></div></div>
+      <p class="note" style="margin-bottom:0">${hosts} project${hosts === 1 ? '' : 's'} picked up their PHP version and web root from these tools.</p>${htdocsPart}</div></div>
     <div class="card"><div class="ch"><h3>Copy databases to LocalSites MySQL 8.4</h3></div><div class="cb">${dbPart}</div></div>
     <div class="card"><div class="ch">${icon.plug}<h3>Connect projects to their copied database</h3></div>${connectTable()}</div></div>`;
 }
@@ -2282,7 +2287,7 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+const CLICKABLE = ['addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
@@ -2447,6 +2452,13 @@ document.addEventListener('click', async (e) => {
   if (d.sect) { if (d.sect.startsWith('g:')) { S.closed[d.sect] = !S.closed[d.sect]; saveUI(); return renderView(); } return toggleSect(d.sect); }
   if (d.fav) { S.favs.has(d.fav) ? S.favs.delete(d.fav) : S.favs.add(d.fav); saveUI(); return render(); }
   if (d.toggle) { e.stopPropagation(); const s = site(d.toggle); return updateSite(s.folder, { enabled: !s.enabled }); }
+  if (d.addroot) {
+    const st = await act(() => bridge.call('settings.get'), 'Settings'); if (!st) return;
+    const roots = [...(st.roots || []), { path: d.addroot, label: d.addrootlabel || 'htdocs' }];
+    const r = await act(() => bridge.call('settings.update', { roots }), 'Add folder');
+    if (r) { toast(`Added ${d.addroot} as a projects folder`); S.settings = null; await refresh(); render(); }
+    return;
+  }
   if (d.projrename) {
     const s = site(d.projrename); if (!s) return;
     const name = await dialog(`<h3>Rename ${esc(s.name)}</h3><p class="note">Renames the folder in ${esc(s.path.slice(0, s.path.length - s.name.length - 1))}. Settings and logs move along, and the address follows the new name unless you set your own. The database keeps its name.</p>

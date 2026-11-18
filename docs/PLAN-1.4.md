@@ -136,17 +136,23 @@ never deleted.
 ## 4. MAMP and XAMPP importers
 
 Installing free MAMP on this Mac is not safe: MAMP and MAMP PRO share `/Applications/MAMP`, and MAMP PRO's MySQL
-holds real data. So the importers are tested against the real config files from the official installers, unpacked
-into a temporary folder without installing anything:
+holds real data. MAMP PRO's installer already puts free MAMP's files there, so the check used those files,
+read-only.
 
-- MAMP `.pkg`: `pkgutil --expand-full` into a temporary folder.
-- XAMPP for macOS: unpack the installer the same way.
+**Found and fixed:**
 
-Expected findings to check: free MAMP has no virtual hosts by default (projects are folders in `htdocs`), and the
-XAMPP virtual host file is all comments by default. In both cases the importers should fall back to listing the
-`htdocs` folders. XAMPP uses MariaDB, so the database copy must work with MariaDB's `mysqldump`.
+- Free MAMP ships `httpd-vhosts.conf` with two Apache example hosts (`dummy-host.example.com`), and its
+  `httpd.conf` doesn't load that file (the `Include` line is commented out). The importer read it anyway and
+  offered the example hosts. XAMPP for macOS ships Apache's same stock files.
+- Free MAMP and XAMPP users keep projects as folders in `htdocs`, which the importer never looked at.
 
-The importers get a base folder that tests can change, and the tests run against copies of those real files.
+Now the importer reads the main `httpd.conf`: it uses a virtual-host file only when `httpd.conf` includes it,
+always skips Apache's example hosts, and lists the folders in `htdocs` with the PHP version MAMP's PHP module
+uses. The Import screen offers to add `htdocs` as a projects folder when it has projects. MAMP PRO is unchanged
+(checked on this Mac: the same 9 hosts and PHP versions).
+
+**Not checked on a real install:** XAMPP's own files (its installer can't be unpacked without installing) and
+copying a database from XAMPP's MariaDB. The tests use Apache's stock files with XAMPP's paths.
 
 ---
 
