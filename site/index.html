@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac</title>
-<meta name="description" content="Free, open-source local web development for Mac: an alternative to MAMP PRO, Laravel Herd, XAMPP and Valet. Every folder gets https://name.test, PHP 7.4 to 8.5 per project, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI coding agents.">
+<meta name="description" content="Free, open-source local web development for Mac: an alternative to MAMP PRO, Laravel Herd, XAMPP and Valet. Every folder gets https://name.test, PHP 7.1 to 8.5 per project, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI coding agents.">
 <meta name="keywords" content="MAMP PRO alternative, Laravel Herd alternative, XAMPP alternative, Local WP alternative, DBngin alternative, local development environment mac, PHP development mac, Laravel Valet alternative, local HTTPS .test domains, multiple PHP versions mac, MySQL mac, WordPress local development, MCP server">
 <link rel="canonical" href="https://itismowgli.github.io/localsites/">
 <link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
@@ -37,14 +37,15 @@
   "name": "LocalSites",
   "alternateName": [
     "LocalSites for macOS",
+    "LocalSites for Linux",
     "localsites"
   ],
   "applicationCategory": "DeveloperApplication",
   "applicationSubCategory": "Local web development environment",
-  "operatingSystem": "macOS",
+  "operatingSystem": "macOS, Linux",
   "softwareVersion": "{{version}}",
   "datePublished": "2026-11-09",
-  "softwareRequirements": "macOS on Apple silicon, Homebrew (httpd, mysql@8.4, php)",
+  "softwareRequirements": "macOS on Apple silicon, or Linux (beta: Ubuntu 24.04+, Debian 12+, Fedora; x86_64 or arm64). LocalSites installs Homebrew (httpd, mysql@8.4, php) for you",
   "fileSize": "22MB",
   "isAccessibleForFree": true,
   "license": "https://opensource.org/licenses/MIT",
@@ -53,10 +54,10 @@
     "price": "0",
     "priceCurrency": "USD"
   },
-  "description": "Free, open-source local web development environment for macOS and an alternative to MAMP PRO, Laravel Herd, XAMPP and Laravel Valet: HTTPS .test domains for every folder, PHP 7.4 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "description": "Free, open-source local web development environment for macOS and Linux (beta) and an alternative to MAMP PRO, Laravel Herd, XAMPP and Laravel Valet: HTTPS .test domains for every folder, PHP 7.1 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
   "featureList": [
     "HTTPS .test domain for every project folder",
-    "PHP 7.4 to 8.5 per project with isolated PHP-FPM pools",
+    "PHP 7.1 to 8.5 per project with isolated PHP-FPM pools",
     "Apache or Nginx, Xdebug per project",
     "MySQL 8.4 with one login per project",
     "Data browser for MySQL, MariaDB, PostgreSQL and SQLite",
@@ -166,7 +167,7 @@
       "name": "Does LocalSites run on Windows or Linux?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned."
+        "text": "Linux, yes, as a beta from version 1.4: Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Install the .deb or .rpm from the GitHub release. Windows is planned."
       }
     }
   ]
@@ -446,9 +447,10 @@ h1, h2, h3 { text-wrap: balance; }
         <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.67c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.27 1.23-2.51 1.25-2.57-.03-.01-2.4-.92-2.37-3.69zM14.1 5.92c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.05-.51 2.68-1.28z"/></svg>
           Download for macOS</a>
+        <a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a>
         <a class="btn" href="https://github.com/itismowgli/localsites">Star on GitHub</a>
       </div>
-      <p class="meta reveal">Free · MIT licence · Apple silicon · No account, no telemetry</p>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
     </div>
     <div class="stage wrap">
       <div class="frame fade-bottom" id="heroFrame">
@@ -463,7 +465,7 @@ h1, h2, h3 { text-wrap: balance; }
     <div class="stats wrap" aria-label="LocalSites in numbers">
       <div class="stat reveal"><b>22 MB</b><span>The whole app</span></div>
       <div class="stat reveal"><b>24 MB</b><span>Background service at idle</span></div>
-      <div class="stat reveal"><b>7.4 to 8.5</b><span>PHP, per project</span></div>
+      <div class="stat reveal"><b>7.1 to 8.5</b><span>PHP, per project</span></div>
       <div class="stat reveal"><b>$0</b><span>Free and open source, for good</span></div>
     </div>
   </div>
@@ -488,7 +490,7 @@ h1, h2, h3 { text-wrap: balance; }
         </div>
         <div class="tile reveal">
           <div class="viz"><div class="chips"><span class="chip">7.4</span><span class="chip">8.0</span><span class="chip">8.2</span><span class="chip">8.3</span><span class="chip">8.4</span><span class="chip on">8.5</span></div></div>
-          <h3>PHP 7.4 to 8.5, per project</h3>
+          <h3>PHP 7.1 to 8.5, per project</h3>
           <p>Each project gets its own PHP-FPM pool. Laravel uses the version composer.json asks for. Turn on Xdebug only for the project you're debugging.</p>
         </div>
         <div class="tile reveal">
@@ -605,7 +607,7 @@ h1, h2, h3 { text-wrap: balance; }
             <tr><th scope="row">Open source</th><td class="ls">Yes (MIT)</td><td class="no">No</td><td class="no">No</td><td class="">Yes (GPL)</td><td class="">Yes (MIT)</td><td class="no">No</td></tr>
             <tr><th scope="row">Mac app</th><td class="ls">Yes</td><td class="">Yes</td><td class="">Yes</td><td class="">Yes</td><td class="no">No, command line</td><td class="">Yes</td></tr>
             <tr><th scope="row">HTTPS local domains</th><td class="ls">Built in</td><td class="">Yes</td><td class="">Yes</td><td class="no">Manual setup</td><td class="">Yes, per site</td><td class="">Yes</td></tr>
-            <tr><th scope="row">PHP version per project</th><td class="ls">Yes, 7.4 to 8.5</td><td class="">Yes</td><td class="">Yes</td><td class="no">One per install</td><td class="">Yes</td><td class="">Yes</td></tr>
+            <tr><th scope="row">PHP version per project</th><td class="ls">Yes, 7.1 to 8.5</td><td class="">Yes</td><td class="">Yes</td><td class="no">One per install</td><td class="">Yes</td><td class="">Yes</td></tr>
             <tr><th scope="row">MySQL included</th><td class="ls">Yes</td><td class="">Yes</td><td class="no">Pro only</td><td class="">Yes (MariaDB)</td><td class="no">No</td><td class="">Yes</td></tr>
             <tr><th scope="row">MCP server for AI agents</th><td class="ls">Built in, with approvals</td><td class="">Yes</td><td class="">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">Through add-ons</td></tr>
             <tr><th scope="row">Made for</th><td class="ls">PHP, Node and Docker</td><td class="">PHP sites</td><td class="">PHP and Laravel</td><td class="">PHP sites</td><td class="">PHP and Laravel</td><td class="">WordPress</td></tr>
@@ -656,7 +658,7 @@ xampp     XAMPP     yes        yes
         <details><summary>macOS says it can't verify LocalSites. What do I do?</summary>
           <p>LocalSites isn't notarized by Apple yet, because that needs a paid developer account. The code is open source. To open it the first time: click Done on the warning, open System Settings → Privacy &amp; Security, scroll to Security and click Open Anyway next to LocalSites, then confirm. You only need to do this once.</p></details>
         <details><summary>Does LocalSites run on Windows or Linux?</summary>
-          <p>Not yet. LocalSites is macOS only for now. Windows and Linux versions are planned.</p></details>
+          <p>Linux, yes, as a beta from version 1.4: Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Download the <code>.deb</code> or <code>.rpm</code> from the <a href="https://github.com/itismowgli/localsites/releases/latest">latest release</a>; LocalSites installs Homebrew, PHP, Apache and MySQL for you, like on a Mac. Windows is planned.</p></details>
       </div>
     </div>
   </section>
@@ -707,9 +709,10 @@ xampp     XAMPP     yes        yes
     <h2 class="reveal">Your local stack, sorted.</h2>
     <div class="cta reveal">
       <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
+      <a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a>
       <a class="btn" href="https://github.com/itismowgli/localsites">View source</a>
     </div>
-    <p class="meta reveal">Requires macOS on Apple silicon and Homebrew.</p>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
   </div>
 </main>
 

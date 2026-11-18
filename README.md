@@ -4,7 +4,7 @@
 
 # LocalSites
 
-**A free, open-source alternative to MAMP PRO, Laravel Herd and XAMPP for macOS, with an MCP server for AI coding agents.**
+**A free, open-source alternative to MAMP PRO, Laravel Herd and XAMPP for macOS and Linux (beta), with an MCP server for AI coding agents.**
 
 Every project folder gets a real `https://name.test` address. PHP, MySQL, Node, Laravel, WordPress and Next.js
 work out of the box. A 22 MB native app, a CLI and an MCP server share one engine, so you and your AI coding agent
@@ -12,6 +12,7 @@ run the same local stack.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-3e3e44.svg)](LICENSE)
 [![Platform: macOS](https://img.shields.io/badge/platform-macOS-111.svg?logo=apple)](#install)
+[![Platform: Linux beta](https://img.shields.io/badge/platform-Linux%20beta-111.svg?logo=linux)](#linux-beta)
 [![Go](https://img.shields.io/github/go-mod/go-version/itismowgli/localsites?color=00ADD8&logo=go)](go.mod)
 [![CI](https://github.com/itismowgli/localsites/actions/workflows/ci.yml/badge.svg)](https://github.com/itismowgli/localsites/actions/workflows/ci.yml)
 [![MCP server](https://img.shields.io/badge/MCP-ready-3e3e44.svg)](#ai-agents-mcp)
@@ -54,19 +55,21 @@ does nothing until something changes. MySQL sleeps when nothing needs it.
 | | |
 |---|---|
 | **HTTPS for every folder** | `https://<folder>.test`, no port numbers. Uses Laravel Valet if you have it, or a built-in proxy and DNS server |
-| **PHP 7.4 → 8.5 per project** | Switch in one click. Laravel picks the version its `composer.json` asks for |
+| **PHP 7.1 → 8.5 per project** | Switch in one click. Laravel picks the version its `composer.json` asks for |
 | **Apache or Nginx** | Full `.htaccess` support on Apache; Nginx with pretty-URL fallback. One isolated PHP-FPM pool per project |
 | **Xdebug per project** | Turn it on for the project you're debugging; everything else stays fast. Your `php.ini` is never touched |
 | **Laravel, WordPress, PHP, static** | Detected automatically, with the right web root (`public/` for Laravel) |
 | **Next.js, Node, Docker, anything** | Runs your dev server (npm, pnpm, yarn or bun; `.nvmrc` respected) behind `https://name.test`, restarts it if it crashes. Or any command: `python manage.py runserver {port}`, `docker compose up`, `rails s -p {port}` |
 | **Many folders, many git accounts** | Add every projects folder you use. Group folders (one per GitHub/GitLab/Bitbucket account) are found automatically |
 | **Per-project settings** | Environment variables, `php.ini` overrides, web root, domain, or commit a `localsites.yaml` to share them with your team |
+| **Your editor, your terminal** | Open any project in the editor or terminal you choose (VS Code, Cursor, Zed, PhpStorm, Sublime, iTerm2, Ghostty, kitty and more). LocalSites asks once and never guesses |
+| **Rename, hide or trash** | Rename a project folder and its settings and address follow; hide it from LocalSites; or move it to the Trash. Its database is never touched |
 
 ### Databases, with a real data browser
 
 <img src="docs/screenshots/data-browser.jpg" alt="LocalSites data browser showing a products table in MySQL, read-only by default" width="900">
 
-- **MySQL 8.4 LTS** with **one login per project** (no shared `root`), passwords in the macOS Keychain
+- **MySQL 8.4 LTS** with **one login per project** (no shared `root`), passwords in the macOS Keychain (or your Linux desktop keyring)
 - **Data browser** for LocalSites MySQL, MAMP's MySQL, any MySQL/MariaDB (with SSH tunnels), PostgreSQL and SQLite:
   tables, rows, structure, SQL with autocomplete and history
 - **Safe by default.** Every connection starts read-only. In Edit mode changes are staged, you review the exact
@@ -165,10 +168,10 @@ localsites import database xampp blog_db
 
 ## Install
 
-> LocalSites is **macOS only** for now. Windows and Linux versions are planned: the engine and CLI already
-> compile for both, but there is no app or installer for them yet. See the [roadmap](#roadmap).
+LocalSites runs on **macOS** and, as a beta, on **Linux** ([see below](#linux-beta)). A Windows version is
+planned; see the [roadmap](#roadmap).
 
-**Download:** get `LocalSites.app` from the [latest release](https://github.com/itismowgli/localsites/releases/latest).
+**Download (macOS):** get `LocalSites.app` from the [latest release](https://github.com/itismowgli/localsites/releases/latest).
 Unzip the download and drag **LocalSites.app** into your Applications folder, then open it.
 
 You don't need to install anything else first. LocalSites runs Apache, MySQL and PHP from Homebrew, and the
@@ -177,7 +180,7 @@ Overview page sets them up for you:
 - **No Homebrew?** Click **Install Homebrew**. LocalSites downloads Homebrew's official installer, checks that
   Apple has notarized it, and opens it. Click Continue and enter your Mac password.
 - **Then click Fix everything.** LocalSites installs Apache, MySQL 8.4, PHP and every PHP version your projects
-  use (old ones such as 7.4 or 5.6 come from the `shivammathur/php` tap), and repairs PHP versions that are
+  use (old ones such as 7.1 or 7.4 come from the `shivammathur/php` tap), and repairs PHP versions that are
   installed but broken, for example after Homebrew removed a library they need. If some Homebrew files belong
   to root, macOS asks for your password once to give them back. Projects restart by themselves when it's done.
 
@@ -212,8 +215,35 @@ xattr -dr com.apple.quarantine /Applications/LocalSites.app
 Open **LocalSites.app**. It starts its background service and lists every folder in `~/Sites/localhost`
 (change it in Settings). Switch a project on and open `https://<folder>.test`.
 
-If you use Laravel Valet, LocalSites uses Valet's domains and certificates. Otherwise it runs its own; trust its
-certificate once so browsers don't warn. **Doctor** shows the one command to run.
+If you use Laravel Valet, LocalSites uses Valet's domains and certificates. Otherwise it runs its own, and the
+Overview page shows one more step, **Set up .test domains**: it sends `.test` addresses to LocalSites and trusts
+its certificate, which can only sign `.test` names, so browsers show the padlock. macOS asks for your password
+once. Ports 80 and 443 need nothing.
+
+<a id="linux-beta"></a>
+### Linux (beta)
+
+Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Download the package for your system
+from the [latest release](https://github.com/itismowgli/localsites/releases/latest) and install it:
+
+```sh
+sudo apt install ./localsites_*_amd64.deb      # Ubuntu, Debian (arm64: the _arm64.deb)
+sudo dnf install ./localsites-*.x86_64.rpm     # Fedora (arm64: the .aarch64.rpm)
+```
+
+Then open **LocalSites** from your applications. It works the same way as on a Mac:
+
+- **Install Homebrew** asks for your password once (the system's own prompt), then installs Homebrew in
+  `/home/linuxbrew`, the only place its ready-made packages work. PHP, Apache, MySQL 8.4 and add-ons come from
+  there, so every PHP version from 7.1 to 8.5 is available on every distro, side by side, without touching your
+  system's own packages.
+- **Fix everything** installs what your projects need. **Set up .test domains** adds a systemd-resolved setting
+  for `.test`, trusts the LocalSites certificate in the system store and in Chrome and Firefox, and lets programs
+  use ports 80 and 443. One password prompt.
+- Passwords go to your desktop keyring (GNOME Keyring or KWallet). Closing the window leaves your sites running.
+
+Known limits of the beta: no tray icon yet, updates come from the release page (open the new package), and
+`.test` names need systemd-resolved (the default on Ubuntu and Fedora; Debian needs it switched on).
 
 <a id="build-from-source"></a>
 <details>
@@ -224,6 +254,13 @@ brew install go httpd mysql@8.4 php
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
 make build      # CLI -> bin/localsites, app -> desktop/build/bin/LocalSites.app
+```
+
+Linux packages build in a container that has GTK, WebKitGTK 4.1, Wails and nfpm:
+
+```sh
+docker build -t localsites-linux-build tests/linux/build
+docker run --rm -v "$PWD":/src -w /src localsites-linux-build make linux-packages
 ```
 
 </details>
@@ -303,10 +340,13 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 
 | | macOS | Linux | Windows |
 |---|---|---|---|
-| Desktop app and installer | ✅ | planned | planned |
-| Engine and CLI | ✅ | compiles, not yet usable | compiles, not yet usable |
-| PHP / Apache / MySQL runtimes | ✅ Homebrew | planned | planned |
-| HTTPS domains | ✅ Valet or built-in | planned | planned |
+| Desktop app and installer | ✅ | ✅ beta (.deb, .rpm) | planned |
+| Engine and CLI | ✅ | ✅ beta | compiles, not yet usable |
+| PHP / Apache / MySQL runtimes | ✅ Homebrew | ✅ Homebrew | planned |
+| HTTPS domains | ✅ Valet or built-in | ✅ built-in (systemd-resolved) | planned |
+| Passwords | ✅ Keychain | ✅ desktop keyring | planned |
+| Tray icon | ✅ menu bar | planned | planned |
+| In-app updates | ✅ | planned (update from the release page) | planned |
 | Import from MAMP PRO / MAMP / XAMPP | ✅ | not needed (no MAMP on Linux) | planned |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PLAN.md](docs/PLAN.md) for what's next.

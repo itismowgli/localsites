@@ -521,15 +521,21 @@ test('native drag regions: headers drag, controls and open dialogs never do', as
   });
   await page.goto('/#projects');
   await expect.poll(() => page.evaluate(() => window.__regions.length)).toBeGreaterThan(0);
-  const [drag, no] = await page.evaluate(() => window.__regions.at(-1));
   const inside = (list, x, y) => list.some(([l, t, w, h]) => x >= l && x < l + w && y >= t && y < t + h);
   const center = async (sel) => page.locator(sel).first().evaluate(el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
-  const tb = await page.locator('#topbar').boundingBox();
-  expect(inside(drag, tb.x + tb.width - 60, tb.y + 10)).toBe(true);            // empty title bar
-  for (const sel of ['#tbBack', '.ph .title', '#filter', '.switcher .ws', '.statusbar .item']) {
-    const [x, y] = await center(sel);
-    expect(inside(drag, x, y) && !inside(no, x, y), sel).toBe(false);          // controls stay clickable
-  }
+  // The regions follow the page as it fills in (status bar, setup card): check the latest once it settles
+  const wrong = async () => {
+    const [drag, no] = await page.evaluate(() => window.__regions.at(-1));
+    const out = [];
+    const tb = await page.locator('#topbar').boundingBox();
+    if (!inside(drag, tb.x + tb.width - 60, tb.y + 10)) out.push('empty title bar should drag');
+    for (const sel of ['#tbBack', '.ph .title', '#filter', '.switcher .ws', '.statusbar .item']) {
+      const [x, y] = await center(sel);
+      if (inside(drag, x, y) && !inside(no, x, y)) out.push(sel + ' drags');  // controls stay clickable
+    }
+    return out;
+  };
+  await expect.poll(wrong).toEqual([]);
   await page.keyboard.press('ControlOrMeta+k');                                  // palette open: nothing drags
   await expect.poll(() => page.evaluate(() => window.__regions.at(-1)[0].length)).toBe(0);
   await ctx.close();

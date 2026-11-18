@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-11-18",
+    "title": "Linux beta, your editor, and .test without Valet",
+    "items": [
+      "LocalSites runs on Linux (beta): Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Install the .deb or .rpm from the release page; PHP, Apache, MySQL 8.4 and add-ons come from Homebrew, which LocalSites installs for you after one password prompt",
+      "On Linux, .test domains, HTTPS and the web ports are set up from the same Setup card (systemd-resolved, the system and browser certificate stores), passwords are kept in your desktop keyring, notifications and start at login work, and closing the window leaves your sites running",
+      "Choose your code editor and terminal: the Open buttons no longer guess. The first time, LocalSites asks which installed one to use and remembers it; change it in Settings, pick Make default in the Open menu, or choose Ask every time. localsites open and AI agents use the same choice",
+      "Macs without Laravel Valet get working .test addresses with HTTPS: one Setup step sends .test to LocalSites and trusts its certificate (which can only sign .test names), with one password prompt. Ports 80 and 443 need no password at all",
+      "Projects can be renamed (settings, logs and the address move along), hidden from LocalSites (the folder stays), or moved to the Trash after typing the project's name. A project's database is never touched by any of these",
+      "Importing from free MAMP and XAMPP finds the projects in htdocs, with MAMP's PHP version, instead of Apache's example hosts. The Import screen offers to add htdocs as a projects folder",
+      "Menus close as soon as you click outside them, also on the window's drag areas, when you switch to another app, or click their button again",
+      "Fixed: projects on PHP 7.2 or older couldn't run, because PHP-FPM before 7.3 refuses an option LocalSites always wrote. Every installed PHP version is now tested with the configuration LocalSites writes for it",
+      "Fixed: Fix everything couldn't install some PHP versions from the shivammathur/php tap (php@8.5 needs other formulas from the same tap); the tap is now trusted as a whole",
+      "Fixed: dev servers didn't find npm installed with Snap, Volta, Bun, nvm's default version or in your own folder"
+    ]
+  },
+  {
     "version": "1.3.0",
     "date": "2026-11-15",
     "title": "LocalSites sets itself up",

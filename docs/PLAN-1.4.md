@@ -1,7 +1,9 @@
 # LocalSites 1.4: plan
 
-Branch: `linux-editors`. Nothing is merged into `master` or released until every part below is done and the
-full test gate passes. Then: merge, version 1.4.0, one release.
+**Status: released as 1.4.0 (2026-11-18), Linux as a beta.** Parts 1 to 6 are done. Not in 1.4.0: a Linux tray
+icon, in-app updates on Linux (the app points to the release page), and signed `.rpm` packages.
+
+Branch: `linux-editors`, merged into `master` once every part below was done and the full test gate passed.
 
 Goal: someone installs LocalSites on a new Mac or Linux computer and their sites work without a terminal.
 

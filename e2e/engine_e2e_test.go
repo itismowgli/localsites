@@ -242,6 +242,19 @@ func TestSitesEndToEnd(t *testing.T) {
 		ev.set("hello", engine.SitePatch{PHP: str("8.5")})
 	})
 
+	t.Run("old PHP versions serve too", func(t *testing.T) {
+		for _, v := range []string{"5.6", "7.0", "7.1", "7.2"} { // PHP-FPM before 7.3 rejects options newer versions know
+			if _, ok := lsruntime.FindPHP(v); !ok {
+				continue
+			}
+			ev.set("hello", engine.SitePatch{PHP: str(v)})
+			if _, body := ev.get("https://hello.test/"); body != "php="+v+" via=direct" {
+				t.Fatalf("PHP %s: %q", v, body)
+			}
+		}
+		ev.set("hello", engine.SitePatch{PHP: str("8.5")})
+	})
+
 	t.Run("web root subfolder", func(t *testing.T) {
 		ev.set("pubapp", engine.SitePatch{Enabled: on()})
 		if _, body := ev.get("https://pubapp.test/"); body != "public-ok" {

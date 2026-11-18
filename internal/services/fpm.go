@@ -48,8 +48,7 @@ pm = ondemand
 pm.max_children = 8
 pm.process_idle_timeout = 10s
 catch_workers_output = yes
-decorate_workers_output = no
-clear_env = yes
+%sclear_env = yes
 env[PATH] = %s
 env[TMPDIR] = %q
 php_admin_value[pdo_mysql.default_socket] = %q
@@ -58,7 +57,7 @@ php_admin_value[error_log] = %q
 php_admin_flag[log_errors] = on
 php_admin_value[sys_temp_dir] = %q
 php_admin_value[upload_tmp_dir] = %q
-`, p.Name, p.Socket, fpmPath(), p.TmpDir, p.MySQLSocket, p.MySQLSocket, p.ErrorLog, p.TmpDir, p.TmpDir)
+`, p.Name, p.Socket, decorateOff(version), fpmPath(), p.TmpDir, p.MySQLSocket, p.MySQLSocket, p.ErrorLog, p.TmpDir, p.TmpDir)
 		vals := map[string]string{}
 		for k, v := range PHPDefaults {
 			vals[k] = v
@@ -92,4 +91,14 @@ func fpmPath() string {
 		return "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" // unchanged from earlier versions
 	}
 	return strings.Join(append(platform.BrewBins(), "/usr/local/bin", "/usr/bin", "/bin"), ":")
+}
+
+// decorateOff keeps PHP's own log lines plain. PHP-FPM only knows the option from 7.3 and refuses to start
+// on an unknown one, so older versions (5.6 to 7.2) don't get it.
+func decorateOff(version string) string {
+	var major, minor int
+	if _, err := fmt.Sscanf(version, "%d.%d", &major, &minor); err != nil || major > 7 || (major == 7 && minor >= 3) {
+		return "decorate_workers_output = no\n"
+	}
+	return ""
 }
