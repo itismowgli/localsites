@@ -8,11 +8,11 @@ jobs:
   lint-and-test:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Lint (gofmt, go vet, JavaScript syntax, no container queries)
@@ -31,8 +31,8 @@ jobs:
     # Apache, MySQL 8.4 and PHP, set up the way LocalSites does it on Linux.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: GTK and WebKitGTK for the desktop app
@@ -47,7 +47,11 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
-          brew install httpd mysql@8.4
+          brew install httpd
+          # The runner has a system MySQL whose /etc/mysql/my.cnf breaks Homebrew's own post-install step
+          # (it only creates Homebrew's sample data folder, which LocalSites doesn't use; LocalSites starts
+          # MySQL with its own --defaults-file). Keep that file: the tests then run next to a system MySQL.
+          brew install mysql@8.4 || test -x "$(brew --prefix mysql@8.4)/bin/mysqld"
           brew tap shivammathur/php && (brew trust shivammathur/php || true)
           brew install shivammathur/php/php@8.5
       - name: End-to-end tests
