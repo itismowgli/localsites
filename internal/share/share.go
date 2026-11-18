@@ -26,6 +26,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // Provider is a tunnel service with a free, open-source client and no account needed.
@@ -73,7 +75,10 @@ func FindProvider(id string) (Provider, bool) {
 func (p Provider) Binary() (string, bool) {
 	cands := []string{p.Bin}
 	if !filepath.IsAbs(p.Bin) {
-		cands = []string{filepath.Join("/opt/homebrew/bin", p.Bin), filepath.Join("/usr/local/bin", p.Bin)}
+		cands = nil
+		for _, d := range append(platform.BrewBins(), "/usr/local/bin", "/usr/bin") {
+			cands = append(cands, filepath.Join(d, p.Bin))
+		}
 	}
 	for _, f := range cands {
 		if st, err := os.Stat(f); err == nil && !st.IsDir() && st.Mode()&0o111 != 0 {

@@ -57,7 +57,7 @@ type SettingsView struct {
 func (e *Engine) Settings() SettingsView {
 	cfg := e.Store.Get()
 	v := SettingsView{Settings: cfg.Settings, Version: version.Version, PHPDefaults: services.PHPDefaults,
-		PHPEffective: e.phpIni(), StartAtLogin: e.startAtLogin(), LoginSupport: goruntime.GOOS == "darwin",
+		PHPEffective: e.phpIni(), StartAtLogin: e.startAtLogin(), LoginSupport: loginSupported(),
 		DataDir: e.P.Data, LogsDir: e.P.Logs, BackupsDir: e.P.Backups, MySQLSocket: e.P.Socket("mysql"), FrontDoorUsed: e.Front.Name()}
 	_, v.ValetFound = runtime.Valet()
 	for k := range PHPIniKeys {
@@ -360,8 +360,21 @@ func (e *Engine) UpdateSettings(p SettingsPatch) ([]string, error) {
 
 const loginLabel = "dev.localsites.agent"
 
+// loginSupported: macOS (a LaunchAgent) and Linux desktops (an XDG autostart entry).
+func loginSupported() bool { return goruntime.GOOS == "darwin" || goruntime.GOOS == "linux" }
+
 func (e *Engine) launchAgentPath() string {
 	dir := os.Getenv("LOCALSITES_LAUNCHAGENTS_DIR") // tests use a temp dir
+	if goruntime.GOOS == "linux" {
+		if dir == "" {
+			cfg := os.Getenv("XDG_CONFIG_HOME")
+			if cfg == "" {
+				cfg = filepath.Join(e.P.Home, ".config")
+			}
+			dir = filepath.Join(cfg, "autostart")
+		}
+		return filepath.Join(dir, loginLabel+".desktop")
+	}
 	if dir == "" {
 		dir = filepath.Join(e.P.Home, "Library", "LaunchAgents")
 	}
@@ -369,24 +382,29 @@ func (e *Engine) launchAgentPath() string {
 }
 
 func (e *Engine) startAtLogin() bool {
-	if goruntime.GOOS != "darwin" {
+	if !loginSupported() {
 		return false
 	}
 	_, err := os.Stat(e.launchAgentPath())
 	return err == nil
 }
 
+// desktopExecQuote quotes one argument of a .desktop Exec line (Desktop Entry Specification).
+func desktopExecQuote(s string) string {
+	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`, "`", "\\`", `$`, `\$`).Replace(s) + `"`
+}
+
 // setStartAtLogin installs or removes a per-user LaunchAgent that runs `<this binary> daemon` at login.
 // Only called when the user flips the switch in Settings or runs the CLI command.
 func (e *Engine) setStartAtLogin(on bool) error {
-	if goruntime.GOOS != "darwin" {
-		return errors.New("start at login is available on macOS for now")
+	if !loginSupported() {
+		return errors.New("start at login isn't available on this system yet")
 	}
 	file := e.launchAgentPath()
 	sandboxed := os.Getenv("LOCALSITES_LAUNCHAGENTS_DIR") != ""
 	uid := fmt.Sprint(os.Getuid())
 	if !on {
-		if !sandboxed {
+		if !sandboxed && goruntime.GOOS == "darwin" {
 			_ = exec.Command("/bin/launchctl", "bootout", "gui/"+uid+"/"+loginLabel).Run()
 		}
 		if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
@@ -399,6 +417,14 @@ func (e *Engine) setStartAtLogin(on bool) error {
 		return err
 	}
 	self, _ = filepath.EvalSymlinks(self)
+	if goruntime.GOOS == "linux" { // started by the desktop when the person logs in (a graphical session)
+		entry := "[Desktop Entry]\nType=Application\nName=LocalSites\nComment=Runs your local sites in the background\n" +
+			"Exec=" + desktopExecQuote(self) + " daemon\nTerminal=false\nNoDisplay=true\nX-GNOME-Autostart-enabled=true\n"
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(file, []byte(entry), 0o644)
+	}
 	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>

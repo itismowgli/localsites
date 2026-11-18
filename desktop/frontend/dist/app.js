@@ -541,8 +541,9 @@ function setupCard() {
     <p class="note">${esc(su.step || 'Working…')}</p></div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
     <p class="note">This can take a few minutes. You can keep using LocalSites; projects restart by themselves when it’s done.</p></section>`;
   if (!su.homebrew) return `<section class="ov-sec setup"><div class="setup-h"><span class="st-ic">${icon.download2}</span><div><h2>One step before your projects run</h2>
-    <p class="note">LocalSites runs Apache, MySQL and PHP from Homebrew, the free installer most Mac developers use. LocalSites downloads Homebrew’s official installer, checks Apple has verified it, and opens it: click Continue and enter your Mac password.</p></div></div>
-    ${res.homebrew === 'opened' ? '<p class="note">Finish the Homebrew installer, then come back here: the next step appears by itself.</p>' : res.homebrew ? `<p class="note warn">${esc(res.homebrew)}</p>` : ''}
+    <p class="note">${isMac ? 'LocalSites runs Apache, MySQL and PHP from Homebrew, the free installer most Mac developers use. LocalSites downloads Homebrew’s official installer, checks Apple has verified it, and opens it: click Continue and enter your Mac password.'
+      : 'LocalSites runs Apache, MySQL and PHP from Homebrew, a free package manager that keeps them separate from your system’s own packages. LocalSites installs it for you: enter your password once, then it takes a few minutes.'}</p></div></div>
+    ${res.homebrew === 'opened' ? '<p class="note">Finish the Homebrew installer, then come back here: the next step appears by itself.</p>' : res.homebrew && res.homebrew !== 'ok' ? `<p class="note warn">${esc(res.homebrew)}</p>` : ''}
     <div class="form-row">${UI.btn(res.homebrew === 'opened' ? 'Open the installer again' : 'Install Homebrew', { ic: 'download2', kind: 'primary', attrs: 'data-cmd="setuphomebrew"' })}</div>
     ${su.items.filter(i => i.kind === 'system').map(i => `<div class="ov-row"><span class="chip">Set up</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
       <button class="btn sm" data-setupfix="${esc(i.id)}">${icon.wrench}Set up</button></div>`).join('')}</section>`;
@@ -551,7 +552,7 @@ function setupCard() {
   const need = su.items.filter(i => i.required).length, pw = su.items.some(i => i.password);
   const title = need ? `${need === 1 ? 'One thing needs' : `${need} things need`} fixing before every project can run` : 'LocalSites can fix these for you';
   return `<section class="ov-sec setup"><div class="setup-h"><span class="${need ? 'bad' : 'note'}">${icon.alertCircle}</span><div><h2>${esc(title)}</h2>
-    <p class="note">${su.items.every(i => i.kind === 'system') ? 'One click sets this up' : 'One click installs or repairs everything below with Homebrew'}${pw ? '. macOS asks for your Mac password once' : ''}.</p></div></div>
+    <p class="note">${su.items.every(i => i.kind === 'system') ? 'One click sets this up' : 'One click installs or repairs everything below with Homebrew'}${pw ? (isMac ? '. macOS asks for your Mac password once' : '. It asks for your password once') : ''}.</p></div></div>
     ${su.items.map(i => `<div class="ov-row"><span class="chip">${{ repair: 'Repair', system: 'Set up' }[i.kind] || 'Install'}</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
       ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span>` : ''}</div>`).join('')}
     <details class="setup-cmds"><summary class="note">Commands it runs</summary><pre class="mini">${esc(su.items.flatMap(i => i.steps).join('\n'))}</pre></details>
@@ -792,7 +793,7 @@ const statusIcon = { ok: '<span class="ok">✓</span>', warn: '<span class="warn
 function setupFor(c) {
   if (c.status === 'ok' || !S.setup || S.setup.running) return null;
   const m = /^PHP (\d+\.\d+|latest)$/.exec(c.name);
-  const domains = /^\.[a-z]+ addresses$/.test(c.name) || (c.area === 'Certificates' && /^LocalSites Development CA/.test(c.name));
+  const domains = /^\.[a-z]+ addresses$/.test(c.name) || c.name === 'Web ports 80 and 443' || (c.area === 'Certificates' && /^LocalSites Development CA/.test(c.name));
   const id = domains ? 'domains' : { 'Apache installed': 'httpd', 'MySQL 8.4 installed': 'mysql@8.4', PHP: 'php' }[c.name] || (m && (m[1] === 'latest' ? 'php' : 'php@' + m[1]));
   return (S.setup.items || []).find(i => i.id === id) || null;
 }

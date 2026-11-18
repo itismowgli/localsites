@@ -16,6 +16,8 @@ import (
 	"github.com/localsites/localsites/internal/frontdoor"
 	"github.com/localsites/localsites/internal/proc"
 	"github.com/localsites/localsites/internal/secrets"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // AddonView is an add-on with its install and run state, for the app, CLI and agents.
@@ -254,7 +256,7 @@ func (e *Engine) applyAddons(add func(string, ...any)) []frontdoor.Route {
 		_, o := e.addonOptions(v.Def)
 		dir := filepath.Join(e.P.Data, "addons", v.ID)
 		_ = os.MkdirAll(dir, 0o700)
-		env := []string{"PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin", "HOME=" + e.P.Home}
+		env := []string{"PATH=" + platform.SystemPath(), "HOME=" + e.P.Home}
 		if v.Def.ProcEnv != nil {
 			env = append(env, v.Def.ProcEnv(o)...)
 		}

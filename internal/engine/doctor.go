@@ -142,9 +142,13 @@ func (e *Engine) Doctor() []Check {
 		if d.resolver {
 			out = append(out, ok("Domains", "."+d.tld+" addresses", "macOS sends them to LocalSites"))
 		} else {
-			out = append(out, fail("Domains", "."+d.tld+" addresses", "macOS doesn’t send ."+d.tld+" lookups to LocalSites yet",
+			out = append(out, fail("Domains", "."+d.tld+" addresses", map[bool]string{true: "Linux", false: "macOS"}[d.goos == "linux"]+" doesn’t send ."+d.tld+" lookups to LocalSites yet",
 				"Overview → Set up ."+d.tld+" domains (or: localsites setup fix domains)"))
 		}
+	}
+	if d := e.domainsState(); d.need && d.goos == "linux" && !d.ports {
+		out = append(out, fail("Domains", "Web ports 80 and 443", "Linux only lets system programs use ports below 1024",
+			"Overview → Set up ."+d.tld+" domains (or: localsites setup fix domains)"))
 	}
 	out = append(out, e.trustCheck())
 
@@ -219,6 +223,13 @@ func procCheck(name string, st proc.Status, _ bool) Check {
 
 // trustCheck tells whether browsers will trust the site certificates.
 func (e *Engine) trustCheck() Check {
+	if goruntime.GOOS == "linux" && e.Front.Name() == "builtin" {
+		if caFileTrusted(e.CA.RootPath()) {
+			return ok("Certificates", caName+" trusted", "browsers will show the padlock")
+		}
+		return fail("Certificates", caName+" trusted", "browsers will warn “Your connection is not private”",
+			"Overview → Set up ."+e.Store.Get().Settings.TLD+" domains (or: localsites setup fix domains)")
+	}
 	if goruntime.GOOS != "darwin" {
 		return Check{Area: "Certificates", Name: "Certificate authority trusted", Status: "skip", Detail: "check not available on this OS yet"}
 	}

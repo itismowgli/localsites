@@ -17,6 +17,8 @@ import (
 	"github.com/localsites/localsites/internal/config"
 	"github.com/localsites/localsites/internal/proc"
 	"github.com/localsites/localsites/internal/runtime"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // Dev-server projects (Next.js, Node, any custom command) run as supervised processes on
@@ -85,7 +87,7 @@ func portFree(p int) bool {
 // appSpec builds the command that runs a project's dev server.
 func (e *Engine) appSpec(s SiteView) (proc.Spec, error) {
 	port := strconv.Itoa(s.Port)
-	path := strings.Join(append(e.nodeBins(s), "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"), string(os.PathListSeparator))
+	path := platform.SystemPath(e.nodeBins(s)...)
 	env := []string{"PATH=" + path, "PORT=" + port, "HOST=127.0.0.1", "HOSTNAME=127.0.0.1", "BROWSER=none", "FORCE_COLOR=0"}
 	for _, k := range sortedKeys(s.EnvVars) { // the project's own variables (validated when saved)
 		env = append(env, k+"="+s.EnvVars[k])
@@ -240,7 +242,7 @@ func (e *Engine) InstallDeps(folder string) (string, error) {
 	if e.Sup.Status(name).Running {
 		return "", errors.New("already installing")
 	}
-	path := strings.Join(append(e.nodeBins(s), "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"), string(os.PathListSeparator))
+	path := platform.SystemPath(e.nodeBins(s)...)
 	spec := proc.Spec{Name: name, Dir: s.Path, OneShot: true, Env: []string{"PATH=" + path, "COMPOSER_NO_INTERACTION=1", "CI=1", "FORCE_COLOR=0"},
 		Log: filepath.Join(e.P.SiteLogs, fileKey(s.Folder)+"-install.log")}
 	switch {

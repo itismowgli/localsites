@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,10 +14,16 @@ import (
 	"strings"
 )
 
-// Setting up .test domains for the built-in front door (Macs without Laravel Valet): macOS must send
-// .test lookups to LocalSites' DNS (/etc/resolver/test) and trust the LocalSites certificate authority,
-// which can only sign .test names. Both need the Mac password once; ports 80 and 443 need nothing
-// (see frontdoor.listenLocal).
+// Setting up .test domains for the built-in front door (no Laravel Valet). Three things, done once with
+// one password prompt:
+//
+//	                 macOS                                   Linux
+//	.test names      /etc/resolver/<tld>                     systemd-resolved drop-in (resolved.conf.d)
+//	certificate      System keychain (or the login keychain) system store + Chrome/Firefox NSS stores
+//	ports 80, 443    nothing needed (frontdoor.listenLocal)  net.ipv4.ip_unprivileged_port_start=80
+//
+// The LocalSites certificate authority can only sign .<tld> names, so trusting it can't be used to fake
+// other websites.
 
 const caName = "LocalSites Development CA"
 
@@ -25,31 +32,50 @@ var validTLD = regexp.MustCompile(`^[a-z]{2,20}$`)
 // domainsState is what the domains step depends on, so tests can build it without touching the system.
 type domainsState struct {
 	need     bool // the built-in front door serves the domains (no Valet) on a supported system
+	goos     string
 	resolver bool // the system sends .<tld> lookups to LocalSites
 	trusted  bool // browsers trust the LocalSites CA
+	ports    bool // LocalSites may listen on the HTTP and HTTPS ports
 	tld      string
 	dnsPort  int
+	lowPort  int // the lower of the HTTP and HTTPS ports
 	caFile   string
 }
 
 // domainsStep is the system change of the domains item.
 type domainsStep struct {
-	resolver bool // write /etc/resolver/<tld>
-	trust    bool // trust the CA
+	goos     string
+	resolver bool
+	trust    bool
+	ports    bool
 	tld      string
 	dnsPort  int
+	lowPort  int
 	caFile   string
 }
 
-// resolverFile is where macOS looks for a per-domain DNS server (tests change it).
-var resolverDir = "/etc/resolver"
+// Where each system keeps the settings (tests change them).
+var (
+	resolverDir   = "/etc/resolver"                                // macOS
+	resolvedDrop  = "/etc/systemd/resolved.conf.d/localsites.conf" // Linux
+	caAnchors     = []string{"/usr/local/share/ca-certificates/localsites-ca.crt", "/etc/pki/ca-trust/source/anchors/localsites-ca.crt"}
+	portStartFile = "/proc/sys/net/ipv4/ip_unprivileged_port_start"
+)
 
 func resolverContent(port int) string {
 	return fmt.Sprintf("# Added by LocalSites: send .test lookups to its DNS server\nnameserver 127.0.0.1\nport %d\n", port)
 }
 
-// resolverOK reports whether /etc/resolver/<tld> points at LocalSites' DNS port.
-func resolverOK(tld string, port int) bool {
+func resolvedContent(tld string, port int) string {
+	return fmt.Sprintf("# Added by LocalSites: send .%s lookups to its DNS server\n[Resolve]\nDNS=127.0.0.1:%d\nDomains=~%s\n", tld, port, tld)
+}
+
+// resolverOK reports whether the system sends .<tld> lookups to LocalSites' DNS port.
+func resolverOK(goos, tld string, port int) bool {
+	if goos == "linux" {
+		b, err := os.ReadFile(resolvedDrop)
+		return err == nil && strings.Contains(string(b), fmt.Sprintf("DNS=127.0.0.1:%d\n", port)) && strings.Contains(string(b), "Domains=~"+tld+"\n")
+	}
 	b, err := os.ReadFile(filepath.Join(resolverDir, tld))
 	if err != nil {
 		return false
@@ -67,7 +93,20 @@ func resolverOK(tld string, port int) bool {
 	return ns && p == port
 }
 
-// caTrusted asks macOS whether the CA is trusted, system-wide (-d) or for this user (replaced in tests).
+// portsOK: on Linux, programs need net.ipv4.ip_unprivileged_port_start at or below the port (macOS: always).
+func portsOK(goos string, low int) bool {
+	if goos != "linux" || low >= 1024 {
+		return true
+	}
+	b, err := os.ReadFile(portStartFile)
+	if err != nil {
+		return false
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	return err == nil && n <= low
+}
+
+// caTrusted asks macOS whether the CA is trusted, system-wide or for this user (replaced in tests).
 var caTrusted = func(name string) bool {
 	if goruntime.GOOS != "darwin" {
 		return false
@@ -81,32 +120,62 @@ var caTrusted = func(name string) bool {
 	return false
 }
 
+// caFileTrusted: on Linux, the CA file is in the system's trust anchors.
+func caFileTrusted(caFile string) bool {
+	want, err := os.ReadFile(caFile)
+	if err != nil {
+		return false
+	}
+	for _, a := range caAnchors {
+		if got, err := os.ReadFile(a); err == nil && bytes.Equal(bytes.TrimSpace(got), bytes.TrimSpace(want)) {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *Engine) domainsState() domainsState {
 	s := e.Store.Get().Settings
-	d := domainsState{tld: s.TLD, dnsPort: s.DNSPort}
+	d := domainsState{goos: goruntime.GOOS, tld: s.TLD, dnsPort: s.DNSPort, lowPort: min(s.HTTPPort, s.HTTPSPort)}
 	if e.CA != nil {
 		d.caFile = e.CA.RootPath()
 	}
-	if goruntime.GOOS != "darwin" || e.Front == nil || e.CA == nil || e.Front.Name() != "builtin" || !validTLD.MatchString(s.TLD) {
+	if (d.goos != "darwin" && d.goos != "linux") || e.Front == nil || e.CA == nil || e.Front.Name() != "builtin" || !validTLD.MatchString(s.TLD) {
 		return d
 	}
 	d.need = true
-	d.resolver = resolverOK(s.TLD, s.DNSPort)
-	d.trusted = caTrusted(caName)
+	d.resolver = resolverOK(d.goos, s.TLD, s.DNSPort)
+	d.ports = portsOK(d.goos, d.lowPort)
+	if d.goos == "linux" {
+		d.trusted = caFileTrusted(d.caFile)
+	} else {
+		d.trusted = caTrusted(caName)
+	}
 	return d
 }
 
 // domainsItem is the Setup item, or nothing when everything is in place.
 func domainsItem(d domainsState) (planItem, bool) {
-	if !d.need || (d.resolver && d.trusted) {
+	if d.goos == "" {
+		d.goos = "darwin"
+	}
+	if !d.need || (d.resolver && d.trusted && (d.ports || d.goos != "linux")) {
 		return planItem{}, false
 	}
-	var why []string
-	st := domainsStep{resolver: !d.resolver, trust: !d.trusted, tld: d.tld, dnsPort: d.dnsPort, caFile: d.caFile}
-	var labels []string
+	st := domainsStep{goos: d.goos, resolver: !d.resolver, trust: !d.trusted, ports: d.goos == "linux" && !d.ports,
+		tld: d.tld, dnsPort: d.dnsPort, lowPort: d.lowPort, caFile: d.caFile}
+	var why, labels []string
 	if !d.resolver {
 		why = append(why, "."+d.tld+" addresses don’t open yet")
-		labels = append(labels, fmt.Sprintf("send .%s addresses to LocalSites (writes %s/%s)", d.tld, resolverDir, d.tld))
+		if d.goos == "linux" {
+			labels = append(labels, fmt.Sprintf("send .%s addresses to LocalSites (writes %s)", d.tld, resolvedDrop))
+		} else {
+			labels = append(labels, fmt.Sprintf("send .%s addresses to LocalSites (writes %s/%s)", d.tld, resolverDir, d.tld))
+		}
+	}
+	if st.ports {
+		why = append(why, "LocalSites can’t use the web ports 80 and 443 yet")
+		labels = append(labels, "let programs use ports from 80 up (net.ipv4.ip_unprivileged_port_start)")
 	}
 	if !d.trusted {
 		why = append(why, "browsers would warn “Your connection is not private”")
@@ -118,59 +187,124 @@ func domainsItem(d domainsState) (planItem, bool) {
 	return it, true
 }
 
-// setupDomains makes the system changes with one macOS password prompt (replaced in tests).
-var setupDomains = func(ctx context.Context, st domainsStep) error {
-	if goruntime.GOOS != "darwin" {
-		return errors.New("setting up domains isn't supported on this system yet")
-	}
-	if !validTLD.MatchString(st.tld) || st.dnsPort < 1024 || st.dnsPort > 65535 {
-		return errors.New("invalid domain settings")
-	}
-	tmp, err := os.CreateTemp("", "localsites-resolver-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.WriteString(resolverContent(st.dnsPort)); err != nil {
-		tmp.Close()
-		return err
-	}
-	tmp.Close()
-	_ = os.Chmod(tmp.Name(), 0o644)
-	// The script builds one shell command from quoted arguments; nothing from outside is pasted in unquoted.
-	script := `on run argv
-	set resolverFile to item 1 of argv
-	set tmpFile to item 2 of argv
-	set caFile to item 3 of argv
-	set doResolver to item 4 of argv
-	set doTrust to item 5 of argv
-	set cmd to "true"
-	if doResolver is "1" then set cmd to cmd & " && /bin/mkdir -p /etc/resolver && /usr/bin/install -m 0644 " & quoted form of tmpFile & " " & quoted form of resolverFile & " && (/usr/bin/killall -HUP mDNSResponder || true)"
-	if doTrust is "1" then set cmd to cmd & " && (/usr/bin/security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " & quoted form of caFile & " && echo TRUSTED || echo TRUST-FAILED)"
-	do shell script cmd with prompt "LocalSites needs your password once to set up .test addresses and HTTPS for your projects." with administrator privileges
-end run`
+const macDomainsScript = `set -e
+if [ "$4" = 1 ]; then
+  mkdir -p /etc/resolver
+  install -m 0644 "$1" "/etc/resolver/$2"
+  killall -HUP mDNSResponder 2>/dev/null || true
+fi
+if [ "$5" = 1 ]; then
+  if security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$3"; then echo TRUSTED; else echo TRUST-FAILED; fi
+fi`
+
+const linuxDomainsScript = `set -e
+if [ "$3" = 1 ]; then
+  mkdir -p /etc/systemd/resolved.conf.d
+  install -m 0644 "$1" /etc/systemd/resolved.conf.d/localsites.conf
+  systemctl restart systemd-resolved 2>/dev/null || true
+fi
+if [ "$4" = 1 ]; then
+  if [ -d /usr/local/share/ca-certificates ] && command -v update-ca-certificates >/dev/null 2>&1; then
+    install -m 0644 "$2" /usr/local/share/ca-certificates/localsites-ca.crt
+    update-ca-certificates >/dev/null
+  elif [ -d /etc/pki/ca-trust/source/anchors ]; then
+    install -m 0644 "$2" /etc/pki/ca-trust/source/anchors/localsites-ca.crt
+    update-ca-trust
+  fi
+  command -v certutil >/dev/null 2>&1 || (command -v apt-get >/dev/null 2>&1 && apt-get install -y -q libnss3-tools >/dev/null) || (command -v dnf >/dev/null 2>&1 && dnf install -y -q nss-tools >/dev/null) || true
+  echo TRUSTED
+fi
+if [ "$5" = 1 ]; then
+  printf '# Added by LocalSites: let programs listen on the web ports 80 and 443\nnet.ipv4.ip_unprivileged_port_start=%s\n' "$6" > /etc/sysctl.d/60-localsites.conf
+  sysctl -q -w "net.ipv4.ip_unprivileged_port_start=$6"
+fi`
+
+// domainsCommand is the script and its arguments for one system (tested without running it).
+func domainsCommand(st domainsStep, tmpFile string) (script string, args []string) {
 	flag := func(b bool) string {
 		if b {
 			return "1"
 		}
 		return "0"
 	}
-	args := []string{"-e", script, filepath.Join("/etc/resolver", st.tld), tmp.Name(), st.caFile, flag(st.resolver), flag(st.trust)}
-	out, err := exec.CommandContext(ctx, "/usr/bin/osascript", args...).CombinedOutput()
-	if err != nil {
-		if strings.Contains(string(out), "-128") {
-			return errors.New("the password prompt was cancelled")
-		}
-		return fmt.Errorf("couldn't set up domains: %s", strings.TrimSpace(string(out)))
+	if st.goos == "linux" {
+		return linuxDomainsScript, []string{tmpFile, st.caFile, flag(st.resolver), flag(st.trust), flag(st.ports), strconv.Itoa(st.lowPort)}
 	}
-	if st.trust && !strings.Contains(string(out), "TRUSTED") {
+	return macDomainsScript, []string{tmpFile, st.tld, st.caFile, flag(st.resolver), flag(st.trust)}
+}
+
+// setupDomains makes the system changes with one password prompt (replaced in tests).
+var setupDomains = func(ctx context.Context, st domainsStep) error {
+	if st.goos != goruntime.GOOS || (st.goos != "darwin" && st.goos != "linux") {
+		return errors.New("setting up domains isn't supported on this system yet")
+	}
+	if !validTLD.MatchString(st.tld) || st.dnsPort < 1024 || st.dnsPort > 65535 || st.lowPort < 1 || st.lowPort > 65535 {
+		return errors.New("invalid domain settings")
+	}
+	tmp, err := os.CreateTemp("", "localsites-dns-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	content := resolverContent(st.dnsPort)
+	if st.goos == "linux" {
+		content = resolvedContent(st.tld, st.dnsPort)
+	}
+	if _, err := tmp.WriteString(content); err != nil {
+		tmp.Close()
+		return err
+	}
+	tmp.Close()
+	_ = os.Chmod(tmp.Name(), 0o644)
+	script, args := domainsCommand(st, tmp.Name())
+	out, err := runAdmin(ctx, "LocalSites needs your password once to set up ."+st.tld+" addresses and HTTPS for your projects.", script, args...)
+	if err != nil {
+		return fmt.Errorf("couldn't set up domains: %v", err)
+	}
+	if st.trust && st.goos == "linux" {
+		trustInBrowsers(ctx, st.caFile) // Chrome, Chromium and Firefox keep their own lists (no password needed)
+	}
+	if st.trust && st.goos == "darwin" && !strings.Contains(out, "TRUSTED") {
 		// Some macOS versions only allow trust changes that the person confirms in their own dialog:
 		// trust it for this user instead (macOS asks for the password itself).
 		home, _ := os.UserHomeDir()
 		kc := filepath.Join(home, "Library", "Keychains", "login.keychain-db")
 		if o, err := exec.CommandContext(ctx, "/usr/bin/security", "add-trusted-cert", "-r", "trustRoot", "-k", kc, st.caFile).CombinedOutput(); err != nil {
-			return fmt.Errorf("the .test addresses work, but the certificate isn't trusted yet: %s", strings.TrimSpace(string(o)))
+			return fmt.Errorf("the .%s addresses work, but the certificate isn't trusted yet: %s", st.tld, strings.TrimSpace(string(o)))
 		}
 	}
 	return nil
+}
+
+// nssDatabases are the person's browser certificate stores: Chrome/Chromium's shared one and each
+// Firefox profile (also the Snap and Flatpak ones).
+func nssDatabases(home string) []string {
+	dbs := []string{filepath.Join(home, ".pki", "nssdb")}
+	for _, pattern := range []string{".mozilla/firefox/*", "snap/firefox/common/.mozilla/firefox/*", ".var/app/org.mozilla.firefox/.mozilla/firefox/*"} {
+		matches, _ := filepath.Glob(filepath.Join(home, pattern))
+		for _, m := range matches {
+			if _, err := os.Stat(filepath.Join(m, "cert9.db")); err == nil {
+				dbs = append(dbs, m)
+			}
+		}
+	}
+	return dbs
+}
+
+// trustInBrowsers adds the CA to the browsers' own stores with certutil (from libnss3-tools / nss-tools).
+func trustInBrowsers(ctx context.Context, caFile string) {
+	certutil, err := exec.LookPath("certutil")
+	if err != nil {
+		return
+	}
+	home, _ := os.UserHomeDir()
+	for _, db := range nssDatabases(home) {
+		if _, err := os.Stat(filepath.Join(db, "cert9.db")); err != nil {
+			if err := os.MkdirAll(db, 0o700); err != nil {
+				continue
+			}
+			_ = exec.CommandContext(ctx, certutil, "-N", "--empty-password", "-d", "sql:"+db).Run()
+		}
+		_ = exec.CommandContext(ctx, certutil, "-d", "sql:"+db, "-A", "-t", "C,,", "-n", caName, "-i", caFile).Run()
+	}
 }

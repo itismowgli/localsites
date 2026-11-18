@@ -12,7 +12,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -116,8 +118,8 @@ func buildPlan(in planInput) []planItem {
 		if !in.tapped {
 			s = append(s, step{label: "brew tap " + phpTap, brew: []string{"tap", phpTap}})
 		}
-		if in.trust {
-			s = append(s, step{label: "brew trust --formula " + full, brew: []string{"trust", "--formula", full}})
+		if in.trust { // the whole tap: its formulas load each other (php@8.5 needs shivammathur/php/php)
+			s = append(s, step{label: "brew trust " + phpTap, brew: []string{"trust", phpTap}})
 		}
 		return s
 	}
@@ -137,7 +139,7 @@ func buildPlan(in planInput) []planItem {
 		if tap := in.tapOf(f); tap != "" {
 			full = tap + "/" + f
 			if in.trust {
-				steps = append(steps, step{label: "brew trust --formula " + full, brew: []string{"trust", "--formula", full}})
+				steps = append(steps, step{label: "brew trust " + tap, brew: []string{"trust", tap}})
 			}
 		}
 		paths, left := in.rootOwned(f)
@@ -330,22 +332,16 @@ var setupApply = func(e *Engine) {
 	e.Apply()
 }
 
-// setupChown gives folders back to the person; macOS shows its own password dialog (replaced in tests).
+// setupChown gives folders back to the person, after the system's own password prompt (replaced in tests).
 var setupChown = func(ctx context.Context, paths []string) error {
-	script := `on run argv
-	set cmd to "/usr/sbin/chown -R " & quoted form of (item 1 of argv)
-	repeat with i from 2 to count of argv
-		set cmd to cmd & " " & quoted form of (item i of argv)
-	end repeat
-	do shell script cmd with prompt "LocalSites needs your password to fix file permissions in Homebrew, so it can repair PHP." with administrator privileges
-end run`
-	args := append([]string{"-e", script, fmt.Sprintf("%d:admin", os.Getuid())}, paths...)
-	out, err := exec.CommandContext(ctx, "/usr/bin/osascript", args...).CombinedOutput()
+	owner := fmt.Sprintf("%d:admin", os.Getuid()) // macOS: Homebrew's files belong to the admin group
+	if goruntime.GOOS != "darwin" {
+		owner = fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid())
+	}
+	_, err := runAdmin(ctx, "LocalSites needs your password to fix file permissions in Homebrew, so it can repair PHP.",
+		`owner="$1"; shift; exec chown -R "$owner" "$@"`, append([]string{owner}, paths...)...)
 	if err != nil {
-		if strings.Contains(string(out), "-128") {
-			return errors.New("the password prompt was cancelled")
-		}
-		return fmt.Errorf("couldn't change file owners: %s", strings.TrimSpace(string(out)))
+		return fmt.Errorf("couldn't change file owners: %v", err)
 	}
 	return nil
 }
@@ -484,9 +480,12 @@ func (e *Engine) InstallHomebrew() (string, error) {
 		err := e.fetchHomebrew()
 		e.setup.mu.Lock()
 		e.setup.running, e.setup.step = false, ""
-		if err != nil {
+		switch {
+		case err != nil:
 			e.setup.results = map[string]string{"homebrew": err.Error()}
-		} else {
+		case goruntime.GOOS == "linux":
+			e.setup.results = map[string]string{"homebrew": "ok"} // installed: the next step shows by itself
+		default:
 			e.setup.results = map[string]string{"homebrew": "opened"}
 		}
 		e.setup.mu.Unlock()
@@ -498,6 +497,9 @@ func (e *Engine) InstallHomebrew() (string, error) {
 var homebrewRelease = "https://api.github.com/repos/Homebrew/brew/releases/latest"
 
 func (e *Engine) fetchHomebrew() error {
+	if goruntime.GOOS == "linux" {
+		return e.installHomebrewLinux()
+	}
 	e.setStep("Finding the latest Homebrew")
 	c := &http.Client{Timeout: 30 * time.Second}
 	res, err := c.Get(homebrewRelease)
@@ -558,6 +560,117 @@ func (e *Engine) fetchHomebrew() error {
 	e.setStep("Opening the Homebrew installer")
 	if err := exec.Command("/usr/bin/open", pkg).Run(); err != nil {
 		return fmt.Errorf("couldn't open the installer: %v", err)
+	}
+	return nil
+}
+
+// Homebrew on Linux: one password prompt creates /home/linuxbrew for the person (the only place Homebrew's
+// prebuilt packages work) and installs the few tools it needs; then Homebrew's official install script
+// runs as the person, without a terminal and without sudo.
+
+const linuxBrewPrepScript = `set -e
+mkdir -p /home/linuxbrew/.linuxbrew
+chown -R "$1" /home/linuxbrew
+need=""
+for t in git curl file ps; do command -v "$t" >/dev/null 2>&1 || need=1; done
+if [ -n "$need" ] || [ "$2" = 1 ]; then
+  if command -v apt-get >/dev/null 2>&1; then
+    tools="git curl file procps ca-certificates"; [ "$2" = 1 ] && tools="$tools build-essential"
+    apt-get update -q >/dev/null && apt-get install -y -q $tools >/dev/null
+  elif command -v dnf >/dev/null 2>&1; then
+    tools="git curl file procps-ng"; [ "$2" = 1 ] && tools="$tools gcc gcc-c++ make"
+    dnf install -y -q $tools >/dev/null
+  elif command -v pacman >/dev/null 2>&1; then
+    tools="git curl file procps-ng"; [ "$2" = 1 ] && tools="$tools base-devel"
+    pacman -S --noconfirm --needed $tools >/dev/null
+  fi
+fi`
+
+// homebrewInstallScript is Homebrew's official installer (https://brew.sh); tests replace it.
+var homebrewInstallScript = "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
+
+// needsBuildTools: Homebrew's prebuilt packages expect glibc 2.39 or newer (Ubuntu 24.04); older systems
+// (Debian 12, glibc 2.36) get Homebrew's own glibc and gcc, which need a system compiler to set up.
+func needsBuildTools(glibc string) bool {
+	parts := strings.SplitN(strings.TrimSpace(glibc), ".", 3)
+	if len(parts) < 2 {
+		return true
+	}
+	major, _ := strconv.Atoi(parts[0])
+	minor, _ := strconv.Atoi(parts[1])
+	return major < 2 || (major == 2 && minor < 39)
+}
+
+func glibcVersion() string {
+	out, _ := exec.Command("getconf", "GNU_LIBC_VERSION").Output() // "glibc 2.39"
+	return strings.TrimPrefix(strings.TrimSpace(string(out)), "glibc ")
+}
+
+func (e *Engine) installHomebrewLinux() error {
+	_ = os.MkdirAll(e.P.Logs, 0o700)
+	log, err := os.OpenFile(e.setupLog(), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return err
+	}
+	defer log.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	e.setStep("Preparing Homebrew’s folder (asks for your password)")
+	build := "0"
+	if needsBuildTools(glibcVersion()) {
+		build = "1"
+	}
+	owner := fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid())
+	if out, err := runAdmin(ctx, "LocalSites needs your password once to install Homebrew, which provides PHP, Apache and MySQL.", linuxBrewPrepScript, owner, build); err != nil {
+		fmt.Fprintf(log, "preparing failed: %v\n%s\n", err, out)
+		return err
+	}
+
+	e.setStep("Downloading Homebrew’s installer")
+	res, err := (&http.Client{Timeout: 2 * time.Minute}).Get(homebrewInstallScript)
+	if err != nil {
+		return fmt.Errorf("couldn't download Homebrew's installer: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return fmt.Errorf("couldn't download Homebrew's installer: %s", res.Status)
+	}
+	dir, err := os.MkdirTemp("", "localsites-homebrew-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	script := filepath.Join(dir, "install.sh")
+	f, err := os.OpenFile(script, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o700)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, io.LimitReader(res.Body, 4<<20))
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		return err
+	}
+
+	e.setStep("Installing Homebrew (a few minutes)")
+	home, _ := os.UserHomeDir()
+	env := []string{"NONINTERACTIVE=1", "HOME=" + home, "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "HOMEBREW_NO_ANALYTICS=1", "LANG=C.UTF-8"}
+	var last error
+	for try := 1; try <= 2; try++ { // the first "brew update" sometimes fails on a slow network
+		cmd := exec.CommandContext(ctx, "/bin/bash", script)
+		cmd.Env, cmd.Stdout, cmd.Stderr, cmd.Dir = env, log, log, dir
+		if last = cmd.Run(); last == nil {
+			break
+		}
+		fmt.Fprintf(log, "\n==> try %d failed: %v\n", try, last)
+	}
+	if last != nil {
+		return fmt.Errorf("Homebrew's installer stopped (see the setup log): %v", last)
+	}
+	if _, ok := addons.Brew(); !ok {
+		return errors.New("Homebrew's installer finished, but brew isn't in /home/linuxbrew/.linuxbrew")
 	}
 	return nil
 }

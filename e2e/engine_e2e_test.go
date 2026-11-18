@@ -815,7 +815,7 @@ func slicesContains(list []string, s string) bool {
 }
 
 func TestDataBrowserPostgres(t *testing.T) {
-	bin := "/opt/homebrew/opt/postgresql@17/bin"
+	bin := brewPath("opt/postgresql@17/bin")
 	if _, err := os.Stat(filepath.Join(bin, "initdb")); err != nil {
 		t.Skip("PostgreSQL not installed")
 	}
@@ -1077,6 +1077,9 @@ socketserver.TCPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
 		t.Fatal("multi-line php.ini value accepted")
 	}
 
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not installed (the env vars check runs a small Python server)")
+	}
 	vars := map[string]string{"GREETING": "hello from env"}
 	ev.set("envapp", engine.SitePatch{Enabled: on(), Kind: str("command"), Command: str("python3 server.py {port}"), EnvVars: &vars})
 	if code, body := ev.get("https://envapp.test/"); code != 200 || body != "hello from env" {
@@ -1098,7 +1101,7 @@ socketserver.TCPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
 
 func TestAddons(t *testing.T) {
 	for _, b := range []string{"mailpit", "valkey-server", "memcached"} {
-		if _, err := exec.LookPath("/opt/homebrew/bin/" + b); err != nil {
+		if _, err := exec.LookPath(brewPath("bin/" + b)); err != nil {
 			t.Skip(b + " not installed")
 		}
 	}
@@ -1394,7 +1397,7 @@ func TestNginxProject(t *testing.T) {
 }
 
 func TestAddonsDataSearchStorage(t *testing.T) {
-	for _, b := range []string{"/opt/homebrew/opt/postgresql@17/bin/postgres", "/opt/homebrew/bin/meilisearch", "/opt/homebrew/bin/minio"} {
+	for _, b := range []string{brewPath("opt/postgresql@17/bin/postgres"), brewPath("bin/meilisearch"), brewPath("bin/minio")} {
 		if _, err := os.Stat(b); err != nil {
 			t.Skip(b + " not installed")
 		}

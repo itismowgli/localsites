@@ -17,6 +17,8 @@ import (
 	"github.com/localsites/localsites/internal/secrets"
 	"github.com/localsites/localsites/internal/services"
 	"github.com/localsites/localsites/internal/sqlfile"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // Export and import for any saved connection in the data browser: MySQL/MariaDB (MAMP, remote, over
@@ -46,8 +48,13 @@ func psqlRestricted() (string, error) {
 
 // pgTool finds pg_dump or psql, newest first (a newer pg_dump can read older servers, not the reverse).
 func pgTool(name string) (string, error) {
-	for _, d := range []string{"/opt/homebrew/opt/libpq/bin", "/opt/homebrew/opt/libpq@18/bin", "/opt/homebrew/opt/postgresql@18/bin", "/opt/homebrew/opt/postgresql@17/bin",
-		"/usr/local/opt/libpq/bin", "/Applications/Postgres.app/Contents/Versions/latest/bin"} {
+	var dirs []string
+	for _, p := range platform.BrewPrefixes() {
+		for _, f := range []string{"libpq", "libpq@18", "postgresql@18", "postgresql@17"} {
+			dirs = append(dirs, filepath.Join(p, "opt", f, "bin"))
+		}
+	}
+	for _, d := range append(dirs, "/Applications/Postgres.app/Contents/Versions/latest/bin") {
 		if p := filepath.Join(d, name); isExec(p) {
 			return p, nil
 		}

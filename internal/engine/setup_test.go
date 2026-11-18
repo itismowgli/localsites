@@ -65,7 +65,7 @@ func TestPlanRepairsAndMissing(t *testing.T) {
 		t.Fatalf("want 7.2, 7.4 and 5.6: %+v", items)
 	}
 	b := find(items, "php@7.2")
-	if b.Kind != "repair" || !b.Required || steps(*b) != "brew trust --formula shivammathur/php/php@7.2 | brew reinstall shivammathur/php/php@7.2" || !strings.Contains(b.Why, "8 projects use it") {
+	if b.Kind != "repair" || !b.Required || steps(*b) != "brew trust shivammathur/php | brew reinstall shivammathur/php/php@7.2" || !strings.Contains(b.Why, "8 projects use it") {
 		t.Fatalf("7.2: %+v", b)
 	}
 	w := find(items, "php@7.4")
@@ -73,7 +73,7 @@ func TestPlanRepairsAndMissing(t *testing.T) {
 		t.Fatalf("7.4: %+v", w)
 	}
 	m := find(items, "php@5.6")
-	if m.Kind != "install" || steps(*m) != "brew tap shivammathur/php | brew trust --formula shivammathur/php/php@5.6 | brew install shivammathur/php/php@5.6" {
+	if m.Kind != "install" || steps(*m) != "brew tap shivammathur/php | brew trust shivammathur/php | brew install shivammathur/php/php@5.6" {
 		t.Fatalf("5.6: %+v", m)
 	}
 }

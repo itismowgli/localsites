@@ -13,9 +13,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
-var brewPrefixes = []string{"/opt/homebrew", "/usr/local"}
+// brewPrefixes are where Homebrew lives on this system (tests replace it).
+var brewPrefixes = platform.BrewPrefixes()
 
 // PHP is one installed PHP version.
 type PHP struct {
@@ -102,7 +105,9 @@ func BrokenPHPVersions() []BrokenPHP {
 }
 
 var (
-	missingLib = regexp.MustCompile(`Library not loaded: (\S+)`)
+	missingLib = regexp.MustCompile(`Library not loaded: (\S+)`) // macOS (dyld)
+	// Linux (ld.so): "error while loading shared libraries: libicuuc.so.77: cannot open shared object file"
+	missingSo  = regexp.MustCompile(`(lib[^\s/():]+\.so[.\d]*): cannot open shared object file`)
 	failedExt  = regexp.MustCompile(`Unable to load dynamic library '([^']+)'`)
 	optFormula = regexp.MustCompile(`/opt/([A-Za-z0-9@._+-]+)/lib/`)
 )
@@ -119,6 +124,8 @@ func brokenBuild(dir, cli, out string) BrokenPHP {
 		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
 			b.Reason = filepath.Base(m[1]) + " (from " + f[1] + ") is missing"
 		}
+	} else if m := missingSo.FindStringSubmatch(out); m != nil {
+		b.Reason = m[1] + " is missing"
 	}
 	return b
 }
@@ -136,7 +143,7 @@ func reinstall(dir string) string {
 	if b, err := os.ReadFile(filepath.Join(dir, "INSTALL_RECEIPT.json")); err == nil && json.Unmarshal(b, &receipt) == nil {
 		if tap := receipt.Source.Tap; tap != "" && tap != "homebrew/core" && validTap.MatchString(tap) {
 			full := tap + "/" + formula
-			return "brew trust --formula " + full + " && brew reinstall " + full
+			return "brew trust " + tap + " && brew reinstall " + full
 		}
 	}
 	return "brew reinstall " + formula
@@ -159,6 +166,8 @@ func extensionWarning(out, dir string) string {
 		if f := optFormula.FindStringSubmatch(m[1]); f != nil {
 			w += " (" + f[1] + " is missing)"
 		}
+	} else if m := missingSo.FindStringSubmatch(out); m != nil {
+		w += " (" + m[1] + " is missing)"
 	}
 	return w + ". Run: " + fix
 }

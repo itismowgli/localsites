@@ -232,7 +232,11 @@ func TestDatabaseToolsSQLiteAndPostgres(t *testing.T) {
 
 	t.Run("sqlite: export, import into another file", func(t *testing.T) {
 		src := filepath.Join(dir, "app.db")
-		if out, err := exec.Command("/usr/bin/sqlite3", src, "CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT); INSERT INTO notes (body) VALUES ('one'),('twø');").CombinedOutput(); err != nil {
+		sqlite3, err := exec.LookPath("sqlite3")
+		if err != nil {
+			t.Skip("sqlite3 not installed")
+		}
+		if out, err := exec.Command(sqlite3, src, "CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT); INSERT INTO notes (body) VALUES ('one'),('twø');").CombinedOutput(); err != nil {
 			t.Fatal(string(out))
 		}
 		a, err := e.Data.Save(dbclient.Conn{Name: "src", Driver: "sqlite", File: src, ReadOnly: true}, nil)
@@ -273,7 +277,7 @@ func TestDatabaseToolsSQLiteAndPostgres(t *testing.T) {
 		}
 	})
 
-	if _, err := os.Stat("/opt/homebrew/opt/postgresql@17/bin/postgres"); err != nil {
+	if _, err := os.Stat(brewPath("opt/postgresql@17/bin/postgres")); err != nil {
 		t.Skip("PostgreSQL not installed")
 	}
 	on, pg := true, freePort(t)
@@ -300,7 +304,7 @@ func TestDatabaseToolsSQLiteAndPostgres(t *testing.T) {
 			t.Fatal("a dump ran a command")
 		}
 		// over TCP the superuser needs the keychain password
-		if bin, err := exec.LookPath("/opt/homebrew/opt/libpq/bin/psql"); err == nil {
+		if bin, err := exec.LookPath(brewPath("opt/libpq/bin/psql")); err == nil {
 			cmd := exec.Command(bin, "--host=127.0.0.1", fmt.Sprintf("--port=%d", pg), "--username=postgres", "--no-password", "--dbname=postgres", "--command=SELECT 1")
 			cmd.Env = append(os.Environ(), "PGPASSWORD=")
 			if out, err := cmd.CombinedOutput(); err == nil {

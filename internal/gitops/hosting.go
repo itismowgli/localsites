@@ -7,8 +7,11 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // Hosting is what the code host knows about the current branch: open pull requests and recent CI runs.
@@ -39,7 +42,8 @@ type Run struct {
 
 // GHPath finds the GitHub CLI (tests replace it).
 var GHPath = func() (string, bool) {
-	for _, p := range []string{"/opt/homebrew/bin/gh", "/usr/local/bin/gh"} {
+	for _, p := range append(platform.BrewBins(), "/usr/local/bin", "/usr/bin") {
+		p = filepath.Join(p, "gh")
 		if _, err := os.Stat(p); err == nil {
 			return p, true
 		}

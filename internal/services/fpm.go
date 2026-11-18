@@ -2,8 +2,11 @@ package services
 
 import (
 	"fmt"
+	goruntime "runtime"
 	"sort"
 	"strings"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // PHPDefaults mirror MAMP PRO's php.ini so projects moved from MAMP behave the same
@@ -47,7 +50,7 @@ pm.process_idle_timeout = 10s
 catch_workers_output = yes
 decorate_workers_output = no
 clear_env = yes
-env[PATH] = /usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
+env[PATH] = %s
 env[TMPDIR] = %q
 php_admin_value[pdo_mysql.default_socket] = %q
 php_admin_value[mysqli.default_socket] = %q
@@ -55,7 +58,7 @@ php_admin_value[error_log] = %q
 php_admin_flag[log_errors] = on
 php_admin_value[sys_temp_dir] = %q
 php_admin_value[upload_tmp_dir] = %q
-`, p.Name, p.Socket, p.TmpDir, p.MySQLSocket, p.MySQLSocket, p.ErrorLog, p.TmpDir, p.TmpDir)
+`, p.Name, p.Socket, fpmPath(), p.TmpDir, p.MySQLSocket, p.MySQLSocket, p.ErrorLog, p.TmpDir, p.TmpDir)
 		vals := map[string]string{}
 		for k, v := range PHPDefaults {
 			vals[k] = v
@@ -81,4 +84,12 @@ php_admin_value[upload_tmp_dir] = %q
 		}
 	}
 	return b.String()
+}
+
+// fpmPath is PATH for PHP code (exec, shell_exec): Homebrew and the system folders.
+func fpmPath() string {
+	if goruntime.GOOS == "darwin" {
+		return "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" // unchanged from earlier versions
+	}
+	return strings.Join(append(platform.BrewBins(), "/usr/local/bin", "/usr/bin", "/bin"), ":")
 }

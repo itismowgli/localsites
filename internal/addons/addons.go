@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/localsites/localsites/internal/platform"
 )
 
 // Def is one add-on in the catalog.
@@ -111,8 +113,8 @@ func Find(id string) (Def, bool) {
 	return Def{}, false
 }
 
-// Prefixes where Homebrew installs programs (Apple silicon, Intel).
-var Prefixes = []string{"/opt/homebrew", "/usr/local"}
+// Prefixes where Homebrew installs programs (macOS: Apple silicon, Intel; Linux: /home/linuxbrew/.linuxbrew).
+var Prefixes = platform.BrewPrefixes()
 
 // Binary finds the installed executable.
 func (d Def) Binary() (string, bool) {

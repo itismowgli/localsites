@@ -11,6 +11,7 @@ import (
 
 	"github.com/localsites/localsites/internal/api"
 	"github.com/localsites/localsites/internal/engine"
+	"github.com/localsites/localsites/internal/platform"
 )
 
 func siteIn(e *engine.Engine, folder string) (engine.SiteView, bool) {
@@ -149,4 +150,14 @@ func TestHideRenameTrash(t *testing.T) {
 			t.Fatalf("trashed project still served: %d", code)
 		}
 	})
+}
+
+// brewPath is a path inside Homebrew on this system (/opt/homebrew on a Mac, /home/linuxbrew/.linuxbrew on Linux).
+func brewPath(rel string) string {
+	for _, p := range platform.BrewPrefixes() {
+		if _, err := os.Stat(p); err == nil {
+			return filepath.Join(p, rel)
+		}
+	}
+	return filepath.Join(platform.BrewPrefixes()[0], rel)
 }
