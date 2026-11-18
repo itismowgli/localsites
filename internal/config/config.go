@@ -94,6 +94,8 @@ type Settings struct {
 	// Default apps chosen by the person, by kind ("editor", "terminal"): an app id, or "ask" to choose
 	// every time. Nothing is set until the person picks; LocalSites never guesses.
 	Apps map[string]string `json:"apps,omitempty"`
+	// Projects hidden from LocalSites (folder ids): the folders stay where they are, unlisted and unserved
+	Hidden []string `json:"hidden_projects,omitempty"`
 }
 
 // Addon is the saved state of one add-on service.

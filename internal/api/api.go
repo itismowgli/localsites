@@ -96,6 +96,13 @@ var Methods = []Method{
 		{Name: "command", Type: "string", Description: "Start command for custom projects; {port} is replaced, e.g. python manage.py runserver {port}"},
 	}},
 	{Name: "sites.context", Description: "Everything an agent needs about one project in one call: stack, address, PHP and web server, database, .env setting names (no values), git, problems and recent errors", Params: []Param{pFolder}},
+	{Name: "sites.hide", Description: "Stop listing and serving a project. Its folder, files and database are not touched; sites.unhide brings it back", Mutates: true, Approve: true, Params: []Param{pFolder}},
+	{Name: "sites.unhide", Description: "List and serve a hidden project again", Mutates: true, Params: []Param{pFolder}},
+	{Name: "sites.hidden", Description: "Projects hidden from LocalSites, and where their folders are"},
+	{Name: "sites.rename", Description: "Rename a project's folder (in the same place). Its settings and logs move along; its address follows the new name unless a custom one was set; the database keeps its name", Mutates: true, Approve: true,
+		Params: []Param{pFolder, {Name: "new_name", Type: "string", Description: "New folder name", Required: true}}},
+	{Name: "sites.trash", Description: "Move a project's folder to the Trash (it can be put back from there). The database is kept. The app and CLI only; agents can't", Mutates: true, Destructive: true,
+		Params: []Param{pFolder, {Name: "name", Type: "string", Description: "The project's folder name again, to confirm", Required: true}}},
 	{Name: "sites.takeover", Description: "Serve a project that Laravel Valet serves with LocalSites instead, at the same address (Valet's own config is not changed; switching off gives it back)", Mutates: true, Params: []Param{pFolder}},
 	{Name: "sites.create", Description: "Create a new project folder with a starter PHP page (switched off until enabled)", Mutates: true,
 		Params: []Param{{Name: "folder", Type: "string", Description: "New folder name (letters, numbers, - and _)", Required: true}}},
@@ -346,6 +353,8 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		res = map[string]any{"ok": err == nil}
 	case !TrustedClient(client) && (method == "update.install" || method == "update.rollback"):
 		err = errors.New("only the person using LocalSites can install updates, from the app")
+	case !TrustedClient(client) && method == "sites.trash":
+		err = errors.New("only the person using LocalSites can move projects to the Trash, from the app or the CLI")
 	case !TrustedClient(client) && method == "setup.homebrew":
 		err = errors.New("only the person using LocalSites can install Homebrew, from the app")
 	case !TrustedClient(client) && (method == "problems.send" || method == "problems.ui"):
@@ -697,6 +706,20 @@ func (s *Server) call(method string, body []byte) (any, error) {
 		return map[string]any{"added": added, "log": []string{"Connected. Restart the agent app to pick it up."}}, err
 	case "agents.disconnect":
 		return map[string]any{"log": []string{"Disconnected"}}, agentcfg.Disconnect(a.ID)
+	case "sites.hide":
+		log, err := e.HideSite(a.Folder)
+		return map[string]any{"log": log}, err
+	case "sites.unhide":
+		log, err := e.UnhideSite(a.Folder)
+		return map[string]any{"log": log}, err
+	case "sites.hidden":
+		return e.HiddenSites(), nil
+	case "sites.rename":
+		log, err := e.RenameSite(a.Folder, a.NewName)
+		return map[string]any{"log": log}, err
+	case "sites.trash":
+		log, err := e.TrashSite(a.Folder, a.Name)
+		return map[string]any{"log": log}, err
 	case "apps.list":
 		return e.InstalledApps(), nil
 	case "apps.default":

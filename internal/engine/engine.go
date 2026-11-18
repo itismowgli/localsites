@@ -142,7 +142,14 @@ func (e *Engine) Sites() []SiteView {
 		valet = e.valetSites()
 	}
 	var out []SiteView
+	hidden := map[string]bool{}
+	for _, h := range cfg.Settings.Hidden {
+		hidden[h] = true
+	}
 	for _, c := range scanRoots(cfg.Settings.Roots) {
+		if hidden[c.ID] {
+			continue
+		}
 		fw := detectCached(c.Path)
 		v := SiteView{Folder: c.ID, Name: c.Name, Path: c.Path, Root: c.RootLabel, RootIdx: c.RootIdx, Group: c.Group, Framework: fw, Git: gitInfo(c.Path)}
 		if s, ok := cfg.Sites[c.ID]; ok {

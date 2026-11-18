@@ -933,3 +933,40 @@ test('a Mac without Valet gets a one-click .test domains step, even before Homeb
   expect(JSON.parse(runBody)).toEqual({ ids: ['domains'] });
   await page.unroute('**/__call/setup.status'); await page.unroute('**/__call/setup.run');
 });
+
+test('rename, hide and move a project to the Trash from its panel', async ({ page }, info) => {
+  const a = 'ut' + info.project.name.slice(0, 3), b = a + '2'; // each browser has its own project (they share the sandbox)
+  await call(page, 'sites.create', { folder: a });
+  await page.goto('/#projects/' + a); await page.reload();
+  const dlg = page.locator('#keysDialog');
+
+  // Rename
+  await page.locator(`#detail [data-projrename="${a}"]`).click();
+  await dlg.locator('input').fill(b);
+  await dlg.locator('[data-dlg="ok"]').click();
+  await expect(page.locator(`.row[data-row="${b}"]`)).toBeVisible();
+  await expect(page.locator(`.row[data-row="${a}"]`)).toHaveCount(0);
+
+  // Hide, then show it again from Settings
+  await page.goto('/#projects/' + b);
+  await page.locator(`#detail [data-projhide="${b}"]`).click();
+  await dlg.locator('[data-dlg="ok"]').click();
+  await expect(page.locator(`.row[data-row="${b}"]`)).toHaveCount(0);
+  await page.goto('/#settings');
+  await page.locator('[data-setsec="folders"]').click();
+  await page.locator(`[data-unhide="${b}"]`).click();
+  await page.goto('/#projects');
+  await expect(page.locator(`.row[data-row="${b}"]`)).toBeVisible();
+
+  // Move to Trash: a wrong name moves nothing; the right one does
+  await page.goto('/#projects/' + b);
+  await page.locator(`#detail [data-projtrash="${b}"]`).click();
+  await dlg.locator('input').fill('nope');
+  await dlg.locator('[data-dlg="ok"]').click();
+  await expect(page.locator(`.row[data-row="${b}"]`)).toBeVisible();
+  await page.locator(`#detail [data-projtrash="${b}"]`).click();
+  await dlg.locator('input').fill(b);
+  await dlg.locator('[data-dlg="ok"]').click();
+  await expect(page.locator(`.row[data-row="${b}"]`)).toHaveCount(0);
+  expect((await call(page, 'sites.list')).some(s => s.folder.startsWith(a))).toBe(false);
+});

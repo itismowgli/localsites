@@ -40,7 +40,7 @@ module.exports = async () => {
   sentry.unref();
   process.env.LS_SENTRY = `http://127.0.0.1:${sentry.address().port}`;
   const token = require('crypto').randomBytes(24).toString('hex'); // devui answers only this browser cookie
-  const env = { ...process.env, LOCALSITES_REPORT_DSN: `http://testkey@127.0.0.1:${sentry.address().port}/1`, LOCALSITES_UPDATE_FEED: `http://127.0.0.1:${feed.address().port}/releases`, LOCALSITES_HOME: home, LOCALSITES_SECRETS: 'file', LOCALSITES_NO_BREW: '1', LOCALSITES_DEVUI_ADDR: `127.0.0.1:${ui}`, LOCALSITES_DEVUI_TOKEN: token,
+  const env = { ...process.env, LOCALSITES_REPORT_DSN: `http://testkey@127.0.0.1:${sentry.address().port}/1`, LOCALSITES_UPDATE_FEED: `http://127.0.0.1:${feed.address().port}/releases`, LOCALSITES_HOME: home, LOCALSITES_SECRETS: 'file', LOCALSITES_NO_BREW: '1', LOCALSITES_TRASH_DIR: path.join(home, 'trash'), LOCALSITES_DEVUI_ADDR: `127.0.0.1:${ui}`, LOCALSITES_DEVUI_TOKEN: token,
     LOCALSITES_LAUNCHAGENTS_DIR: path.join(home, 'launchagents'),
     LOCALSITES_DEVUI_DIR: path.join(root, 'desktop', 'frontend', 'dist') };
   const devui = spawn(path.join(root, 'bin', 'devui'), [path.join(root, 'bin', 'localsites')], { env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });

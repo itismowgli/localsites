@@ -905,7 +905,10 @@ function detailsPane(s) {
       <div id="siteChecks">${S.checks[s.folder] ? checksTable(S.checks[s.folder], false) : '<p class="note" style="margin:0">Tests DNS, the server, the database connection and HTTPS, like a browser would.</p>'}</div>` : ''}
       ${!valet ? `<div class="st">${app ? 'Dev server output' : s.installing ? 'Install output' : 'Recent errors'}<span class="spacer"></span><button class="btn ghost sm" data-projlog="${esc(s.folder)}">${icon.logs}All logs</button></div>
       <pre class="mini" id="miniLog">${esc(miniLogAt[s.folder + (s.installing ? 'site-install' : app ? 'site-app' : 'site-error')]?.text || 'Loading…')}</pre>` : ''}
-      <div class="st">Folder</div><div class="note" style="word-break:break-all">${esc(s.path)}</div>`;
+      <div class="st">Folder</div><div class="note" style="word-break:break-all">${esc(s.path)}</div>
+      <div class="form-row proj-manage">${valet ? '<span class="note">Served by Laravel Valet: rename or remove it in Valet.</span>' : `${UI.btn('Rename…', { ic: 'edit', kind: 'ghost', attrs: `data-projrename="${esc(s.folder)}"` })}
+        ${UI.btn('Hide', { ic: 'eye', kind: 'ghost', attrs: `data-projhide="${esc(s.folder)}"`, title: 'Stop listing and serving it; the folder stays' })}
+        ${UI.btn('Move to Trash…', { ic: 'trash', kind: 'ghost danger', attrs: `data-projtrash="${esc(s.folder)}"` })}`}</div>`;
 }
 
 /* --- PHP details --- */
@@ -2214,6 +2217,8 @@ function viewSettings() {
         <button class="icon-btn" data-rootdel="${i}" title="Remove folder" ${roots.length === 1 ? 'disabled' : ''}>${icon.trash}</button>
         ${S.setErrors['roots.' + i] ? `<div class="field-error" role="alert">${esc(S.setErrors['roots.' + i])}</div>` : ''}</div>`).join('')}
       <div class="form-row" style="margin-top:12px"><button class="btn" data-cmd="rootadd">${icon.folderPlus}Add folder</button></div>
+      ${(st.hidden_projects || []).length ? `<h3 style="margin-top:24px">Hidden projects</h3><p class="note">LocalSites doesn’t list or serve these. Their folders are untouched.</p>
+        ${st.hidden_projects.map(f => `<div class="root-row"><span class="root-idx">${icon.eye}</span><span class="mono" style="flex:1">${esc(f)}</span><button class="btn sm" data-unhide="${esc(f)}">Show again</button></div>`).join('')}` : ''}
       <p class="note" style="margin-top:16px"><b>Layouts.</b> “Detect groups” treats subfolders that only contain projects as groups (for example one folder per git account). The first folder is your main folder. Folders already served by Laravel Valet are shown as “Served by Valet”.</p>
       ${saveBar()}`;
   } else if (sec === 'domains') {
@@ -2277,7 +2282,7 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['openwith', 'mkdefault', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+const CLICKABLE = ['openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
@@ -2442,6 +2447,41 @@ document.addEventListener('click', async (e) => {
   if (d.sect) { if (d.sect.startsWith('g:')) { S.closed[d.sect] = !S.closed[d.sect]; saveUI(); return renderView(); } return toggleSect(d.sect); }
   if (d.fav) { S.favs.has(d.fav) ? S.favs.delete(d.fav) : S.favs.add(d.fav); saveUI(); return render(); }
   if (d.toggle) { e.stopPropagation(); const s = site(d.toggle); return updateSite(s.folder, { enabled: !s.enabled }); }
+  if (d.projrename) {
+    const s = site(d.projrename); if (!s) return;
+    const name = await dialog(`<h3>Rename ${esc(s.name)}</h3><p class="note">Renames the folder in ${esc(s.path.slice(0, s.path.length - s.name.length - 1))}. Settings and logs move along, and the address follows the new name unless you set your own. The database keeps its name.</p>
+      <input class="input" style="width:100%" value="${esc(s.name)}" spellcheck="false" aria-label="New name">
+      <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn primary" data-dlg="ok">Rename</button></div>`);
+    if (!name || name === s.name) return;
+    const r = await act(() => bridge.call('sites.rename', { folder: s.folder, new_name: name }), 'Rename');
+    if (r) { logToast(r); await refresh(); const nf = s.folder.includes('/') ? s.folder.replace(/[^/]+$/, name) : name; if (site(nf)) navigate('projects', nf); }
+    return;
+  }
+  if (d.projhide) {
+    const s = site(d.projhide); if (!s) return;
+    if (!await confirmBox(`Hide ${s.name}?`, 'LocalSites stops listing and serving it. The folder, its files and its database stay as they are. Settings → Projects folders can show it again.', 'Hide')) return;
+    const r = await act(() => bridge.call('sites.hide', { folder: s.folder }), 'Hide');
+    if (r) { logToast(r); cur().sel = null; await refresh(); render(); }
+    return;
+  }
+  if (d.projtrash) {
+    const s = site(d.projtrash); if (!s) return;
+    const typed = await dialog(`<h3>Move ${esc(s.name)} to the Trash?</h3>
+      <p class="note">The folder <code>${esc(s.path)}</code> goes to the Trash, where you can put it back.${s.database ? ` The database <b>${esc(s.database)}</b> is kept.` : ''}</p>
+      <p class="note">Type <b>${esc(s.name)}</b> to confirm.</p>
+      <input class="input" style="width:100%" spellcheck="false" autocomplete="off" aria-label="Project name">
+      <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn danger" data-dlg="ok">Move to Trash</button></div>`);
+    if (typed == null) return;
+    if (typed !== s.name) return toast('The name didn’t match, so nothing was moved', 'warn');
+    const r = await act(() => bridge.call('sites.trash', { folder: s.folder, name: typed }), 'Move to Trash');
+    if (r) { logToast(r); cur().sel = null; await refresh(); render(); }
+    return;
+  }
+  if (d.unhide) {
+    const r = await act(() => bridge.call('sites.unhide', { folder: d.unhide }), 'Show');
+    if (r) { logToast(r); await loadSettings(); await refresh(); render(); }
+    return;
+  }
   if (d.mkdefault) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); const [k, id] = d.mkdefault.split(':'); return act(() => setDefaultApp(k, id), 'Save'); }
   if (d.openwith) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); return openWith(d.openwith, d.folder); }
   if (d.app) { e.preventDefault(); e.stopPropagation(); $('#menu').classList.remove('open'); return act(() => bridge.call('open', { folder: d.folder, app: d.app }), 'Open'); }

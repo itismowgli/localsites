@@ -14,6 +14,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -177,6 +178,24 @@ func run(c *api.Client, a []string) error {
 		}
 		_, err := c.Call("open", p)
 		return err
+	case "hide", "unhide":
+		if err := need(2, a[0]+" <folder>"); err != nil {
+			return err
+		}
+		return show(c, "sites."+a[0], map[string]any{"folder": a[1]}, printLog)
+	case "hidden":
+		return show(c, "sites.hidden", nil, printJSON)
+	case "rename":
+		if err := need(3, "rename <folder> <new name>"); err != nil {
+			return err
+		}
+		return show(c, "sites.rename", map[string]any{"folder": a[1], "new_name": strings.Join(a[2:], " ")}, printLog)
+	case "trash":
+		// localsites trash <folder> --confirm <name>
+		if len(a) != 4 || a[2] != "--confirm" {
+			return errors.New("usage: localsites trash <folder> --confirm <folder name>   (moves the folder to the Trash; the database is kept)")
+		}
+		return show(c, "sites.trash", map[string]any{"folder": a[1], "name": a[3]}, printLog)
 	case "apps":
 		// localsites apps                         installed apps and the chosen defaults
 		// localsites apps default editor <id>     choose (ask = every time, none = forget)
@@ -665,6 +684,9 @@ func usage() {
   localsites import sources
   localsites import databases <source> [--user root]
   localsites import database <source> <name> [--user root]   copy + verify, original untouched
+  localsites hide|unhide <folder>        stop listing and serving a project (its folder stays) / bring it back
+  localsites rename <folder> <new name>  rename the project folder; settings, logs and address move along
+  localsites trash <folder> --confirm <name>   move the project folder to the Trash (the database is kept)
   localsites open <folder> [app] [--remember]   open in your code editor (or terminal, browser, an app id)
   localsites apps [default editor|terminal <id>|ask|none]   installed apps; choose the default editor or terminal
   localsites settings [key=value ...]    show or change settings (php.memory_limit=256M, mysql_port=3308, ...)
