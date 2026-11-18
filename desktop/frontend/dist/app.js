@@ -2300,6 +2300,24 @@ document.addEventListener('pointerdown', (e) => {
   S.sidePeek = false; $('#body').classList.remove('peek');
   swallowClick = true; setTimeout(() => { swallowClick = false; }, 600);
 }, true);
+// Popups close as soon as the pointer goes down outside them. A click alone isn't enough: on the window's
+// drag areas (sidebar, header, status bar) a press moves the window and no click ever arrives.
+function closePopups() {
+  $('#menu')?.classList.remove('open');
+  const ac = $('#acBox'); if (ac && !ac.hidden) { ac.hidden = true; if (S.data) S.data.ac = null; }
+}
+document.addEventListener('pointerdown', (e) => {
+  const m = $('#menu');
+  if (m?.classList.contains('open') && !e.target.closest('#menu')) {
+    m.classList.remove('open');
+    const a = e.target.closest(CLICK_SEL);
+    if (a && anchorKey(a) === menuKey) { reopenBlock = menuKey; setTimeout(() => { reopenBlock = ''; }, 600); }
+  }
+  const ac = $('#acBox');
+  if (ac && !ac.hidden && !e.target.closest('#acBox, #dSQL')) { ac.hidden = true; if (S.data) S.data.ac = null; }
+}, true);
+window.addEventListener('blur', closePopups); // clicked another app or outside the window
+window.addEventListener('resize', () => $('#menu')?.classList.remove('open')); // its position would be wrong
 for (const type of ['mousedown', 'mouseup', 'click', 'dblclick']) {
   document.addEventListener(type, (e) => {
     if (!swallowClick || e.target.closest('#side')) return;
@@ -2614,8 +2632,13 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'dSQL') { S.data.sql = e.target.value; acUpdate(e.target); }
 });
 
+// Pressing the button that opened a menu closes it (the press already did); its click must not reopen it.
+const anchorKey = (el) => el ? el.id || JSON.stringify(el.dataset) + el.className : '';
+let menuKey = '', reopenBlock = '';
 function menuAt(anchor, html, cls = '') {
+  if (reopenBlock && reopenBlock === anchorKey(anchor)) { reopenBlock = ''; return; }
   const m = $('#menu'), r = anchor.getBoundingClientRect();
+  menuKey = anchorKey(anchor);
   m.className = 'menu ' + cls;
   m.innerHTML = html;
   const w = cls.includes('wide') ? 420 : cls.includes('fmenu') ? 300 : 260;

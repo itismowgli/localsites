@@ -970,3 +970,22 @@ test('rename, hide and move a project to the Trash from its panel', async ({ pag
   await expect(page.locator(`.row[data-row="${b}"]`)).toHaveCount(0);
   expect((await call(page, 'sites.list')).some(s => s.folder.startsWith(a))).toBe(false);
 });
+
+test('menus close when you press outside them, even on the window’s drag areas', async ({ page }) => {
+  const menu = page.locator('#menu');
+  // A press on a drag area moves the window in the app and never becomes a click: only pointerdown arrives
+  await page.locator('#wsBtn').click();
+  await expect(menu).toHaveClass(/open/);
+  await page.locator('.statusbar').dispatchEvent('pointerdown');
+  await expect(menu).not.toHaveClass(/open/);
+  // Pressing the menu's own button closes it instead of reopening it
+  await page.locator('#wsBtn').click();
+  await expect(menu).toHaveClass(/open/);
+  await page.locator('#wsBtn').click();
+  await expect(menu).not.toHaveClass(/open/);
+  await page.locator('#wsBtn').click(); // and it opens again on the next press
+  await expect(menu).toHaveClass(/open/);
+  // Clicking another app or outside the window
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(menu).not.toHaveClass(/open/);
+});
