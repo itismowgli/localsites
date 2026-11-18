@@ -31,7 +31,11 @@ func main() {
 	useNativeNotifications()
 	// notify: the service (when started from the command line) sends notifications through the app
 	if len(os.Args) > 3 && os.Args[1] == "notify" {
-		os.Exit(notifyOnce(os.Args[2], os.Args[3]))
+		kind, ref := "", ""
+		if len(os.Args) > 5 { // notify <title> <text> <kind> <ref>
+			kind, ref = os.Args[4], os.Args[5]
+		}
+		os.Exit(notifyOnce(os.Args[2], os.Args[3], kind, ref))
 	}
 	// update-selftest: an update checks the new app runs on this Mac before installing it
 	if len(os.Args) > 1 && os.Args[1] == "update-selftest" {
@@ -71,6 +75,8 @@ func main() {
 	problems.CaptureCrashes(filepath.Join(paths.Default().Data, "problems"), "app")
 	rememberAppPath(paths.Default().Data)
 	app := &App{}
+	theApp = app
+	listenForNoticeButtons() // before the app starts: macOS may have started it for a button press
 	err := wails.Run(&options.App{
 		Title:            "LocalSites",
 		Width:            1240,

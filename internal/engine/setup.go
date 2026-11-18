@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/localsites/localsites/internal/addons"
+	"github.com/localsites/localsites/internal/notices"
 	"github.com/localsites/localsites/internal/runtime"
 )
 
@@ -456,7 +457,18 @@ func (e *Engine) runSetup(brew, prefix string, items []planItem) {
 	setupApply(e)
 	e.setup.mu.Lock()
 	e.setup.running, e.setup.step = false, ""
+	var failed []string
+	for _, it := range items {
+		if r := e.setup.results[it.ID]; r != "ok" {
+			failed = append(failed, it.Title)
+		}
+	}
 	e.setup.mu.Unlock()
+	if len(failed) == 0 {
+		e.Notify(notices.Notice{Kind: notices.KindSetup, Title: "Everything is installed and repaired", Text: "Your projects were restarted.", Open: "view:overview"})
+	} else {
+		e.Notify(notices.Notice{Kind: notices.KindSetup, Title: "Setup finished, but some steps didn't work", Text: strings.Join(failed, ", ") + ". Overview has the details.", Open: "view:overview"})
+	}
 	e.Changes.Bump()
 }
 

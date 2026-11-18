@@ -995,3 +995,53 @@ test('menus close when you press outside them, even on the window’s drag areas
   await page.evaluate(() => window.dispatchEvent(new Event('blur')));
   await expect(menu).not.toHaveClass(/open/);
 });
+
+test('notification center: bell, panel, open a notice, Do Not Disturb and settings', async ({ page }) => {
+  const now = Date.now();
+  let view = { kinds: ['agent', 'crash', 'install', 'setup', 'share', 'update', 'problem'], off: [], unread: 2, notices: [
+    { id: 'n1', time: new Date(now - 60000).toISOString(), kind: 'crash', title: 'Apache stopped unexpectedly', text: 'It was restarted. Logs has the details.', open: 'log:apache', ref: 'apache' },
+    { id: 'n2', time: new Date(now - 120000).toISOString(), kind: 'install', title: 'Installing hello finished', open: 'proj:hello' },
+    { id: 'n3', time: new Date(now - 86400000 * 2).toISOString(), kind: 'update', title: 'LocalSites 1.5.0 is ready', open: 'view:settings/updates', read: true }] };
+  const calls = [];
+  await page.route('**/__call/notices.list', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(view) }));
+  for (const m of ['notices.read', 'notices.clear', 'notices.quiet', 'notices.off']) {
+    await page.route('**/__call/' + m, r => { const b = JSON.parse(r.request().postData() || '{}'); calls.push([m, b]);
+      if (m === 'notices.read') { view = { ...view, unread: b.id ? view.unread - 1 : 0, notices: view.notices.map(n => (!b.id || n.id === b.id) ? { ...n, read: true } : n) }; }
+      if (m === 'notices.quiet') view = { ...view, quiet_until: b.minutes ? new Date(now + b.minutes * 60000).toISOString() : undefined };
+      if (m === 'notices.off') view = { ...view, off: b.kinds };
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify(m === 'notices.read' || m === 'notices.clear' ? { log: ['ok'] } : view) }); });
+  }
+  await page.goto('/#overview'); await page.reload();
+  const bell = page.locator('#statusbar [data-cmd="noticemenu"]');
+  await expect(bell.locator('.nbadge')).toHaveText('2');
+  await bell.click();
+  const menu = page.locator('#menu');
+  await expect(menu).toContainText('Apache stopped unexpectedly');
+  await expect(menu).toContainText('Today');
+  await expect(menu.locator('.notice.unread')).toHaveCount(2);
+  // Opening a notice marks it read and goes where it points
+  await menu.locator('[data-notice="n2"]').click();
+  await expect.poll(() => calls.find(c => c[0] === 'notices.read')?.[1]).toEqual({ id: 'n2' });
+  await expect(page.locator(".row.sel[data-row=\"hello\"]")).toBeVisible();
+  await expect(bell.locator('.nbadge')).toHaveText('1');
+  // Do Not Disturb for an hour, from the panel
+  await bell.click();
+  await menu.locator('[data-quiet="60"]').click();
+  await expect.poll(() => calls.find(c => c[0] === 'notices.quiet')?.[1]).toEqual({ minutes: 60 });
+  await expect(menu).toContainText('Do Not Disturb until');
+  await menu.locator('[data-noticeall="read"]').click();
+  await expect(bell.locator('.nbadge')).toHaveCount(0);
+  // Settings: switching a kind off; agent requests can't be switched off
+  await page.goto('/#settings');
+  await page.locator('[data-setsec="notifications"]').click();
+  await expect(page.locator('[data-noticeoff="agent"]')).toBeDisabled();
+  await page.locator('[data-noticeoff="install"]').evaluate(el => el.closest('label').click());
+  await expect.poll(() => calls.filter(c => c[0] === 'notices.off').at(-1)?.[1]).toEqual({ kinds: ['install'] });
+  for (const m of ['notices.list', 'notices.read', 'notices.clear', 'notices.quiet', 'notices.off']) await page.unroute('**/__call/' + m);
+});
+
+test('notices.list works against the real service', async ({ page }) => {
+  const v = await call(page, 'notices.list');
+  expect(v.kinds).toContain('agent');
+  expect(Array.isArray(v.notices)).toBe(true);
+});

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"github.com/localsites/localsites/internal/notices"
 	"os"
 	"path/filepath"
 	"sort"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/localsites/localsites/internal/config"
-	"github.com/localsites/localsites/internal/notify"
 	"github.com/localsites/localsites/internal/update"
 )
 
@@ -81,7 +81,7 @@ func (e *Engine) updateDownloaded(st update.Status) {
 	case updateStatus(st, s).OnQuit:
 		when = "It installs when you quit LocalSites. You can also restart now from Settings → Updates."
 	}
-	notify.Send("LocalSites "+st.Latest.Version+" is ready", when)
+	e.Notify(notices.Notice{Kind: notices.KindUpdate, Title: "LocalSites " + st.Latest.Version + " is ready", Text: when, Open: "view:settings/updates"})
 }
 
 // UpdateTick runs hourly in the service: with automatic checks on, check once a day, then tell the
@@ -111,7 +111,7 @@ func (e *Engine) UpdateTick() {
 		if st.Latest.Security {
 			title += " (security fix)"
 		}
-		notify.Send(title, "Open Settings → Updates to see what's new and install it.")
+		e.Notify(notices.Notice{Kind: notices.KindUpdate, Title: title, Text: "Open Settings → Updates to see what's new and install it.", Open: "view:settings/updates"})
 	}
 }
 

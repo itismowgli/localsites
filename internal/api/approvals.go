@@ -30,6 +30,8 @@ type Approval struct {
 }
 
 type approvals struct {
+	onNotice func(title, text, id string) // show a notification (with Approve / Deny on macOS)
+	onDone   func(id string)              // the request isn't waiting anymore
 	mu       sync.Mutex
 	pending  map[string]*Approval
 	onChange func() // a request arrived or ended
@@ -68,8 +70,21 @@ func (a *approvals) wait(method, client string, body []byte, done <-chan struct{
 	a.pending[p.ID] = p
 	a.mu.Unlock()
 	a.changed()
-	defer func() { a.mu.Lock(); delete(a.pending, p.ID); a.mu.Unlock(); a.changed() }()
-	notify(requester(client)+" is waiting for your approval", humanMethod(method)+". Open LocalSites to approve or deny.")
+	defer func() {
+		a.mu.Lock()
+		delete(a.pending, p.ID)
+		a.mu.Unlock()
+		a.changed()
+		if a.onDone != nil {
+			a.onDone(p.ID) // answered, timed out or cancelled: its notice is no longer waiting
+		}
+	}()
+	title, text := requester(client)+" is waiting for your approval", humanMethod(method)+". Approve or deny it here or in LocalSites."
+	if a.onNotice != nil {
+		a.onNotice(title, text, p.ID)
+	} else {
+		notify(title, text)
+	}
 	select {
 	case ok := <-p.answer:
 		if !ok {

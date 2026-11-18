@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -178,6 +179,33 @@ func run(c *api.Client, a []string) error {
 		}
 		_, err := c.Call("open", p)
 		return err
+	case "notices":
+		// localsites notices [read | clear | quiet <minutes|off|on>]
+		if len(a) > 1 {
+			switch a[1] {
+			case "read":
+				return show(c, "notices.read", nil, printLog)
+			case "clear":
+				return show(c, "notices.clear", nil, printLog)
+			case "quiet":
+				if err := need(3, "notices quiet <minutes|on|off>"); err != nil {
+					return err
+				}
+				m := map[string]int{"off": 0, "on": -1}
+				mins, ok := m[a[2]]
+				if !ok {
+					n, err := strconv.Atoi(a[2])
+					if err != nil {
+						return errors.New("give minutes, on (until turned off) or off")
+					}
+					mins = n
+				}
+				_, err := c.Call("notices.quiet", map[string]any{"minutes": mins})
+				return err
+			}
+			return errors.New("usage: localsites notices [read | clear | quiet <minutes|on|off>]")
+		}
+		return show(c, "notices.list", nil, printNotices)
 	case "hide", "unhide":
 		if err := need(2, a[0]+" <folder>"); err != nil {
 			return err
@@ -424,6 +452,45 @@ func printJSON(b []byte) error {
 	_ = json.Unmarshal(b, &v)
 	out, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(out))
+	return nil
+}
+
+func printNotices(b []byte) error {
+	var v struct {
+		Notices []struct {
+			Time              time.Time
+			Kind, Title, Text string
+			Read              bool
+		}
+		Unread     int
+		QuietUntil *time.Time `json:"quiet_until"`
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	if v.QuietUntil != nil {
+		fmt.Printf("Do Not Disturb until %s\n\n", v.QuietUntil.Local().Format("Mon 15:04"))
+	}
+	if len(v.Notices) == 0 {
+		fmt.Println("No notifications.")
+		return nil
+	}
+	for i, n := range v.Notices {
+		if i == 30 {
+			fmt.Printf("… and %d older\n", len(v.Notices)-30)
+			break
+		}
+		mark := " "
+		if !n.Read {
+			mark = "•"
+		}
+		fmt.Printf("%s %s  %-8s %s", mark, n.Time.Local().Format("Jan 02 15:04"), n.Kind, n.Title)
+		if n.Text != "" {
+			fmt.Printf(" (%s)", n.Text)
+		}
+		fmt.Println()
+	}
+	fmt.Printf("\n%d unread\n", v.Unread)
 	return nil
 }
 
@@ -684,6 +751,7 @@ func usage() {
   localsites import sources
   localsites import databases <source> [--user root]
   localsites import database <source> <name> [--user root]   copy + verify, original untouched
+  localsites notices [read|clear|quiet <minutes|on|off>]   notifications LocalSites showed; Do Not Disturb
   localsites hide|unhide <folder>        stop listing and serving a project (its folder stays) / bring it back
   localsites rename <folder> <new name>  rename the project folder; settings, logs and address move along
   localsites trash <folder> --confirm <name>   move the project folder to the Trash (the database is kept)

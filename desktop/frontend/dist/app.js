@@ -219,6 +219,7 @@ async function loadSetup() {
   }
 }
 async function loadActivity() { S.activity = await bridge.call('activity') || []; }
+async function loadNotices() { try { S.notices = await bridge.call('notices.list'); } catch (_) { S.notices = S.notices || null; /* an older service */ } }
 async function loadVersion() { S.version = await bridge.call('version'); }
 async function loadSettings() { S.settings = await bridge.call('settings.get'); S.settingsErr = null; }
 let settingsLoading = false;
@@ -250,7 +251,7 @@ function loadDBs() {
   return dbsInFlight;
 }
 async function refresh() {
-  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadSetup()]));
+  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadSetup(), loadNotices()]));
   render();
 }
 async function updateSite(folder, patch) {
@@ -452,6 +453,7 @@ function renderStatus() {
   const sharing = shares.length ? `<button class="item sharing" data-proj="${esc(shares[0].folder)}" title="${esc(shares.map(x => `${x.folder}: ${x.url}`).join('\n'))}"><span class="dot on"></span>Sharing ${shares.length > 1 ? shares.length + ' sites' : esc(shares[0].folder)}</button>` : '';
   setHTML($('#statusbar'), `${left}${sharing}<span class="spacer"></span>
     <button class="item" data-view="agent">${icon.agent}Agent${agentCalls ? ` · ${agentCalls}` : ''}</button>
+    ${bellButton()}
     <button class="item" data-cmd="activitymenu" title="Recent activity">${icon.clock}</button>`);
 }
 
@@ -909,7 +911,7 @@ function detailsPane(s) {
       <pre class="mini" id="miniLog">${esc(miniLogAt[s.folder + (s.installing ? 'site-install' : app ? 'site-app' : 'site-error')]?.text || 'Loading…')}</pre>` : ''}
       <div class="st">Folder</div><div class="note" style="word-break:break-all">${esc(s.path)}</div>
       <div class="form-row proj-manage">${valet ? '<span class="note">Served by Laravel Valet: rename or remove it in Valet.</span>' : `${UI.btn('Rename…', { ic: 'edit', kind: 'ghost', attrs: `data-projrename="${esc(s.folder)}"` })}
-        ${UI.btn('Hide', { ic: 'eye', kind: 'ghost', attrs: `data-projhide="${esc(s.folder)}"`, title: 'Stop listing and serving it; the folder stays' })}
+        ${UI.btn('Hide', { ic: 'eyeOff', kind: 'ghost', attrs: `data-projhide="${esc(s.folder)}"`, title: 'Stop listing and serving it; the folder stays' })}
         ${UI.btn('Move to Trash…', { ic: 'trash', kind: 'ghost danger', attrs: `data-projtrash="${esc(s.folder)}"` })}`}</div>`;
 }
 
@@ -2018,7 +2020,7 @@ function snippet(title, text) {
 }
 const SETTING_SECTIONS = [
   ['general', 'General', 'sliders'], ['folders', 'Projects folders', 'folder'], ['domains', 'Domains & ports', 'network'], ['php', 'PHP', 'php'], ['mysql', 'MySQL', 'db'],
-  ['agents', 'AI agents (MCP)', 'agent'], ['storage', 'Storage', 'hardDrive'], ['problems', 'Problems', 'alertCircle'], ['updates', 'Updates', 'sparkles'], ['advanced', 'Advanced', 'cpu'],
+  ['agents', 'AI agents (MCP)', 'agent'], ['storage', 'Storage', 'hardDrive'], ['problems', 'Problems', 'alertCircle'], ['notifications', 'Notifications', 'bell'], ['updates', 'Updates', 'sparkles'], ['advanced', 'Advanced', 'cpu'],
 ];
 function setVal(key) { return key in S.setDraft ? S.setDraft[key] : S.settings?.[key]; }
 function iniVal(key) { const k = 'php_ini.' + key; return k in S.setDraft ? S.setDraft[k] : (S.settings?.php_ini?.[key] ?? ''); }
@@ -2225,7 +2227,7 @@ function viewSettings() {
         ${S.setErrors['roots.' + i] ? `<div class="field-error" role="alert">${esc(S.setErrors['roots.' + i])}</div>` : ''}</div>`).join('')}
       <div class="form-row" style="margin-top:12px"><button class="btn" data-cmd="rootadd">${icon.folderPlus}Add folder</button></div>
       ${(st.hidden_projects || []).length ? `<h3 style="margin-top:24px">Hidden projects</h3><p class="note">LocalSites doesn’t list or serve these. Their folders are untouched.</p>
-        ${st.hidden_projects.map(f => `<div class="root-row"><span class="root-idx">${icon.eye}</span><span class="mono" style="flex:1">${esc(f)}</span><button class="btn sm" data-unhide="${esc(f)}">Show again</button></div>`).join('')}` : ''}
+        ${st.hidden_projects.map(f => `<div class="root-row"><span class="root-idx">${icon.eyeOff}</span><span class="mono" style="flex:1">${esc(f)}</span><button class="btn sm" data-unhide="${esc(f)}">Show again</button></div>`).join('')}` : ''}
       <p class="note" style="margin-top:16px"><b>Layouts.</b> “Detect groups” treats subfolders that only contain projects as groups (for example one folder per git account). The first folder is your main folder. Folders already served by Laravel Valet are shown as “Served by Valet”.</p>
       ${saveBar()}`;
   } else if (sec === 'domains') {
@@ -2273,6 +2275,14 @@ function viewSettings() {
     const size = (b) => b >= 1 << 30 ? (b / (1 << 30)).toFixed(1) + ' GB' : b >= 1 << 20 ? (b / (1 << 20)).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
     page = `<h2>Storage</h2><p class="lead">What LocalSites keeps on this Mac${S.storage ? `: ${size(total)} in total` : ''}. Clean-ups only remove files LocalSites made, and ask first.</p>
       ${S.storage ? list.map(x => settingRow(`${x.name} · ${size(x.bytes)}`, esc(x.detail), x.clean ? UI.btn(x.can_clean ? 'Clean up' : 'Nothing to clean', { attrs: `data-storageclean="${esc(x.id)}" ${x.can_clean ? '' : 'disabled'}`, title: x.clean }) : '<span class="note">Nothing to clean</span>')).join('') : '<span class="skeleton" style="width:40%"></span>'}`;
+  } else if (sec === 'notifications') {
+    if (!S.notices) { loadNotices().then(renderView); return '<div class="pad"><span class="skeleton" style="width:40%"></span></div>'; }
+    const off = new Set(S.notices.off || []), q = quietUntil();
+    page = `<h2>Notifications</h2><p class="lead">Everything LocalSites tells you is kept under the bell in the status bar for 30 days. Choose what also pops up on the screen.</p>
+      ${Object.entries(NOTICE_KINDS).map(([k, [label]]) => settingRow(label, k === 'agent' ? 'Always on: an agent waits for your answer.' : '',
+        `<label class="switch"><input type="checkbox" data-noticeoff="${k}" ${off.has(k) ? '' : 'checked'} ${k === 'agent' ? 'disabled' : ''}><span></span></label>`)).join('')}
+      ${settingRow('Do Not Disturb', q ? `On ${esc(quietLabel(q))}. Notifications still go under the bell.` : 'Nothing pops up for a while, except agent requests. Everything still goes under the bell.',
+        q ? '<button class="btn" data-quiet="0">Turn off</button>' : '<div class="form-row"><button class="btn" data-quiet="60">1 hour</button><button class="btn" data-quiet="tomorrow">Until tomorrow</button></div>')}`;
   } else if (sec === 'problems') {
     page = problemsPage();
   } else if (sec === 'updates') {
@@ -2289,7 +2299,7 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+const CLICKABLE = ['notice', 'noticeall', 'quiet', 'noticeoff', 'addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
@@ -2472,6 +2482,23 @@ document.addEventListener('click', async (e) => {
   if (d.sect) { if (d.sect.startsWith('g:')) { S.closed[d.sect] = !S.closed[d.sect]; saveUI(); return renderView(); } return toggleSect(d.sect); }
   if (d.fav) { S.favs.has(d.fav) ? S.favs.delete(d.fav) : S.favs.add(d.fav); saveUI(); return render(); }
   if (d.toggle) { e.stopPropagation(); const s = site(d.toggle); return updateSite(s.folder, { enabled: !s.enabled }); }
+  if (d.notice) { e.preventDefault(); return noticeClicked(d.notice); }
+  if (d.noticeall) {
+    e.preventDefault();
+    await act(() => bridge.call(d.noticeall === 'clear' ? 'notices.clear' : 'notices.read', {}), 'Notifications');
+    await loadNotices(); renderStatus();
+    if ($('#menu').classList.contains('open')) $('#menu').innerHTML = noticeMenuHTML();
+    return;
+  }
+  if (d.quiet !== undefined) {
+    e.preventDefault();
+    const minutes = d.quiet === 'tomorrow' ? minutesToMorning() : +d.quiet;
+    const r = await act(() => bridge.call('notices.quiet', { minutes }), 'Do Not Disturb');
+    if (r) { S.notices = r; toast(minutes ? `Do Not Disturb ${quietLabel(quietUntil())}` : 'Do Not Disturb is off'); }
+    renderStatus(); if (cur().view === 'settings') renderView();
+    if ($('#menu').classList.contains('open')) $('#menu').innerHTML = noticeMenuHTML();
+    return;
+  }
   if (d.addroot) {
     const st = await act(() => bridge.call('settings.get'), 'Settings'); if (!st) return;
     const roots = [...(st.roots || []), { path: d.addroot, label: d.addrootlabel || 'htdocs' }];
@@ -2612,6 +2639,13 @@ document.addEventListener('change', async (e) => {
   if (e.target.id === 'dConn') { const v = e.target.value; if (!await guardEdits()) { e.target.value = S.data.conn; return; } S.data.conn = v; dataConnect(); }
   if (e.target.id === 'dSchema') { const v = e.target.value; if (!await guardEdits()) { e.target.value = S.data.schema; return; } S.data.schema = v; act(dataLoadTables).then(() => { renderView(); renderSide(); }); }
   if (e.target.dataset.prefapp) return act(() => setDefaultApp(e.target.dataset.prefapp, e.target.value), 'Save');
+  if (e.target.dataset.noticeoff) {
+    const off = new Set(S.notices?.off || []);
+    if (e.target.checked) off.delete(e.target.dataset.noticeoff); else off.add(e.target.dataset.noticeoff);
+    const r = await act(() => bridge.call('notices.off', { kinds: [...off] }), 'Notifications');
+    if (r) S.notices = r; else e.target.checked = !e.target.checked;
+    return;
+  }
   if (e.target.id === 'shareProv') SF.prov = e.target.value;
   if (e.target.id === 'shareOpen') { SF.open = e.target.checked; return renderDetail(); }
   if (e.target.id === 'shareMins') SF.mins = +e.target.value;
@@ -2681,6 +2715,60 @@ function showDocs() {
     <p><b>AI agents</b>: Settings → AI agents (MCP) shows how to connect Claude or Cursor.</p></div>
     <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn primary" data-dlg="ok">Done</button></div>`);
 }
+/* --- notification center: everything LocalSites showed, with Do Not Disturb --- */
+const NOTICE_KINDS = { agent: ['AI agent requests', 'agent'], crash: ['Services that stopped', 'alertCircle'], install: ['Finished installs', 'download2'],
+  setup: ['Setup finished', 'wrench'], share: ['Shares ending', 'globe'], update: ['Updates', 'sparkles'], problem: ['Problems', 'bug'] };
+const quietUntil = () => S.notices?.quiet_until ? new Date(S.notices.quiet_until) : null;
+function quietLabel(d) {
+  if (!d) return '';
+  if (d.getFullYear() > new Date().getFullYear() + 50) return 'until you turn it off';
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return 'until ' + (sameDay ? '' : 'tomorrow ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+function bellButton() {
+  const n = S.notices?.unread || 0, q = quietUntil();
+  return `<button class="item bell" data-cmd="noticemenu" title="${q ? 'Do Not Disturb ' + esc(quietLabel(q)) : 'Notifications'}" aria-label="Notifications${n ? `, ${n} unread` : ''}">${q ? icon.bellOff : icon.bell}${n ? `<span class="nbadge">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
+}
+function noticeDay(t) {
+  const d = new Date(t), today = new Date(), y = new Date(); y.setDate(today.getDate() - 1);
+  return d.toDateString() === today.toDateString() ? 'Today' : d.toDateString() === y.toDateString() ? 'Yesterday' : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' });
+}
+function noticeMenuHTML() {
+  const v = S.notices || { notices: [], unread: 0 }, q = quietUntil();
+  let day = '', rows = '';
+  for (const n of v.notices.slice(0, 60)) {
+    const d = noticeDay(n.time);
+    if (d !== day) { day = d; rows += `<div class="label2">${esc(d)}</div>`; }
+    const k = NOTICE_KINDS[n.kind] || ['', 'info'];
+    rows += `<button class="notice ${n.read ? '' : 'unread'}" data-notice="${esc(n.id)}">${icon[k[1]] || icon.info}<span class="nt"><b>${esc(n.title)}</b>${n.text ? `<span class="note">${esc(n.text)}</span>` : ''}</span>
+      <span class="kb">${new Date(n.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></button>`;
+  }
+  const head = `<div class="notice-h"><b>Notifications</b><span class="spacer"></span>${v.unread ? '<button class="linkish" data-noticeall="read">Mark all as read</button>' : ''}${v.notices.length ? '<button class="linkish" data-noticeall="clear">Clear</button>' : ''}</div>`;
+  const dnd = q ? `<div class="notice-dnd on">${icon.bellOff}<span>Do Not Disturb ${esc(quietLabel(q))}</span><span class="spacer"></span><button class="linkish" data-quiet="0">Turn off</button></div>`
+    : `<div class="notice-dnd">${icon.moonStar}<span>Do Not Disturb</span><span class="spacer"></span><button class="linkish" data-quiet="60">1 hour</button><button class="linkish" data-quiet="tomorrow">Until tomorrow</button><button class="linkish" data-quiet="-1">Until I turn it off</button></div>`;
+  const empty = '<div class="menu-empty">Nothing yet. Services that stop, finished installs, agent requests, shares about to end, updates and problems show up here.</div>';
+  return head + dnd + (rows || empty);
+}
+function showNoticeMenu(anchor) { menuAt(anchor, noticeMenuHTML(), 'wide notices'); }
+// Minutes until 8:00 tomorrow
+function minutesToMorning() { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(8, 0, 0, 0); return Math.max(1, Math.round((t - new Date()) / 60000)); }
+// Opens what a notice is about ("view:settings/updates", "proj:shop", "approval:<id>", "log:apache")
+function openNotice(open) {
+  if (!open) return;
+  const [what, arg = ''] = [open.slice(0, open.indexOf(':')), open.slice(open.indexOf(':') + 1)];
+  if (what === 'view') { const [view, sec] = arg.split('/'); if (sec) S.setSec = sec; return navigate(view); }
+  if (what === 'proj') return site(arg) ? navigate('projects', arg) : navigate('projects');
+  if (what === 'approval') return navigate('overview');
+  if (what === 'log') { if (['apache', 'mysql', 'nginx'].includes(arg)) S.log = { ...S.log, kind: arg, folder: '' }; return navigate('logs'); }
+}
+async function noticeClicked(id) {
+  const n = (S.notices?.notices || []).find(x => x.id === id);
+  $('#menu').classList.remove('open');
+  if (n && !n.read) { n.read = true; S.notices.unread = Math.max(0, S.notices.unread - 1); bridge.call('notices.read', { id }).catch(() => {}); }
+  renderStatus();
+  if (n) openNotice(n.open);
+}
+
 function showActivityMenu(anchor) {
   const items = collapseActivity(S.activity).slice(0, 8);
   menuAt(anchor, items.length ? items.map(a => { const who = (CLIENTS[a.client] || CLIENTS.unknown)[1];
@@ -2843,6 +2931,7 @@ async function command(cmd, opts = {}) {
       S.setSaving = false; return render();
     }
     case 'activitymenu': return showActivityMenu($('#statusbar [data-cmd="activitymenu"]'));
+    case 'noticemenu': await loadNotices(); renderStatus(); return showNoticeMenu($('#statusbar [data-cmd="noticemenu"]'));
     case 'restart': { toast('Restarting services…', 'warn'); logToast(await act(() => bridge.call('restart'))); return refresh(); }
     case 'stop': {
       if (!await confirmBox('Stop all services?', 'Your sites go offline until you start them again.', 'Stop')) return;
@@ -3152,6 +3241,16 @@ document.addEventListener('dblclick', (e) => {
   window.go?.main?.App?.TitleBarDoubleClick?.();
 });
 try { window.runtime?.EventsOn?.('menu', (cmd) => command(cmd)); } catch (_) { /* not in the desktop app */ }
+// A macOS notification (or its Open logs button) was clicked: open what it's about
+try {
+  window.runtime?.EventsOn?.('notice', async (kind, ref, action) => {
+    if (action === 'logs') return openNotice('log:' + ref);
+    await loadNotices();
+    const n = (S.notices?.notices || []).find(x => (ref && x.ref === ref) || (!ref && x.kind === kind));
+    if (n) return noticeClicked(n.id);
+    openNotice({ agent: 'approval:', share: 'view:projects', update: 'view:settings/updates', problem: 'view:settings/problems', setup: 'view:overview' }[kind] || '');
+  });
+} catch (_) { /* not in the desktop app */ }
 // Hidden for a few minutes, the app asks the page to unload itself to free memory; it reloads on the same
 // tabs when the window is shown. Never while something is unsaved or in progress.
 function unsavedWork() {
@@ -3206,7 +3305,7 @@ async function refreshAll() {
   if (busyUI()) { stale = true; return; } // a dialog is open: refresh when it closes
   stale = false; lastPoll = Date.now();
   if (document.activeElement?.matches('input,select,textarea') || $('#menu').classList.contains('open')) { await act(() => Promise.all([loadStatus(), loadActivity()])); renderStatus(); stale = true; return; }
-  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadProblems(), loadSetup()]));
+  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity(), loadProblems(), loadSetup(), loadNotices()]));
   const snap = JSON.stringify([S.status, S.sites, S.activity[0]?.time, S.prob?.problems?.length, probNew(), S.setup]);
   if (snap !== lastSnap) { lastSnap = snap; render(); } else renderStatus();
   if (legacy) pollApprovals();

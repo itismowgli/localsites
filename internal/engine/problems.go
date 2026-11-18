@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/localsites/localsites/internal/notices"
 	"io"
 	"os"
 	"os/user"
@@ -11,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/localsites/localsites/internal/notify"
 	"github.com/localsites/localsites/internal/problems"
 	"github.com/localsites/localsites/internal/version"
 )
@@ -73,7 +73,7 @@ func (e *Engine) problemAdded(p problems.Problem) {
 	case "ask", "off":
 		if time.Since(lastProblemNote) > 10*time.Minute {
 			lastProblemNote = time.Now()
-			notify.Send("LocalSites ran into a problem", p.Title+". Settings → Problems has the details.")
+			e.Notify(notices.Notice{Kind: notices.KindProblem, Title: "LocalSites ran into a problem", Text: p.Title + ". Settings → Problems has the details.", Open: "view:settings/problems"})
 		}
 	}
 }

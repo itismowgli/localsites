@@ -235,6 +235,34 @@ func (m *Manager) Start(folder string, t Target, providerID, password string, d 
 	return *s, nil
 }
 
+// Extend gives a share more time, up to 24 hours from when it started.
+func (m *Manager) Extend(id string, d time.Duration) (Share, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.shares[id]
+	if !ok {
+		return Share{}, errors.New("that share has already ended")
+	}
+	if d <= 0 {
+		return Share{}, errors.New("give a positive time")
+	}
+	until := s.Expires.Add(d)
+	if limit := s.Started.Add(24 * time.Hour); until.After(limit) {
+		until = limit
+	}
+	if !until.After(s.Expires) {
+		return Share{}, errors.New("a share can't last more than 24 hours")
+	}
+	s.Expires = until
+	if s.timer != nil {
+		s.timer.Reset(time.Until(until))
+	}
+	if m.OnChange != nil {
+		go m.OnChange()
+	}
+	return *s, nil
+}
+
 // Stop ends a share: the tunnel closes and the gateway stops answering.
 func (m *Manager) Stop(id string) bool {
 	m.mu.Lock()

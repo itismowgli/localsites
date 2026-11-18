@@ -135,3 +135,27 @@ func TestShareLimitIgnoresForgedHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestShareExtend(t *testing.T) {
+	m := NewManager(t.TempDir())
+	start := time.Now()
+	stopped := make(chan bool, 1)
+	s := &Share{ID: "x", Started: start, Expires: start.Add(time.Hour), cancel: func() {}, srv: &http.Server{}}
+	s.timer = time.AfterFunc(time.Hour, func() { stopped <- true })
+	m.shares["x"] = s
+	got, err := m.Extend("x", 30*time.Minute)
+	if err != nil || !got.Expires.Equal(start.Add(90*time.Minute)) {
+		t.Fatalf("extend = %v %v", got.Expires, err)
+	}
+	got, _ = m.Extend("x", 48*time.Hour) // capped at 24 hours from the start
+	if !got.Expires.Equal(start.Add(24 * time.Hour)) {
+		t.Fatalf("cap = %v", got.Expires.Sub(start))
+	}
+	if _, err := m.Extend("x", time.Minute); err == nil {
+		t.Fatal("past the 24-hour limit must be refused")
+	}
+	if _, err := m.Extend("gone", time.Minute); err == nil {
+		t.Fatal("unknown share")
+	}
+	s.timer.Stop()
+}

@@ -1002,3 +1002,20 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .app-remember { gap: 8px; font-size: 13px; }
 .ov-why:empty { display: none; } /* Linux: no number on the app icon to explain */
 .c-sub code { overflow-wrap: break-word; } /* a long config path wraps inside the card instead of running past it */
+
+/* Notification center: the bell in the status bar and its panel */
+.statusbar .bell { position: relative; }
+.statusbar .bell .nbadge { position: absolute; top: 1px; right: 0; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+  background: var(--accent-strong); color: #fff; font-size: 10px; line-height: 15px; text-align: center; font-weight: 600; }
+.menu.notices { max-height: min(520px, 70vh); overflow-y: auto; padding-top: 0; }
+.menu .notice-h { display: flex; align-items: center; gap: 10px; padding: 10px 10px 6px; position: sticky; top: 0; background: inherit; z-index: 1; }
+.menu .notice-dnd { display: flex; align-items: center; gap: 8px; margin: 0 6px 6px; padding: 7px 8px; border-radius: 6px; color: var(--muted); font-size: 12px; background: var(--hover, rgba(127,127,127,.08)); }
+.menu .notice-dnd.on { color: var(--text); background: var(--accent-bg); }
+.menu .notice-dnd svg { width: 14px; height: 14px; flex: none; }
+.menu button.linkish, .linkish { background: none; border: 0; padding: 2px 4px; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; width: auto; }
+.menu button.linkish:hover { text-decoration: underline; background: none; }
+.menu button.notice { align-items: flex-start; height: auto; padding-top: 8px; padding-bottom: 8px; }
+.menu button.notice > span.nt { display: flex; flex-direction: column; gap: 2px; white-space: normal; min-width: 0; flex: 1; }
+.menu button.notice .nt b { font-weight: 500; }
+.menu button.notice.unread .nt b::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 3px; background: var(--accent); margin: 0 6px 1px 0; vertical-align: middle; }
+.menu button.notice:not(.unread) { opacity: .8; }

@@ -39,8 +39,12 @@ func AppExe() string {
 	return exe
 }
 
-// Send is replaceable (the app sends natively; tests stub it).
-var Send = func(title, text string) {
+// Send shows a notification without buttons.
+func Send(title, text string) { SendNotice(title, text, "", "") }
+
+// SendNotice shows a notification. kind and ref (an approval or share id) let the macOS app add buttons
+// (Approve / Deny, Extend / Stop, Open logs). Replaceable: the app sends natively; tests stub it.
+var SendNotice = func(title, text, kind, ref string) {
 	if os.Getenv("LOCALSITES_HOME") != "" {
 		return
 	}
@@ -55,7 +59,7 @@ var Send = func(title, text string) {
 	}
 	go func() {
 		if exe := AppExe(); exe != "" {
-			cmd := exec.Command(exe, "notify", title, text)
+			cmd := exec.Command(exe, "notify", title, text, kind, ref)
 			if err := cmd.Start(); err == nil {
 				done := make(chan error, 1)
 				go func() { done <- cmd.Wait() }()

@@ -24,6 +24,7 @@ import (
 	"github.com/localsites/localsites/internal/dbclient"
 	"github.com/localsites/localsites/internal/frontdoor"
 	"github.com/localsites/localsites/internal/importers"
+	"github.com/localsites/localsites/internal/notices"
 	"github.com/localsites/localsites/internal/paths"
 	"github.com/localsites/localsites/internal/problems"
 	"github.com/localsites/localsites/internal/proc"
@@ -51,6 +52,7 @@ type Engine struct {
 	Shares       *share.Manager    // sites shared on the internet
 	upd          *update.Updater   // app updates (see update.go)
 	Changes      changes.Bus       // clients wait on this instead of polling (events.wait)
+	notices      *notices.Store    // every notification, for the bell in the app (see Notify)
 	problems     *problems.Store   // things that went wrong (see problems.go)
 	problemsOnce sync.Once
 	pgMu         sync.Mutex
@@ -90,6 +92,7 @@ func New() (*Engine, error) {
 		}
 		return nil
 	}
+	e.notices = notices.Open(p.Data)
 	e.Shares = share.NewManager(p.Logs)
 	e.Shares.OnChange = e.Changes.Bump
 	e.Sup.OnChange = e.Changes.Bump

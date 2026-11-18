@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/localsites/localsites/internal/api"
+	"github.com/localsites/localsites/internal/config"
 	"github.com/localsites/localsites/internal/engine"
+	"github.com/localsites/localsites/internal/notices"
 	"github.com/localsites/localsites/internal/notify"
 	"github.com/localsites/localsites/internal/paths"
 	"github.com/localsites/localsites/internal/problems"
@@ -54,10 +56,16 @@ func Run() error {
 			}
 		}
 	}()
+	go func() { // shares about to end, or ended by themselves
+		for {
+			time.Sleep(30 * time.Second)
+			e.WatchShares(time.Now())
+		}
+	}()
 	go func() { // app updates: a daily check only when the person turned it on
 		if r := e.UpdateState().Result; r != "" {
 			log.Print(r)
-			notify.Send("LocalSites", r)
+			e.Notify(notices.Notice{Kind: notices.KindUpdate, Title: "LocalSites", Text: r, Open: "view:settings/updates"})
 			if strings.HasPrefix(r, "The last update didn't install") {
 				e.AddProblem(problems.KindUpdate, r, "")
 			}
@@ -167,7 +175,8 @@ func watchProcesses(e *engine.Engine) {
 			st := e.Sup.Status(n)
 			if st.Restarts > restarts[n] && time.Since(lastCrash[n]) > 5*time.Minute {
 				lastCrash[n] = time.Now()
-				notify.Send("LocalSites", friendlyName(n)+" stopped unexpectedly and was restarted. Logs has the details.")
+				e.Notify(notices.Notice{Kind: notices.KindCrash, Title: friendlyName(n) + " stopped unexpectedly",
+					Text: "It was restarted. Logs has the details.", Ref: n, Open: "log:" + n})
 				e.AddProblem(problems.KindService, friendlyName(n)+" stopped unexpectedly", serviceDetail(e, n, st))
 			}
 			if strings.Contains(st.LastErr, "gave up") && !gaveUp[n] {
@@ -177,7 +186,11 @@ func watchProcesses(e *engine.Engine) {
 			restarts[n] = st.Restarts
 			if strings.Contains(n, "install") {
 				if installing[n] && !st.Running {
-					notify.Send("LocalSites", friendlyName(n)+" finished. Open LocalSites to see the result.")
+					text, open := "Open LocalSites to see the result.", "view:services"
+					if folder := installFolder(e, n); folder != "" {
+						open = "proj:" + folder
+					}
+					e.Notify(notices.Notice{Kind: notices.KindInstall, Title: friendlyName(n) + " finished", Text: text, Ref: n, Open: open})
 					if st.LastErr != "" && st.LastErr != "finished" {
 						e.AddProblem(problems.KindInstall, friendlyName(n)+" failed", serviceDetail(e, n, st))
 					}
@@ -210,4 +223,14 @@ func friendlyName(proc string) string {
 		return "The dev server of " + strings.TrimPrefix(proc, "app-")
 	}
 	return proc
+}
+
+// installFolder is the project an install process belongs to ("install-shop" → "shop"), when it is one.
+func installFolder(e *engine.Engine, proc string) string {
+	for _, s := range e.Sites() {
+		if "install-"+config.Slug(s.Folder) == proc {
+			return s.Folder
+		}
+	}
+	return ""
 }

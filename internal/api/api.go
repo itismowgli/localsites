@@ -27,6 +27,7 @@ import (
 	"github.com/localsites/localsites/internal/dbclient"
 	"github.com/localsites/localsites/internal/engine"
 	"github.com/localsites/localsites/internal/importers"
+	"github.com/localsites/localsites/internal/notices"
 	"github.com/localsites/localsites/internal/paths"
 	"github.com/localsites/localsites/internal/problems"
 	lsruntime "github.com/localsites/localsites/internal/runtime"
@@ -156,6 +157,15 @@ var Methods = []Method{
 		{Name: "no_password", Type: "boolean", Description: "Share without a password: anyone with the address can open it"},
 		{Name: "minutes", Type: "integer", Description: "Stop sharing after this many minutes (default 60, max 1440)"}}},
 	{Name: "share.stop", Description: "Stop sharing (the public address stops working immediately)", Mutates: true, Params: []Param{{Name: "id", Type: "string", Description: "Share id from share.list", Required: true}}},
+	{Name: "share.extend", Description: "Give a share more time (up to 24 hours from when it started)", Mutates: true, Destructive: true,
+		Params: []Param{{Name: "id", Type: "string", Description: "Share id from share.list", Required: true}, {Name: "minutes", Type: "integer", Description: "Extra minutes (default 30)"}}},
+	{Name: "notices.list", Description: "Notifications LocalSites showed (crashes, finished installs, agent requests, shares ending, updates, problems), newest first, with the unread count and settings"},
+	{Name: "notices.read", Description: "Mark a notification as read (id), or all of them (no id)", Mutates: true, Params: []Param{{Name: "id", Type: "string"}}},
+	{Name: "notices.clear", Description: "Empty the notification list", Mutates: true},
+	{Name: "notices.quiet", Description: "Do Not Disturb: notifications still go to the list but don't pop up. minutes: how long (-1 until turned off, 0 to turn it off)", Mutates: true,
+		Params: []Param{{Name: "minutes", Type: "integer", Required: true}}},
+	{Name: "notices.off", Description: "Choose which kinds of notification don't pop up (crash, install, setup, share, update, problem); agent requests always do", Mutates: true,
+		Params: []Param{{Name: "kinds", Type: "array", Required: true}}},
 	{Name: "share.install", Description: "Install a tunnel client with Homebrew (brew install cloudflared or bore-cli)", Mutates: true, Params: []Param{{Name: "provider", Type: "string", Required: true, Enum: []string{"cloudflared", "bore"}}}},
 	{Name: "addons.list", Description: "Add-on services (Mailpit, Valkey, Redis, Memcached, PostgreSQL, Meilisearch, MinIO): installed, running, ports, and settings for Laravel, Node/Next.js, Django, Rails or any language"},
 	{Name: "addons.update", Description: "Switch an add-on on or off, or change its port and options, then apply", Mutates: true, Params: []Param{
@@ -290,6 +300,10 @@ func (s *Server) Listen() error {
 	}
 	_ = os.Remove(socketPath(p))
 	s.pending.onChange = s.E.Changes.Bump
+	s.pending.onNotice = func(title, text, id string) {
+		s.E.Notify(notices.Notice{Kind: notices.KindAgent, Title: title, Text: text, Ref: id, Open: "approval:" + id})
+	}
+	s.pending.onDone = s.E.ReadNoticesAbout
 	s.token = secrets.Generate(40)
 	if err := os.WriteFile(tokenPath(p), []byte(s.token), 0o600); err != nil {
 		return err
@@ -409,6 +423,7 @@ type args struct {
 	Message    string   `json:"message"`
 	IDs        []string `json:"ids"`
 	Remember   bool     `json:"remember"`
+	Kinds      []string `json:"kinds"`
 	engine.SitePatch
 }
 
@@ -496,6 +511,28 @@ func (s *Server) call(method string, body []byte) (any, error) {
 			return nil, errors.New("that share is not running")
 		}
 		return map[string]any{"log": []string{"Stopped sharing"}}, nil
+	case "share.extend":
+		mins := a.Minutes
+		if mins == 0 {
+			mins = 30
+		}
+		sh, err := e.Shares.Extend(a.ID, time.Duration(mins)*time.Minute)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"log": []string{"Shared until " + sh.Expires.Format("15:04")}, "share": sh}, nil
+	case "notices.list":
+		return e.Notices(), nil
+	case "notices.read":
+		e.ReadNotices(a.ID)
+		return map[string]any{"log": []string{"Marked as read"}}, nil
+	case "notices.clear":
+		e.ClearNotices()
+		return map[string]any{"log": []string{"Cleared"}}, nil
+	case "notices.quiet":
+		return e.Notices(), e.QuietFor(a.Minutes)
+	case "notices.off":
+		return e.Notices(), e.SetNoticesOff(a.Kinds)
 	case "share.install":
 		logf, err := e.InstallShareProvider(a.Provider)
 		return map[string]any{"log": []string{"Installing… progress: " + logf}}, err

@@ -28,6 +28,7 @@ const ICONS = {
   tag: 'tag', home: 'house', minus: 'minus', save: 'save', rows: 'rows-3', panelRight: 'panel-right', dot: 'dot', cable: 'cable',
   container: 'container', calendar: 'calendar', history2: 'history', hash: 'hash', textCursor: 'text-cursor-input', download2: 'file-down',
   mail: 'mail', memory: 'memory-stick', mailCheck: 'mail-check', eraser: 'eraser', gear: 'settings-2', plugZap: 'plug-zap',
+  bell: 'bell', bellOff: 'bell-off', moonStar: 'moon-star', eyeOff: 'eye-off',
 };
 
 const out = {};

@@ -6,56 +6,10 @@ package main
 #cgo CFLAGS: -x objective-c -fobjc-arc
 #cgo LDFLAGS: -framework Foundation -framework UserNotifications
 #include <stdlib.h>
-#import <Foundation/Foundation.h>
-#import <UserNotifications/UserNotifications.h>
-
-// Asks once for permission to show notifications. macOS only prompts the first time.
-static void lsNotifyAuthorize(void) {
-	[[UNUserNotificationCenter currentNotificationCenter]
-		requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
-		completionHandler:^(BOOL granted, NSError *error) {}];
-}
-
-// lsNotifySendWait sends one notification and waits (up to 5 s) until macOS has it, for the short-lived
-// "LocalSites notify" helper process. Returns 0 when it was handed over.
-static int lsNotifySendWait(const char *title, const char *body) {
-	NSString *t = [NSString stringWithUTF8String:title];
-	NSString *b = [NSString stringWithUTF8String:body];
-	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-	dispatch_semaphore_t done = dispatch_semaphore_create(0);
-	__block int result = 1;
-	[center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
-		completionHandler:^(BOOL granted, NSError *error) {
-			if (!granted) { result = 2; dispatch_semaphore_signal(done); return; }
-			UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
-			content.title = t;
-			content.body = b;
-			UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:[[NSUUID UUID] UUIDString]
-				content:content trigger:nil];
-			[center addNotificationRequest:req withCompletionHandler:^(NSError *err) {
-				result = err == nil ? 0 : 1;
-				dispatch_semaphore_signal(done);
-			}];
-		}];
-	dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
-	return result;
-}
-
-static void lsNotifySend(const char *title, const char *body) {
-	NSString *t = [NSString stringWithUTF8String:title];
-	NSString *b = [NSString stringWithUTF8String:body];
-	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-	[center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
-		completionHandler:^(BOOL granted, NSError *error) {
-			if (!granted) return;
-			UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
-			content.title = t;
-			content.body = b;
-			UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:[[NSUUID UUID] UUIDString]
-				content:content trigger:nil];
-			[center addNotificationRequest:req withCompletionHandler:nil];
-		}];
-}
+void lsNotifyAuthorize(void);
+void lsNotifyListen(void);
+int lsNotifySendWait(const char *title, const char *body, const char *kind, const char *ref);
+void lsNotifySend(const char *title, const char *body, const char *kind, const char *ref);
 */
 import "C"
 
@@ -81,25 +35,29 @@ func useNativeNotifications() {
 	if !inBundle() || os.Getenv("LOCALSITES_HOME") != "" {
 		return
 	}
-	notify.Send = func(title, text string) {
-		ct, cb := C.CString(title), C.CString(text)
+	notify.SendNotice = func(title, text, kind, ref string) {
+		ct, cb, ck, cr := C.CString(title), C.CString(text), C.CString(kind), C.CString(ref)
 		defer C.free(unsafe.Pointer(ct))
 		defer C.free(unsafe.Pointer(cb))
-		C.lsNotifySend(ct, cb)
+		defer C.free(unsafe.Pointer(ck))
+		defer C.free(unsafe.Pointer(cr))
+		C.lsNotifySend(ct, cb, ck, cr)
 	}
 }
 
 // notifyOnce is "LocalSites notify <title> <text>": a service started from the command line runs it so the
 // notification shows LocalSites' name and icon. Exits non-zero when macOS didn't take it (the caller then
 // falls back to osascript). A refusal of permission counts as handled: the person said no.
-func notifyOnce(title, text string) int {
+func notifyOnce(title, text, kind, ref string) int {
 	if !inBundle() {
 		return 1
 	}
-	ct, cb := C.CString(title), C.CString(text)
+	ct, cb, ck, cr := C.CString(title), C.CString(text), C.CString(kind), C.CString(ref)
 	defer C.free(unsafe.Pointer(ct))
 	defer C.free(unsafe.Pointer(cb))
-	switch C.lsNotifySendWait(ct, cb) {
+	defer C.free(unsafe.Pointer(ck))
+	defer C.free(unsafe.Pointer(cr))
+	switch C.lsNotifySendWait(ct, cb, ck, cr) {
 	case 0, 2:
 		return 0
 	}
@@ -125,4 +83,16 @@ func askNotificationPermission() {
 	if inBundle() {
 		C.lsNotifyAuthorize()
 	}
+}
+
+// listenForNoticeButtons makes the app receive presses on notification buttons (see noticeAction).
+func listenForNoticeButtons() {
+	if inBundle() {
+		C.lsNotifyListen()
+	}
+}
+
+//export lsNoticeAction
+func lsNoticeAction(kind, ref, action *C.char) {
+	go noticeAction(C.GoString(kind), C.GoString(ref), C.GoString(action))
 }

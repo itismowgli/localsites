@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -96,6 +97,10 @@ type Settings struct {
 	Apps map[string]string `json:"apps,omitempty"`
 	// Projects hidden from LocalSites (folder ids): the folders stay where they are, unlisted and unserved
 	Hidden []string `json:"hidden_projects,omitempty"`
+	// Notification kinds that don't pop up on the screen (they're still kept in the app's list)
+	NoticesOff []string `json:"notices_off,omitempty"`
+	// Do Not Disturb until this time (zero: off)
+	QuietUntil time.Time `json:"quiet_until,omitempty"`
 }
 
 // Addon is the saved state of one add-on service.
