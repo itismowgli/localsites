@@ -86,3 +86,37 @@ func TestDefaultApps(t *testing.T) {
 		t.Fatalf("saved terminal = %q", got)
 	}
 }
+
+func TestDevPathOrder(t *testing.T) {
+	home := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(home, ".nvm", "versions", "node", "v22.11.0", "bin"), 0o755)
+	_ = os.MkdirAll(filepath.Join(home, ".nvm", "alias"), 0o755)
+	_ = os.WriteFile(filepath.Join(home, ".nvm", "alias", "default"), []byte("22\n"), 0o644)
+	t.Setenv("PATH", "/opt/hostedtoolcache/node/bin:relative:/usr/bin")
+	e := &Engine{P: paths.Paths{Home: home}}
+	got := filepath.SplitList(e.devPath(SiteView{}))
+	idx := func(d string) int {
+		for i, x := range got {
+			if x == d {
+				return i
+			}
+		}
+		return -1
+	}
+	nvm := filepath.Join(home, ".nvm", "versions", "node", "v22.11.0", "bin")
+	if idx("/usr/bin") < 0 || idx(nvm) < idx("/usr/bin") || idx("/opt/hostedtoolcache/node/bin") < idx(nvm) {
+		t.Fatalf("order: system first, then the person's tools, then the inherited PATH: %v", got)
+	}
+	if idx("relative") >= 0 {
+		t.Fatal("relative PATH entries must be dropped")
+	}
+	n := 0
+	for _, d := range got {
+		if d == "/usr/bin" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("duplicates: %v", got)
+	}
+}

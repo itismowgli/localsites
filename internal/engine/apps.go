@@ -87,7 +87,7 @@ func portFree(p int) bool {
 // appSpec builds the command that runs a project's dev server.
 func (e *Engine) appSpec(s SiteView) (proc.Spec, error) {
 	port := strconv.Itoa(s.Port)
-	path := platform.SystemPath(e.nodeBins(s)...)
+	path := e.devPath(s)
 	env := []string{"PATH=" + path, "PORT=" + port, "HOST=127.0.0.1", "HOSTNAME=127.0.0.1", "BROWSER=none", "FORCE_COLOR=0"}
 	for _, k := range sortedKeys(s.EnvVars) { // the project's own variables (validated when saved)
 		env = append(env, k+"="+s.EnvVars[k])
@@ -139,6 +139,34 @@ func (e *Engine) appSpec(s SiteView) (proc.Spec, error) {
 }
 
 var nodeVersionRe = regexp.MustCompile(`^[0-9]+(\.[0-9]+){0,2}$`)
+
+// devPath is PATH for dev servers and installs: the project's pinned Node first, then Homebrew and the
+// system folders, then where people commonly install Node and package managers for themselves (Snap,
+// Volta, Bun, nvm's default, ~/.local/bin), then the PATH LocalSites itself was started with.
+func (e *Engine) devPath(s SiteView) string {
+	home := e.P.Home
+	user := []string{"/snap/bin", filepath.Join(home, ".volta", "bin"), filepath.Join(home, ".bun", "bin"),
+		filepath.Join(home, ".local", "bin"), filepath.Join(home, ".local", "share", "pnpm")}
+	if def, err := os.ReadFile(filepath.Join(home, ".nvm", "alias", "default")); err == nil { // nvm's default version
+		want := strings.TrimPrefix(strings.TrimSpace(string(def)), "v")
+		if nodeVersionRe.MatchString(want) {
+			dirs, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "v"+want+"*"))
+			sort.Strings(dirs)
+			if len(dirs) > 0 {
+				user = append(user, filepath.Join(dirs[len(dirs)-1], "bin"))
+			}
+		}
+	}
+	base := filepath.SplitList(platform.SystemPath(e.nodeBins(s)...))
+	seen, out := map[string]bool{}, []string{}
+	for _, d := range append(append(base, user...), filepath.SplitList(os.Getenv("PATH"))...) {
+		if d != "" && filepath.IsAbs(d) && !seen[d] {
+			seen[d] = true
+			out = append(out, d)
+		}
+	}
+	return strings.Join(out, string(os.PathListSeparator))
+}
 
 // nodeBins puts the project's Node version first when it pins one (.nvmrc) and nvm has it.
 func (e *Engine) nodeBins(s SiteView) []string {
@@ -242,7 +270,7 @@ func (e *Engine) InstallDeps(folder string) (string, error) {
 	if e.Sup.Status(name).Running {
 		return "", errors.New("already installing")
 	}
-	path := platform.SystemPath(e.nodeBins(s)...)
+	path := e.devPath(s)
 	spec := proc.Spec{Name: name, Dir: s.Path, OneShot: true, Env: []string{"PATH=" + path, "COMPOSER_NO_INTERACTION=1", "CI=1", "FORCE_COLOR=0"},
 		Log: filepath.Join(e.P.SiteLogs, fileKey(s.Folder)+"-install.log")}
 	switch {
