@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=LocalSites
+GenericName=Local web development
+Comment=Local PHP and MySQL sites with real HTTPS domains
+Exec=/opt/LocalSites/LocalSites
+Icon=localsites
+Terminal=false
+Categories=Development;WebDevelopment;
+Keywords=php;mysql;apache;localhost;mamp;valet;
+StartupWMClass=LocalSites

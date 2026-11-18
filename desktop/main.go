@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 
 	"github.com/localsites/localsites/internal/daemon"
 	"github.com/localsites/localsites/internal/mcp"
@@ -79,13 +80,14 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 11, G: 11, B: 12, A: 255}, // same as the UI's --win; the UI updates it for light mode
 		AssetServer:      &assetserver.Options{Assets: assets},
 		// App, Edit, View and Window menus. ⌘W / ⌘T / ⌘[ stay with the app's tabs (the Window menu only has ⌘M and Zoom)
-		Menu:       appMenu(app),
+		Menu:       appMenu(app), // nil on Linux, where it would be a menu bar inside the window
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
 		// after an update installed at night, LocalSites comes back in the menu bar only
 		StartHidden: len(os.Args) > 1 && os.Args[len(os.Args)-1] == "--hidden",
-		// Closing the window keeps LocalSites in the menu bar; Quit (⌘Q or the menu bar) ends it
-		HideWindowOnClose: true,
+		// macOS: closing the window keeps LocalSites in the menu bar; Quit (⌘Q or the menu bar) ends it.
+		// Linux: closing the window ends the app window; the sites keep running in the background service.
+		HideWindowOnClose: goruntime.GOOS == "darwin",
 		Bind:              []interface{}{app},
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHiddenInset(),
@@ -102,6 +104,9 @@ func main() {
 }
 
 func appMenu(app *App) *menu.Menu {
+	if goruntime.GOOS != "darwin" { // the app's own shortcuts (Ctrl+\ and so on) work without one
+		return nil
+	}
 	view := menu.NewMenu()
 	view.AddText("Toggle Sidebar", keys.CmdOrCtrl("\\"), func(*menu.CallbackData) { app.emit("menu", "togglesidebar") })
 	view.AddSeparator()

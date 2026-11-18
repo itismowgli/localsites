@@ -41,7 +41,16 @@ func AppExe() string {
 
 // Send is replaceable (the app sends natively; tests stub it).
 var Send = func(title, text string) {
-	if runtime.GOOS != "darwin" || os.Getenv("LOCALSITES_HOME") != "" {
+	if os.Getenv("LOCALSITES_HOME") != "" {
+		return
+	}
+	if runtime.GOOS == "linux" { // freedesktop notifications (GNOME, KDE, …); arguments, never a shell
+		if ns, err := exec.LookPath("notify-send"); err == nil {
+			go func() { _ = exec.Command(ns, "--app-name=LocalSites", "--icon=localsites", "--", title, text).Run() }()
+		}
+		return
+	}
+	if runtime.GOOS != "darwin" {
 		return
 	}
 	go func() {

@@ -1000,3 +1000,4 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .app-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 12px 0; }
 .app-pick .btn { justify-content: flex-start; }
 .app-remember { gap: 8px; font-size: 13px; }
+.ov-why:empty { display: none; } /* Linux: no number on the app icon to explain */

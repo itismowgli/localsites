@@ -1,4 +1,4 @@
-.PHONY: build cli app dmg release test e2e e2e-ui test-all lint support
+.PHONY: build cli app dmg release linux-packages test e2e e2e-ui test-all lint support
 
 VERSION := $(shell sed -n 's/^const Version = "\(.*\)"/\1/p' internal/version/version.go)
 ARCH := $(shell go env GOARCH)
@@ -39,6 +39,22 @@ release: app
 	ditto -c -k --keepParent desktop/build/bin/LocalSites.app dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip
 	go run ./tools/release manifest -out dist/release $(if $(SECURITY),-security) $(if $(BETA),-channel beta) dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip
 	@echo "Next: gh release create v$(VERSION) dist/release/*"
+
+# Linux packages (.deb and .rpm) for this machine's architecture. Needs GTK, WebKitGTK 4.1, wails and nfpm;
+# tests/linux/build has them all:
+#   docker build -t localsites-linux-build tests/linux/build
+#   docker run --rm -v "$PWD":/src -w /src localsites-linux-build make linux-packages
+LINUX_ARCH ?= $(shell go env GOARCH)
+linux-packages:
+	@test "$$(go env GOOS)" = linux || { echo "build Linux packages on Linux (see tests/linux/build)"; exit 1; }
+	go build -trimpath -ldflags "$(LDFLAGS)" -o bin/localsites-linux ./cmd/localsites
+	cd desktop && wails build -tags webkit2_41 -trimpath -ldflags "$(LDFLAGS)" -o LocalSites
+	@mkdir -p dist/linux dist/release
+	convert desktop/build/appicon.png -resize 256x256 dist/linux/localsites-256.png
+	convert desktop/build/appicon.png -resize 512x512 dist/linux/localsites-512.png
+	VERSION=$(VERSION) ARCH=$(LINUX_ARCH) nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
+	VERSION=$(VERSION) ARCH=$(LINUX_ARCH) nfpm package -f packaging/linux/nfpm.yaml -p rpm -t dist/release/
+	@ls -la dist/release/*.deb dist/release/*.rpm
 
 # Disk image for sharing. Unsigned unless SIGN_ID is set (a "Developer ID Application" identity);
 # notarizing needs an Apple Developer account: xcrun notarytool submit dist/LocalSites.dmg --wait …

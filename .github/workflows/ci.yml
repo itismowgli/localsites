@@ -26,13 +26,29 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/...
           GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/...
 
-  linux-unit-tests:
-    # Linux support is in progress (docs/LINUX.md); this shows what still assumes macOS
-    runs-on: ubuntu-latest
+  linux:
+    # Ubuntu 24.04 (x86_64): unit tests, the desktop app, and the end-to-end suite with Homebrew's
+    # Apache, MySQL 8.4 and PHP, set up the way LocalSites does it on Linux.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Unit tests (engine and CLI; the desktop app needs WebKitGTK, milestone 4)
-        run: go test $(go list ./... | grep -v '/desktop$')
+      - name: GTK and WebKitGTK for the desktop app
+        run: sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Unit tests
+        run: go test -tags webkit2_41 ./...
+      - name: Desktop app builds
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          cd desktop && wails build -tags webkit2_41 -trimpath -o LocalSites
+      - name: Apache, MySQL 8.4 and PHP from Homebrew
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+          brew install httpd mysql@8.4
+          brew tap shivammathur/php && (brew trust shivammathur/php || true)
+          brew install shivammathur/php/php@8.5
+      - name: End-to-end tests
+        run: go test -tags e2e -count=1 -timeout 20m ./e2e/

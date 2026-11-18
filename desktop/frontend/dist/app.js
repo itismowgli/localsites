@@ -575,6 +575,7 @@ function needsYou() {
 // One sentence that says what the Dock number is made of, e.g. "The 3 on the Dock icon: 2 failed Doctor
 // checks and 1 problem to look at."
 function badgeWhy(total, c) {
+  if (!isMac) return ''; // only macOS shows a number on the app icon
   const u = S.upd, parts = [
     [c.access, 'folder waiting for macOS access', 'folders waiting for macOS access'],
     [c.checks, 'failed Doctor check', 'failed Doctor checks'],
@@ -2111,7 +2112,7 @@ function updCard(u) {
     return `<div class="upd">${head('sparkles', `LocalSites ${ver} is available`, m.title ? esc(m.title) : '', `<span class="upd-facts">${facts}</span>`)}${notes(m)}${err}
       <div class="upd-f">${main}${canInstall ? UI.btn('Download only', { attrs: 'data-cmd="upddl"' }) : ''}<span class="spacer"></span>${UI.btn('Skip this version', { kind: 'ghost', attrs: 'data-cmd="updskip"' })}</div>
       ${canInstall ? `<p class="note">You’re on ${esc(u.current)}. ${u.size ? mb(u.size) + ' download. ' : ''}LocalSites restarts to install it; projects pause for a few seconds.${u.release_url ? ` <a class="link" data-openweb="${esc(u.release_url)}">Release page</a>` : ''}</p>`
-        : `<p class="note">${u.supported ? 'This build has no update key, so it can’t install updates itself.' : 'Installing from inside the app works on macOS for now.'}</p>`}</div>`;
+        : `<p class="note">${u.supported ? 'This build has no update key, so it can’t install updates itself.' : (isMac ? 'Installing from inside the app works on macOS for now.' : 'On Linux, download the new .deb or .rpm from the release page and open it; your package manager updates LocalSites.')}</p>`}</div>`;
   }
   if (u.phase === 'error') return `<div class="upd">${head('alert', 'Couldn’t check for updates', esc(u.error), UI.status('err', 'Problem'))}<div class="upd-f">${UI.btn('Try again', { ic: 'refresh', attrs: 'data-cmd="updcheck"' })}</div></div>`;
   const auto = setVal('update_auto_check');

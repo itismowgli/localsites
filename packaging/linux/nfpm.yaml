@@ -1,0 +1,36 @@
+# Linux packages (.deb and .rpm) for LocalSites, built with nfpm (https://nfpm.goreleaser.com):
+#   VERSION=1.4.0 ARCH=amd64 nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
+# make linux-packages runs this inside tests/linux/build.
+name: localsites
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: devel
+priority: optional
+maintainer: LocalSites contributors <noreply@github.com>
+description: |
+  Local PHP and MySQL sites with real HTTPS domains, a free MAMP PRO alternative.
+  PHP, Apache and MySQL come from Homebrew, which LocalSites installs and keeps working for you.
+vendor: LocalSites
+homepage: https://github.com/itismowgli/localsites
+license: MIT
+overrides:
+  deb:
+    depends: [libgtk-3-0t64 | libgtk-3-0, libwebkit2gtk-4.1-0, ca-certificates, curl, git]
+    recommends: [libnss3-tools, libnotify-bin, gnome-keyring]
+  rpm:
+    depends: [gtk3, webkit2gtk4.1, ca-certificates, curl, git]
+    recommends: [nss-tools, libnotify]
+contents:
+  - src: desktop/build/bin/LocalSites
+    dst: /opt/LocalSites/LocalSites
+    file_info: {mode: 0755}
+  - src: bin/localsites-linux
+    dst: /usr/bin/localsites
+    file_info: {mode: 0755}
+  - src: packaging/linux/localsites.desktop
+    dst: /usr/share/applications/localsites.desktop
+  - src: dist/linux/localsites-256.png
+    dst: /usr/share/icons/hicolor/256x256/apps/localsites.png
+  - src: dist/linux/localsites-512.png
+    dst: /usr/share/icons/hicolor/512x512/apps/localsites.png

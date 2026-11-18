@@ -1,5 +1,5 @@
-// Package secrets stores passwords in the OS keychain (macOS Keychain),
-// falling back to an owner-only file on platforms without one yet.
+// Package secrets stores passwords in the system's keychain: the macOS Keychain, or the Secret Service
+// keyring on Linux desktops (GNOME Keyring, KWallet). Without one, an owner-only file is used.
 package secrets
 
 import (
@@ -51,7 +51,11 @@ func New(fallbackDir string) Store {
 			return keychain{}
 		}
 	}
-	return &fileStore{file: filepath.Join(fallbackDir, "secrets.json")}
+	file := &fileStore{file: filepath.Join(fallbackDir, "secrets.json")}
+	if runtime.GOOS == "linux" && os.Getenv("LOCALSITES_SECRETS") != "file" {
+		return &linuxStore{file: file, ssOpen: openKeyring}
+	}
+	return file
 }
 
 // Generate returns a random password using letters and digits only (safe in .env files and shells).

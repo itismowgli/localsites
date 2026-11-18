@@ -1,0 +1,37 @@
+name: Linux packages
+# Builds the .deb and .rpm for x86_64 and arm64 and attaches them to the release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  packages:
+    strategy:
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build tools
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-dev libwebkit2gtk-4.1-dev imagemagick
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+      - name: Packages
+        run: make linux-packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.runner }}
+          path: dist/release/*
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/release/*.deb dist/release/*.rpm --clobber
