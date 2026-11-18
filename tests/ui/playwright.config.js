@@ -3,6 +3,7 @@
 const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: '.',
+  testIgnore: 'screenshots.spec.js', // run with -c screenshots.config.js
   timeout: 60_000,
   workers: 1, // one shared sandbox service
   retries: 0,

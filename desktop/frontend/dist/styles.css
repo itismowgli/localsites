@@ -1001,3 +1001,4 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .app-pick .btn { justify-content: flex-start; }
 .app-remember { gap: 8px; font-size: 13px; }
 .ov-why:empty { display: none; } /* Linux: no number on the app icon to explain */
+.c-sub code { overflow-wrap: break-word; } /* a long config path wraps inside the card instead of running past it */

@@ -997,7 +997,7 @@ function agentCard(c) {
     : c.connected ? UI.btn('Disconnect', { kind: 'ghost', attrs: `data-agentoff="${c.id}"` })
     : UI.btn('Connect', { ic: 'plugZap', kind: 'primary', attrs: `data-agenton="${c.id}"` });
   return UI.card({ ic: (AGENT_IC[c.id] || (() => icon.agent))(), title: c.name, status: c.manual ? UI.status('off', 'Manual') : UI.status(c.connected ? 'on' : 'off', c.connected ? 'Connected' : 'Not connected'),
-    sub: c.config ? `<code title="${esc(c.config)}">${esc(c.config.replace(/^\/Users\/[^/]+/, '~'))}</code>` : c.id === 'claude-code' ? 'Uses <code>claude mcp add</code>' : '', foot, on: c.connected, attrs: `data-agent="${c.id}"` });
+    sub: c.config ? `<code title="${esc(c.config)}">${esc(c.config.replace(/^\/Users\/[^/]+/, '~')).replace(/\//g, '/<wbr>')}</code>` : c.id === 'claude-code' ? 'Uses <code>claude mcp add</code>' : '', foot, on: c.connected, attrs: `data-agent="${c.id}"` });
 }
 let approvalsShown = '';
 function renderApprovals(list) {

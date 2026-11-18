@@ -65,6 +65,16 @@ does nothing until something changes. MySQL sleeps when nothing needs it.
 | **Your editor, your terminal** | Open any project in the editor or terminal you choose (VS Code, Cursor, Zed, PhpStorm, Sublime, iTerm2, Ghostty, kitty and more). LocalSites asks once and never guesses |
 | **Rename, hide or trash** | Rename a project folder and its settings and address follow; hide it from LocalSites; or move it to the Trash. Its database is never touched |
 
+### Sets itself up
+
+<img src="docs/screenshots/setup.jpg" alt="Overview listing .test domains, a PHP version to repair and one to install, with a Fix everything button" width="900">
+
+Overview lists what's missing or broken (Apache, MySQL, the PHP versions your projects use, `.test` domains and
+HTTPS) and **Fix everything** sorts it out in the background, with at most one password prompt. The first time you
+open a project in an editor, LocalSites asks which one you use instead of guessing:
+
+<img src="docs/screenshots/editor-chooser.jpg" alt="The first Open asks which code editor to use, with Remember my choice" width="900">
+
 ### Databases, with a real data browser
 
 <img src="docs/screenshots/data-browser.jpg" alt="LocalSites data browser showing a products table in MySQL, read-only by default" width="900">
