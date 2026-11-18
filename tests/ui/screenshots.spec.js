@@ -200,23 +200,31 @@ test('social preview', async ({ browser }) => {
   const file = (rel) => `data:${rel.endsWith('.png') ? 'image/png' : rel.endsWith('.jpg') ? 'image/jpeg' : 'font/woff2'};base64,` + fs.readFileSync(path.join(root, rel)).toString('base64');
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
-  const chips = ['https://name.test', 'PHP 7.1 to 8.5', 'MySQL', 'Laravel', 'WordPress', 'MCP for AI agents'];
   await page.setContent(`<!doctype html><html><head><style>
     @font-face { font-family: Inter; src: url('${file('desktop/frontend/dist/fonts/inter-latin.woff2')}') format('woff2'); font-weight: 100 900; }
-    html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; background: radial-gradient(120% 120% at 70% 0%, #1b1b1f 0%, #0b0b0c 60%); color: #f4f4f5; font-family: Inter, -apple-system, sans-serif; }
-    .left { position: absolute; left: 72px; top: 104px; width: 560px; }
-    .icon { width: 84px; height: 84px; border-radius: 20px; }
-    h1 { font-size: 64px; font-weight: 700; letter-spacing: -2px; margin: 36px 0 18px; }
-    p { font-size: 25px; line-height: 1.5; color: #a1a1aa; margin: 0 0 26px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-    .chip { border: 1px solid #3f3f46; border-radius: 999px; padding: 8px 15px; font-size: 19px; color: #e4e4e7; }
-    .shot { position: absolute; left: 660px; top: 110px; width: 760px; border-radius: 14px; border: 1px solid #3f3f46; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+    html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; background: #08090a; color: #f7f8f8; font-family: Inter, -apple-system, sans-serif; }
+    /* a soft light from above, like a stage */
+    body::before { content: ''; position: absolute; inset: -200px 0 auto 0; height: 560px; background: radial-gradient(50% 60% at 62% 40%, rgba(120,120,255,.16), transparent 70%); }
+    .brand { position: absolute; left: 72px; top: 60px; z-index: 2; display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 600; letter-spacing: -.3px; }
+    .brand img { width: 36px; height: 36px; border-radius: 9px; }
+    .text { position: absolute; left: 72px; top: 0; bottom: 0; width: 500px; display: flex; flex-direction: column; justify-content: center; gap: 22px; z-index: 2; }
+    h1 { margin: 0; font-size: 54px; line-height: 1.06; font-weight: 600; letter-spacing: -2.2px;
+      background: linear-gradient(180deg, #ffffff 30%, rgba(255,255,255,.55)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    p { margin: 0; font-size: 21px; line-height: 1.5; color: #8a8f98; letter-spacing: -.1px; }
+    .meta { position: absolute; left: 72px; bottom: 60px; font-size: 17px; color: #8a8f98; z-index: 2; }
+    .stage { position: absolute; left: 650px; top: 92px; perspective: 1600px; }
+    .shot { width: 900px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1);
+      transform: rotateX(18deg) rotateY(-22deg) rotateZ(6deg); transform-origin: left top;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 40px 120px rgba(0,0,0,.7), 0 0 120px rgba(120,120,255,.12); }
+    /* fade the picture into the background at the bottom, as it runs off the edge */
+    .fade { position: absolute; inset: auto 0 0 0; height: 200px; z-index: 1; background: linear-gradient(transparent, #08090a 85%); }
   </style></head><body>
-    <div class="left"><img class="icon" src="${file('docs/brand/app-icon-1024.png')}">
-      <h1>LocalSites</h1>
-      <p>Free, open-source local web development for macOS and Linux. An alternative to MAMP PRO, Herd and XAMPP.</p>
-      <div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join('')}</div></div>
-    <img class="shot" src="${file('docs/screenshots/projects.jpg')}">
+    <div class="brand"><img src="${file('docs/brand/app-icon-1024.png')}">LocalSites</div>
+    <div class="text"><h1>Local web development, without the fiddling</h1>
+    <p>Every folder gets a real https://name.test, with PHP 7.1 to 8.5 and MySQL set up for you.</p></div>
+    <div class="meta">Free and open source · macOS and Linux</div>
+    <div class="stage"><img class="shot" src="${file('docs/screenshots/projects.jpg')}"></div>
+    <div class="fade"></div>
   </body></html>`, { waitUntil: 'load' });
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: path.join(root, 'docs', 'brand', 'social-preview.png') });
