@@ -191,3 +191,34 @@ test('palette, services and agents', async ({ page }) => {
   await page.waitForTimeout(500);
   await shot(page, 'agents.jpg');
 });
+
+// The link preview for social sites (docs/brand/social-preview.png, 1280×640): the app icon, what
+// LocalSites is, and the projects screenshot taken above.
+test('social preview', async ({ browser }) => {
+  const { root } = state();
+  // embedded: a page built from a string can't load local files
+  const file = (rel) => `data:${rel.endsWith('.png') ? 'image/png' : rel.endsWith('.jpg') ? 'image/jpeg' : 'font/woff2'};base64,` + fs.readFileSync(path.join(root, rel)).toString('base64');
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const chips = ['https://name.test', 'PHP 7.1 to 8.5', 'MySQL', 'Laravel', 'WordPress', 'MCP for AI agents'];
+  await page.setContent(`<!doctype html><html><head><style>
+    @font-face { font-family: Inter; src: url('${file('desktop/frontend/dist/fonts/inter-latin.woff2')}') format('woff2'); font-weight: 100 900; }
+    html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; background: radial-gradient(120% 120% at 70% 0%, #1b1b1f 0%, #0b0b0c 60%); color: #f4f4f5; font-family: Inter, -apple-system, sans-serif; }
+    .left { position: absolute; left: 72px; top: 104px; width: 560px; }
+    .icon { width: 84px; height: 84px; border-radius: 20px; }
+    h1 { font-size: 64px; font-weight: 700; letter-spacing: -2px; margin: 36px 0 18px; }
+    p { font-size: 25px; line-height: 1.5; color: #a1a1aa; margin: 0 0 26px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { border: 1px solid #3f3f46; border-radius: 999px; padding: 8px 15px; font-size: 19px; color: #e4e4e7; }
+    .shot { position: absolute; left: 660px; top: 110px; width: 760px; border-radius: 14px; border: 1px solid #3f3f46; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  </style></head><body>
+    <div class="left"><img class="icon" src="${file('docs/brand/app-icon-1024.png')}">
+      <h1>LocalSites</h1>
+      <p>Free, open-source local web development for macOS and Linux. An alternative to MAMP PRO, Herd and XAMPP.</p>
+      <div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join('')}</div></div>
+    <img class="shot" src="${file('docs/screenshots/projects.jpg')}">
+  </body></html>`, { waitUntil: 'load' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({ path: path.join(root, 'docs', 'brand', 'social-preview.png') });
+  await ctx.close();
+});
