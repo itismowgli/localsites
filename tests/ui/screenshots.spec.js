@@ -212,9 +212,10 @@ test('social preview', async ({ browser }) => {
       background: linear-gradient(180deg, #ffffff 30%, rgba(255,255,255,.55)); -webkit-background-clip: text; background-clip: text; color: transparent; }
     p { margin: 0; font-size: 21px; line-height: 1.5; color: #8a8f98; letter-spacing: -.1px; }
     .meta { position: absolute; left: 72px; bottom: 60px; font-size: 17px; color: #8a8f98; z-index: 2; }
-    .stage { position: absolute; left: 650px; top: 92px; perspective: 1600px; }
+    .stage { position: absolute; left: 640px; top: 100px; perspective: 2600px; }
     .shot { width: 900px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1);
-      transform: rotateX(18deg) rotateY(-22deg) rotateZ(6deg); transform-origin: left top;
+      /* leans back and turns away to the right: one flat screen seen at an angle */
+      transform: rotateX(10deg) rotateY(-14deg); transform-origin: left top;
       box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 40px 120px rgba(0,0,0,.7), 0 0 120px rgba(120,120,255,.12); }
     /* fade the picture into the background at the bottom, as it runs off the edge */
     .fade { position: absolute; inset: auto 0 0 0; height: 200px; z-index: 1; background: linear-gradient(transparent, #08090a 85%); }
