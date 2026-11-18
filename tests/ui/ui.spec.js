@@ -916,3 +916,20 @@ test('open without a chosen editor explains what to do (CLI and agents)', async 
   expect(apps).toHaveProperty('defaults');
   expect(Array.isArray(apps.apps)).toBe(true);
 });
+
+test('a Mac without Valet gets a one-click .test domains step, even before Homebrew', async ({ page }) => {
+  const item = { id: 'domains', title: '.test domains and HTTPS', why: '.test addresses don’t open yet; browsers would warn “Your connection is not private”', kind: 'system', required: true, password: true,
+    steps: ['send .test addresses to LocalSites (writes /etc/resolver/test), then trust the LocalSites certificate (it can only be used for .test addresses)'] };
+  let runBody = null;
+  await page.route('**/__call/setup.status', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ homebrew: false, items: [item], running: false, log: '' }) }));
+  await page.route('**/__call/setup.run', r => { runBody = r.request().postData();
+    return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ homebrew: false, items: [item], running: true, step: '.test domains and HTTPS: …', log: '' }) }); });
+  await page.locator('#side a[data-view="overview"]').click();
+  const card = page.locator('.ov-sec.setup');
+  await expect(card.locator('[data-cmd="setuphomebrew"]')).toBeVisible();
+  await expect(card).toContainText('.test domains and HTTPS');
+  await card.locator('[data-setupfix="domains"]').click();
+  await expect.poll(() => runBody).not.toBeNull();
+  expect(JSON.parse(runBody)).toEqual({ ids: ['domains'] });
+  await page.unroute('**/__call/setup.status'); await page.unroute('**/__call/setup.run');
+});

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/localsites/localsites/internal/config"
+	"github.com/localsites/localsites/internal/frontdoor"
 	"github.com/localsites/localsites/internal/proc"
 	"github.com/localsites/localsites/internal/runtime"
 )
@@ -125,11 +126,25 @@ func (e *Engine) Doctor() []Check {
 	if e.Front.Running() {
 		out = append(out, ok("Domains", "Front door", e.Front.Name()))
 	} else {
-		fix := "Start Laravel Valet: valet start"
-		if e.Front.Name() == "builtin" {
+		fix, detail := "Start Laravel Valet: valet start", e.Front.Name()+" is not running"
+		if b, isBuiltin := e.Front.(*frontdoor.Builtin); isBuiltin {
 			fix = "Restart LocalSites"
+			if err := b.LastError(); err != nil {
+				detail = "the built-in front door can’t start: " + err.Error()
+				if strings.Contains(err.Error(), "already used") {
+					fix = "Quit the app that uses ports 80 and 443" + portOwners(e.Store.Get().Settings.HTTPPort, e.Store.Get().Settings.HTTPSPort) + ", then restart LocalSites"
+				}
+			}
 		}
-		out = append(out, fail("Domains", "Front door", e.Front.Name()+" is not running", fix))
+		out = append(out, fail("Domains", "Front door", detail, fix))
+	}
+	if d := e.domainsState(); d.need {
+		if d.resolver {
+			out = append(out, ok("Domains", "."+d.tld+" addresses", "macOS sends them to LocalSites"))
+		} else {
+			out = append(out, fail("Domains", "."+d.tld+" addresses", "macOS doesn’t send ."+d.tld+" lookups to LocalSites yet",
+				"Overview → Set up ."+d.tld+" domains (or: localsites setup fix domains)"))
+		}
 	}
 	out = append(out, e.trustCheck())
 
@@ -207,13 +222,16 @@ func (e *Engine) trustCheck() Check {
 	if goruntime.GOOS != "darwin" {
 		return Check{Area: "Certificates", Name: "Certificate authority trusted", Status: "skip", Detail: "check not available on this OS yet"}
 	}
-	name, file := "LocalSites Development CA", e.CA.RootPath()
+	name, file := caName, e.CA.RootPath()
 	if e.Front.Name() == "valet" {
 		name, file = "Laravel Valet CA", filepath.Join(e.P.Home, ".config", "valet", "CA", "LaravelValetCASelfSigned.pem")
 	}
-	out, _ := exec.Command("/usr/bin/security", "dump-trust-settings", "-d").CombinedOutput()
-	if strings.Contains(string(out), strings.TrimSuffix(name, " CA")) {
+	if caTrusted(strings.TrimSuffix(name, " CA")) {
 		return ok("Certificates", name+" trusted", "browsers will show the padlock")
+	}
+	if e.Front.Name() == "builtin" {
+		return fail("Certificates", name+" trusted", "browsers will warn “Your connection is not private”",
+			"Overview → Set up ."+e.Store.Get().Settings.TLD+" domains (or: localsites setup fix domains)")
 	}
 	return fail("Certificates", name+" trusted", "browsers will warn “Your connection is not private”",
 		"sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain \""+file+"\"")
@@ -461,4 +479,22 @@ func phpFix(w, fallback string) string {
 		return cmd
 	}
 	return fallback
+}
+
+// portOwners names the programs listening on the ports, when the system lets us see them: " (httpd)".
+func portOwners(ports ...int) string {
+	seen, names := map[string]bool{}, []string{}
+	for _, p := range ports {
+		out, _ := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP:%d", p), "-sTCP:LISTEN", "-Fc").Output()
+		for _, line := range strings.Split(string(out), "\n") {
+			if n := strings.TrimPrefix(line, "c"); strings.HasPrefix(line, "c") && n != "" && !seen[n] {
+				seen[n] = true
+				names = append(names, n)
+			}
+		}
+	}
+	if len(names) == 0 {
+		return " (for example MAMP PRO’s Apache or Docker)"
+	}
+	return " (" + strings.Join(names, ", ") + ")"
 }

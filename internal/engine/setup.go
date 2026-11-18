@@ -32,7 +32,7 @@ type SetupItem struct {
 	ID       string   `json:"id"`       // the formula: httpd, mysql@8.4, nginx, php, php@7.4
 	Title    string   `json:"title"`    // "PHP 7.4"
 	Why      string   `json:"why"`      // "can't start: libjpeg.9.dylib is missing · 15 projects use it"
-	Kind     string   `json:"kind"`     // install | repair
+	Kind     string   `json:"kind"`     // install | repair | system (a one-time change to macOS settings)
 	Required bool     `json:"required"` // projects can't run without it
 	Password bool     `json:"password"` // macOS asks for the Mac password once (files owned by root)
 	Steps    []string `json:"steps"`    // the commands that will run, shown before they do
@@ -61,6 +61,8 @@ type step struct {
 	brew  []string // brew arguments
 	chown []string // paths to give back to the person (asks for the password)
 	clean []string // leftover folders to delete after chown (a reinstall that stopped half way)
+	// domains: send .test lookups to LocalSites and trust its certificate (asks for the password)
+	domains *domainsStep
 }
 
 type planItem struct {
@@ -78,6 +80,7 @@ type planInput struct {
 	tapped, trust        bool                  // phpTap is tapped; this Homebrew has "brew trust"
 	tapOf                func(f string) string // tap a formula was installed from ("" for Homebrew's own)
 	rootOwned            func(f string) (paths, leftovers []string)
+	domains              domainsState
 }
 
 func formulaFor(v string) string {
@@ -89,6 +92,9 @@ func formulaFor(v string) string {
 
 func buildPlan(in planInput) []planItem {
 	var out []planItem
+	if it, ok := domainsItem(in.domains); ok {
+		out = append(out, it)
+	}
 	core := func(id, title, why string, required bool) {
 		out = append(out, planItem{SetupItem{ID: id, Title: title, Why: why, Kind: "install", Required: required},
 			[]step{{label: "brew install " + id, brew: []string{"install", id}}}})
@@ -271,6 +277,7 @@ func (e *Engine) plan() ([]planItem, bool) {
 	_, in.mysql = runtime.MySQL()
 	_, _, _, in.nginx = runtime.Nginx()
 	in.php, in.broken = runtime.PHPVersions(), runtime.BrokenPHPVersions()
+	in.domains = e.domainsState()
 	for _, s := range e.Sites() {
 		if s.Runtime == "php" && s.ServedBy == "" {
 			in.users[s.PHP]++
@@ -349,9 +356,6 @@ func (e *Engine) RunSetup(ids []string) (SetupView, error) {
 		return e.Setup(), errors.New("installing with Homebrew is turned off here (LOCALSITES_NO_BREW)")
 	}
 	brew, ok := addons.Brew()
-	if !ok {
-		return e.Setup(), errors.New("Homebrew is needed first: use Install Homebrew")
-	}
 	items, _ := e.plan()
 	want := map[string]bool{}
 	for _, id := range ids {
@@ -366,6 +370,15 @@ func (e *Engine) RunSetup(ids []string) (SetupView, error) {
 	if len(chosen) == 0 {
 		return e.Setup(), errors.New("nothing to install or repair")
 	}
+	if !ok {
+		for _, it := range chosen {
+			for _, s := range it.steps {
+				if len(s.brew) > 0 {
+					return e.Setup(), errors.New("Homebrew is needed first: use Install Homebrew")
+				}
+			}
+		}
+	}
 	e.setup.mu.Lock()
 	if e.setup.running {
 		e.setup.mu.Unlock()
@@ -373,7 +386,10 @@ func (e *Engine) RunSetup(ids []string) (SetupView, error) {
 	}
 	e.setup.running, e.setup.results = true, map[string]string{}
 	e.setup.mu.Unlock()
-	prefix := brewPrefix(brew)
+	prefix := ""
+	if ok {
+		prefix = brewPrefix(brew)
+	}
 	go e.runSetup(brew, prefix, chosen)
 	return e.Setup(), nil
 }
@@ -395,12 +411,17 @@ func (e *Engine) runSetup(brew, prefix string, items []planItem) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer cancel()
 	cellar := filepath.Join(prefix, "Cellar") + string(os.PathSeparator)
+	if prefix == "" {
+		cellar = "\x00" // no Homebrew: nothing can be inside its Cellar
+	}
 	for _, it := range items {
 		var failed error
 		for _, s := range it.steps {
 			e.setStep(it.Title + ": " + s.label)
 			fmt.Fprintf(log, "\n==> %s: %s\n", it.Title, s.label)
 			switch {
+			case s.domains != nil:
+				failed = setupDomains(ctx, *s.domains)
 			case len(s.chown) > 0:
 				for _, p := range s.chown {
 					if !strings.HasPrefix(filepath.Clean(p)+string(os.PathSeparator), cellar) {

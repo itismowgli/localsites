@@ -91,7 +91,12 @@ On a Mac without Laravel Valet, LocalSites uses its own built-in proxy, which ne
   "Set up .test domains". It writes `/etc/resolver/test` (only that file) and trusts the LocalSites certificate
   authority in the System keychain. The authority can only sign `.test` names, so trusting it can't be used to
   fake other websites.
-- If macOS asks a second time for the certificate (some versions do), the card says so.
+- If macOS refuses the system-wide trust (some versions only accept trust changes the person confirms in its
+  own dialog), LocalSites trusts the certificate for the person's account instead; macOS shows its own password
+  dialog for that.
+- Checked on this Mac: listening on a port below 1024 on all addresses works without a password, and the proxy
+  accepts only connections from this computer. If the macOS firewall is turned on, it may ask once whether
+  LocalSites may accept incoming connections; answering either way is fine, since only local connections are used.
 - Doctor gets a **Repair** button on each of the three checks, using the same step.
 - Valet users: nothing changes; Valet keeps serving `.test`.
 

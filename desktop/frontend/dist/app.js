@@ -543,14 +543,16 @@ function setupCard() {
   if (!su.homebrew) return `<section class="ov-sec setup"><div class="setup-h"><span class="st-ic">${icon.download2}</span><div><h2>One step before your projects run</h2>
     <p class="note">LocalSites runs Apache, MySQL and PHP from Homebrew, the free installer most Mac developers use. LocalSites downloads Homebrew’s official installer, checks Apple has verified it, and opens it: click Continue and enter your Mac password.</p></div></div>
     ${res.homebrew === 'opened' ? '<p class="note">Finish the Homebrew installer, then come back here: the next step appears by itself.</p>' : res.homebrew ? `<p class="note warn">${esc(res.homebrew)}</p>` : ''}
-    <div class="form-row">${UI.btn(res.homebrew === 'opened' ? 'Open the installer again' : 'Install Homebrew', { ic: 'download2', kind: 'primary', attrs: 'data-cmd="setuphomebrew"' })}</div></section>`;
+    <div class="form-row">${UI.btn(res.homebrew === 'opened' ? 'Open the installer again' : 'Install Homebrew', { ic: 'download2', kind: 'primary', attrs: 'data-cmd="setuphomebrew"' })}</div>
+    ${su.items.filter(i => i.kind === 'system').map(i => `<div class="ov-row"><span class="chip">Set up</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
+      <button class="btn sm" data-setupfix="${esc(i.id)}">${icon.wrench}Set up</button></div>`).join('')}</section>`;
   if (!su.items.length) return failed.length ? `<section class="ov-sec setup"><div class="setup-h"><span class="bad">${icon.alertCircle}</span><div><h2>Some fixes didn’t finish</h2>
     ${failed.map(([k, v]) => `<p class="note">${esc(k)}: ${esc(v)}</p>`).join('')}</div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div></section>` : '';
   const need = su.items.filter(i => i.required).length, pw = su.items.some(i => i.password);
   const title = need ? `${need === 1 ? 'One thing needs' : `${need} things need`} fixing before every project can run` : 'LocalSites can fix these for you';
   return `<section class="ov-sec setup"><div class="setup-h"><span class="${need ? 'bad' : 'note'}">${icon.alertCircle}</span><div><h2>${esc(title)}</h2>
-    <p class="note">One click installs or repairs everything below with Homebrew${pw ? '. macOS asks for your Mac password once, to fix file owners' : ''}.</p></div></div>
-    ${su.items.map(i => `<div class="ov-row"><span class="chip">${i.kind === 'repair' ? 'Repair' : 'Install'}</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
+    <p class="note">${su.items.every(i => i.kind === 'system') ? 'One click sets this up' : 'One click installs or repairs everything below with Homebrew'}${pw ? '. macOS asks for your Mac password once' : ''}.</p></div></div>
+    ${su.items.map(i => `<div class="ov-row"><span class="chip">${{ repair: 'Repair', system: 'Set up' }[i.kind] || 'Install'}</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
       ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span>` : ''}</div>`).join('')}
     <details class="setup-cmds"><summary class="note">Commands it runs</summary><pre class="mini">${esc(su.items.flatMap(i => i.steps).join('\n'))}</pre></details>
     <div class="form-row">${UI.btn(need ? 'Fix everything' : 'Fix these', { ic: 'wrench', kind: 'primary', attrs: 'data-cmd="setuprun"' })}${failed.length ? UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' }) : ''}</div></section>`;
@@ -790,7 +792,8 @@ const statusIcon = { ok: '<span class="ok">✓</span>', warn: '<span class="warn
 function setupFor(c) {
   if (c.status === 'ok' || !S.setup || S.setup.running) return null;
   const m = /^PHP (\d+\.\d+|latest)$/.exec(c.name);
-  const id = { 'Apache installed': 'httpd', 'MySQL 8.4 installed': 'mysql@8.4', PHP: 'php' }[c.name] || (m && (m[1] === 'latest' ? 'php' : 'php@' + m[1]));
+  const domains = /^\.[a-z]+ addresses$/.test(c.name) || (c.area === 'Certificates' && /^LocalSites Development CA/.test(c.name));
+  const id = domains ? 'domains' : { 'Apache installed': 'httpd', 'MySQL 8.4 installed': 'mysql@8.4', PHP: 'php' }[c.name] || (m && (m[1] === 'latest' ? 'php' : 'php@' + m[1]));
   return (S.setup.items || []).find(i => i.id === id) || null;
 }
 function checksTable(checks, withArea = true) {
@@ -799,7 +802,7 @@ function checksTable(checks, withArea = true) {
     if (withArea && c.area !== area) { area = c.area; h += `<tr><td colspan="3" class="note" style="height:32px;padding-top:12px"><b>${esc(area)}</b></td></tr>`; }
     const copyable = /^(sudo|brew|valet|localsites) /.test(c.fix || '');
     const su = setupFor(c);
-    const fix = su ? `<div class="note" style="margin:2px 0 6px"><button class="btn sm primary" data-setupfix="${esc(su.id)}">${icon.wrench}${su.kind === 'repair' ? 'Repair' : 'Install'} ${esc(su.title)}</button>${su.password ? ' <span class="note">asks for your Mac password once</span>' : ''}</div>`
+    const fix = su ? `<div class="note" style="margin:2px 0 6px"><button class="btn sm primary" data-setupfix="${esc(su.id)}">${icon.wrench}${{ repair: 'Repair', system: 'Set up' }[su.kind] || 'Install'} ${esc(su.title)}</button>${su.password ? ' <span class="note">asks for your Mac password once</span>' : ''}</div>`
       : c.fix && c.status !== 'ok' ? `<div class="note" style="margin:2px 0 6px">${esc(c.fix)}${copyable ? ` <button class="btn ghost" data-copy="${esc(c.fix)}" style="height:22px">${icon.copy}Copy</button>` : ''}</div>` : '';
     h += `<tr><td style="width:30px;text-align:center">${statusIcon[c.status] || ''}</td><td style="width:38%"><span style="font-weight:500">${esc(c.name)}</span></td><td class="note">${esc(c.detail || '')}${fix}</td></tr>`;
   }

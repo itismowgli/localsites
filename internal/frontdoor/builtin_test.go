@@ -110,3 +110,67 @@ func TestDNSAnswersOnlyTLD(t *testing.T) {
 		t.Fatalf("google.com must be refused: %+v", m.Header)
 	}
 }
+
+type fakeConn struct {
+	net.Conn
+	remote net.Addr
+	closed *bool
+}
+
+func (c fakeConn) RemoteAddr() net.Addr { return c.remote }
+func (c fakeConn) Close() error         { *c.closed = true; return nil }
+
+type fakeListener struct {
+	conns []net.Conn
+	net.Listener
+}
+
+func (l *fakeListener) Accept() (net.Conn, error) {
+	if len(l.conns) == 0 {
+		return nil, net.ErrClosed
+	}
+	c := l.conns[0]
+	l.conns = l.conns[1:]
+	return c, nil
+}
+
+func TestLoopbackOnlyDropsOtherComputers(t *testing.T) {
+	var lanClosed, v6Closed, localClosed bool
+	lan := fakeConn{remote: &net.TCPAddr{IP: net.ParseIP("192.168.1.20"), Port: 5000}, closed: &lanClosed}
+	v6 := fakeConn{remote: &net.TCPAddr{IP: net.ParseIP("fe80::1"), Port: 5000}, closed: &v6Closed}
+	local := fakeConn{remote: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 5000}, closed: &localClosed}
+	l := loopbackOnly{&fakeListener{conns: []net.Conn{lan, v6, local}}}
+	c, err := l.Accept()
+	if err != nil || c.RemoteAddr().String() != "127.0.0.1:5000" {
+		t.Fatalf("accepted %v, %v", c, err)
+	}
+	if !lanClosed || !v6Closed || localClosed {
+		t.Fatalf("closed: lan %v v6 %v local %v", lanClosed, v6Closed, localClosed)
+	}
+	if _, err := l.Accept(); err == nil {
+		t.Fatal("expected the listener's error")
+	}
+	if !IsLoopback(&net.TCPAddr{IP: net.IPv6loopback}) || IsLoopback(&net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)}) {
+		t.Fatal("IsLoopback")
+	}
+}
+
+func TestListenLocalPortInUse(t *testing.T) {
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer busy.Close()
+	_, err = listenLocal(busy.Addr().String())
+	if err == nil || !strings.Contains(err.Error(), "already used by another app") {
+		t.Fatalf("err = %v", err)
+	}
+	ln, err := listenLocal("127.0.0.1:0") // a free port: a plain loopback listener
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, wrapped := ln.(loopbackOnly); wrapped {
+		t.Fatal("a loopback address that works must not be widened")
+	}
+	ln.Close()
+}

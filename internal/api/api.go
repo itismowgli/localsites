@@ -168,7 +168,7 @@ var Methods = []Method{
 	{Name: "sites.install", Description: "Install a project's dependencies in the background (composer or npm/pnpm/yarn/bun)", Mutates: true, Params: []Param{pFolder}},
 	{Name: "sites.check", Description: "Test one project end to end: DNS, PHP pool, database socket, HTTPS response and certificate trust", Params: []Param{pFolder}},
 	{Name: "setup.status", Description: "What LocalSites needs from Homebrew and isn't there or is broken (Apache, MySQL, Nginx, the PHP versions projects use), with the commands that fix each, and the progress of a running fix"},
-	{Name: "setup.run", Description: "Install and repair everything setup.status lists (or only the given ids) in the background with Homebrew. May ask for the Mac password once when Homebrew files belong to root", Mutates: true, Approve: true, Params: []Param{
+	{Name: "setup.run", Description: "Install and repair everything setup.status lists (or only the given ids) in the background: Homebrew software, and on Macs without Valet the one-time .test domains and certificate setup (id \"domains\"). May ask for the Mac password once", Mutates: true, Approve: true, Params: []Param{
 		{Name: "ids", Type: "array", Description: "Item ids from setup.status (formulas such as php@7.4); empty: all"}}},
 	{Name: "setup.homebrew", Description: "Download Homebrew's official installer, check Apple's notarization and open it. The app only", Mutates: true, Approve: true},
 	{Name: "doctor", Description: "Full health check of LocalSites with a fix for each problem"},
