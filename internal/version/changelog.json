@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.6.1",
+    "date": "2026-11-19",
+    "title": "Sharing passwords that are easier to pass on",
+    "items": [
+      "A shared site with a password now tells you what visitors see: a sign-in box where they leave the username empty and type the password",
+      "Copy the link and the password with separate buttons, so you can send them apart. Starting a share copies the link only",
+      "Sharing again no longer swaps the password in the form for a new one, so the password on screen is the one visitors need"
+    ],
+    "kinds": [
+      "improved",
+      "improved",
+      "fixed"
+    ]
+  },
+  {
     "version": "1.6.0",
     "date": "2026-11-19",
     "title": "Safer agents, sharing with nothing to install, and a new look",

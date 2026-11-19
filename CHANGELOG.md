@@ -4,6 +4,17 @@ Every LocalSites release, newest first. Written from `internal/version/changelog
 `go run ./tools/release changelog`; the app shows the same list under What's new. Versions follow
 [semantic versioning](https://semver.org): a new feature raises the middle number, a fix the last one.
 
+## 1.6.1 (2026-11-19): Sharing passwords that are easier to pass on
+
+### Improved
+
+- A shared site with a password now tells you what visitors see: a sign-in box where they leave the username empty and type the password
+- Copy the link and the password with separate buttons, so you can send them apart. Starting a share copies the link only
+
+### Fixed
+
+- Sharing again no longer swaps the password in the form for a new one, so the password on screen is the one visitors need
+
 ## 1.6.0 (2026-11-19): Safer agents, sharing with nothing to install, and a new look
 
 ### New
