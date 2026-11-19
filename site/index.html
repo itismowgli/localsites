@@ -180,7 +180,7 @@
 :root {
   /* short names for the shared tokens (tokens.css, from design/tokens.json) */
   --bg: var(--background); --bg2: var(--card); --line: var(--border); --line2: var(--input);
-  --text: var(--foreground); --muted: var(--muted-foreground); --dim: var(--text-faint); --accent: var(--foreground); --accent2: var(--text-secondary);
+  --text: var(--foreground); --ink-muted: var(--muted-foreground); --dim: var(--text-faint); --ink-accent: var(--foreground); --accent2: var(--text-secondary);
   --green: var(--success); --red: var(--danger);
   --glass: color-mix(in oklch, var(--background) 80%, transparent); --fill: var(--card); --fill2: var(--hover); --well: var(--window);
   --glow: transparent;
@@ -206,7 +206,7 @@ img { max-width: 100%; height: auto; display: block; }
 .brand { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; letter-spacing: -.01em; }
 .brand .logo { width: 24px; height: 24px; display: block; flex: none; }
 footer .brand .logo { width: 20px; height: 20px; }
-.links { display: flex; gap: var(--space-6); font: var(--type-body-sm); color: var(--muted); }
+.links { display: flex; gap: var(--space-6); font: var(--type-body-sm); color: var(--ink-muted); }
 .links a:hover { color: var(--text); }
 .nav .right { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 44px; padding: 0 var(--space-4); border-radius: 999px; font: var(--type-label-md); font-weight: 500;
@@ -220,12 +220,12 @@ footer .brand .logo { width: 20px; height: 20px; }
 /* hero */
 .hero { position: relative; padding: calc(var(--space-section) * 1.5) 0 0; text-align: left; }
 .pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1); border: 1px solid var(--line2); border-radius: 999px;
-  font: var(--type-body-sm); color: var(--muted); background: var(--fill); transition: border-color .2s; }
+  font: var(--type-body-sm); color: var(--ink-muted); background: var(--fill); transition: border-color .2s; }
 .pill:hover { color: var(--text); }
 .pill b { color: var(--on-fg); background: var(--on); border-radius: 999px; padding: 1px var(--space-2); font-weight: 600; font: var(--type-mono); font-weight: 500; }
 h1 { font: var(--type-display); letter-spacing: var(--tracking-display); line-height: 1.04; letter-spacing: -.035em; font-weight: 600; margin: var(--space-6) 0 var(--space-4); max-width: 900px;
   color: var(--text); }
-.lead { font: var(--type-body-lg); color: var(--muted); max-width: 620px; margin: 0 0 var(--space-8); line-height: 1.55; }
+.lead { font: var(--type-body-lg); color: var(--ink-muted); max-width: 620px; margin: 0 0 var(--space-8); line-height: 1.55; }
 .cta { display: flex; gap: var(--space-2); justify-content: flex-start; flex-wrap: wrap; }
 .final .cta { justify-content: center; }
 .cta .btn { min-height: 50px; padding: 0 var(--space-6); font: var(--type-label-md); }
@@ -243,12 +243,12 @@ h1 { font: var(--type-display); letter-spacing: var(--tracking-display); line-he
 
 /* sections */
 section { padding: calc(var(--space-section) * 2) 0 0; }
-.eyebrow { display: block; font: var(--type-label-md); color: var(--muted); font-weight: 500; margin-bottom: var(--space-2); }
+.eyebrow { display: block; font: var(--type-label-md); color: var(--ink-muted); font-weight: 500; margin-bottom: var(--space-2); }
 h2 { font: var(--type-headline-lg); letter-spacing: var(--tracking-headline); line-height: 1.07; letter-spacing: -.03em; font-weight: 600; margin: 0 0 var(--space-4); max-width: 760px;
   color: var(--text); }
-.sub { color: var(--muted); font: var(--type-body-lg); max-width: 600px; margin: 0 0 var(--space-12); }
+.sub { color: var(--ink-muted); font: var(--type-body-lg); max-width: 600px; margin: 0 0 var(--space-12); }
 h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 var(--space-1); }
-.muted { color: var(--muted); }
+.muted { color: var(--ink-muted); }
 
 /* bento */
 .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-4); }
@@ -256,7 +256,7 @@ h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 
   border-radius: var(--radius); padding: var(--space-6); overflow: hidden; transition: border-color .3s; }
 .tile:hover { border-color: var(--line2); }
 .tile.wide { grid-column: span 3; } .tile.full { grid-column: span 6; } .tile.big { grid-column: span 4; }
-.tile p { margin: 0; color: var(--muted); font: var(--type-body-md); line-height: 1.55; }
+.tile p { margin: 0; color: var(--ink-muted); font: var(--type-body-md); line-height: 1.55; }
 .viz { margin: 0 0 var(--space-6); min-height: 120px; display: flex; flex-direction: column; justify-content: center; gap: var(--space-2); }
 .row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2); border: 1px solid var(--line); border-radius: 10px; background: var(--well); font: var(--type-body-sm); }
 .row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: none; }
@@ -265,9 +265,9 @@ h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 
 .row .tag { margin-left: auto; color: var(--dim); font: var(--type-body-sm); }
 .lock { color: var(--green); width: 12px; height: 12px; flex: none; }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.chip { font: var(--type-body-sm); padding: var(--space-1) var(--space-2); border-radius: 999px; border: 1px solid var(--line2); color: var(--muted); }
+.chip { font: var(--type-body-sm); padding: var(--space-1) var(--space-2); border-radius: 999px; border: 1px solid var(--line2); color: var(--ink-muted); }
 .chip.on { color: var(--on-fg); background: var(--on); border-color: var(--on); font-weight: 600; }
-.term { font: var(--type-mono); background: var(--well); border: 1px solid var(--line); border-radius: 12px; padding: var(--space-4) var(--space-4); color: var(--muted); white-space: pre; overflow: hidden; }
+.term { font: var(--type-mono); background: var(--well); border: 1px solid var(--line); border-radius: 12px; padding: var(--space-4) var(--space-4); color: var(--ink-muted); white-space: pre; overflow: hidden; }
 .term .p { color: var(--dim); } .term .ok { color: var(--green); } .term .c { color: var(--dim); }
 
 /* feature split */
@@ -279,10 +279,10 @@ h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 
 .shot { border-radius: 16px; border: 1px solid var(--line2); background: var(--bg2); padding: var(--space-1); box-shadow: var(--shadow); }
 .shot img { border-radius: 9px; }
 .points { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-4); }
-.points li { display: grid; grid-template-columns: 20px 1fr; gap: var(--space-2); color: var(--muted); font: var(--type-body-md); }
+.points li { display: grid; grid-template-columns: 20px 1fr; gap: var(--space-2); color: var(--ink-muted); font: var(--type-body-md); }
 .points li b { color: var(--text); font-weight: 600; display: block; }
 .points .pt-ic { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--space-2); border: 1px solid var(--line);
-  background: var(--well); color: var(--muted); }
+  background: var(--well); color: var(--ink-muted); }
 .points .pt-ic svg { width: 20px; height: 20px; }
 .points.cols { row-gap: var(--space-8); }
 .points.cols:has(> li:nth-child(6):last-child) { grid-template-columns: repeat(3, 1fr); }
@@ -293,7 +293,7 @@ h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 
 .approve { box-shadow: var(--shadow); }
 .approve .h i { width: 28px; height: 28px; border-radius: 8px; background: var(--fill2); display: grid; place-items: center; color: var(--text); flex: none; }
 .approve .h i svg { width: 16px; height: 16px; }
-.approve .b { font: var(--type-body-sm); color: var(--muted); }
+.approve .b { font: var(--type-body-sm); color: var(--ink-muted); }
 .approve .a { display: flex; gap: var(--space-2); justify-content: flex-end; }
 
 
@@ -304,7 +304,7 @@ h3 { font: var(--type-body-lg); font-weight: 500; font-weight: 600; margin: 0 0 
 .faq summary::-webkit-details-marker { display: none; }
 .faq summary::after { content: "+"; color: var(--dim); font: var(--type-headline-md); font-weight: 400; line-height: 1; transition: transform .3s var(--ease); }
 .faq details[open] summary::after { transform: rotate(45deg); }
-.faq p { color: var(--muted); margin: var(--space-2) 0 0; max-width: 680px; }
+.faq p { color: var(--ink-muted); margin: var(--space-2) 0 0; max-width: 680px; }
 
 /* final */
 .final { text-align: center; padding: calc(var(--space-section) * 2.5) 0 calc(var(--space-section) * 2); position: relative; }
@@ -335,8 +335,8 @@ footer a:hover { color: var(--text); }
 .cmp { width: 100%; border-collapse: collapse; font: var(--type-body-md); min-width: 860px; table-layout: fixed; }
 .cmp thead th:first-child { width: 200px; }
 .cmp th, .cmp td { padding: var(--space-4) var(--space-4); text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
-.cmp thead th { font: var(--type-label-md); font-weight: 600; color: var(--muted); white-space: nowrap; }
-.cmp tbody th { font-weight: 500; color: var(--muted); position: sticky; left: 0; background: var(--bg2); white-space: nowrap; z-index: 1; }
+.cmp thead th { font: var(--type-label-md); font-weight: 600; color: var(--ink-muted); white-space: nowrap; }
+.cmp tbody th { font-weight: 500; color: var(--ink-muted); position: sticky; left: 0; background: var(--bg2); white-space: nowrap; z-index: 1; }
 /* the LocalSites column: a raised tint, outlined in the accent, a bar on top */
 .cmp { --ls-edge: color-mix(in oklch, var(--brand) 50%, transparent); }
 .cmp .ls { background: color-mix(in oklch, var(--brand) 9%, var(--bg2)); color: var(--text); font-weight: 600;
@@ -390,7 +390,7 @@ h1, h2, h3 { text-wrap: balance; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6); text-align: center; padding: var(--space-section) 0 var(--space-2); }
 .stat b { display: block; font: var(--type-display); letter-spacing: var(--tracking-display); font-weight: 600; letter-spacing: -.04em; line-height: 1.05;
   color: var(--text); }
-.stat span { display: block; color: var(--muted); font: var(--type-body-sm); margin-top: var(--space-2); }
+.stat span { display: block; color: var(--ink-muted); font: var(--type-body-sm); margin-top: var(--space-2); }
 @media (max-width: 900px) {
   .points.cols { grid-template-columns: 1fr 1fr; gap: var(--space-6); }
   .stats { grid-template-columns: 1fr 1fr; row-gap: var(--space-8); }
@@ -544,7 +544,7 @@ h1, h2, h3 { text-wrap: balance; }
       <div><div class="fig" data-fig="settle" data-play aria-label="Loose pieces sliding into place as the pointer nears"></div></div>
     </div>
     <div class="grow-shot reveal">
-      <div class="shot"><img src="screenshots/setup.jpg" loading="lazy" width="2000" height="1264" alt="Overview listing .test domains, a PHP version to repair and one to install, with a Fix everything button"></div>
+      <div class="shot"><picture><source srcset="screenshots/setup-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/setup.jpg" loading="lazy" width="2000" height="1264" alt="Overview listing .test domains, a PHP version to repair and one to install, with a Fix everything button"></picture></div>
     </div>
     <div class="wrap">
       <ul class="points cols reveal">
@@ -555,7 +555,7 @@ h1, h2, h3 { text-wrap: balance; }
       </ul>
     </div>
     <div class="grow-shot reveal" style="margin-top: var(--space-12)">
-      <div class="shot"><img src="screenshots/editor-chooser.jpg" loading="lazy" width="2000" height="1264" alt="The first Open asks which code editor to use: VS Code, Cursor, Zed, PhpStorm or Sublime Text, with Remember my choice"></div>
+      <div class="shot"><picture><source srcset="screenshots/editor-chooser-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/editor-chooser.jpg" loading="lazy" width="2000" height="1264" alt="The first Open asks which code editor to use: VS Code, Cursor, Zed, PhpStorm or Sublime Text, with Remember my choice"></picture></div>
     </div>
   </section>
 
@@ -567,7 +567,7 @@ h1, h2, h3 { text-wrap: balance; }
       <div><div class="fig" data-fig="plot" data-play aria-label="A bar chart with flat tabs where the bars would stand"></div></div>
     </div>
     <div class="grow-shot reveal">
-      <div class="shot"><img src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites data browser showing a products table in MySQL"></div>
+      <div class="shot"><picture><source srcset="screenshots/data-browser-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites data browser showing a products table in MySQL"></picture></div>
     </div>
     <div class="wrap">
       <ul class="points cols reveal">
@@ -587,7 +587,7 @@ h1, h2, h3 { text-wrap: balance; }
       <div><div class="fig" data-fig="hub" data-play aria-label="A hub with tools linked around it, like agents connected to LocalSites"></div></div>
     </div>
     <div class="grow-shot reveal">
-      <div class="shot"><img src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click"></div>
+      <div class="shot"><picture><source srcset="screenshots/agents-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click"></picture></div>
       <div class="approve" aria-hidden="true">
         <div class="h"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg></i><span><b>Cursor</b> <span class="muted">wants to share</span> storefront.test</span></div>
         <div class="b">A public link with a password, for 1 hour.</div>
@@ -612,7 +612,7 @@ h1, h2, h3 { text-wrap: balance; }
       <div><div class="fig" data-fig="branches" data-play aria-label="A commit graph: a branch forks off main and merges back"></div></div>
     </div>
     <div class="grow-shot reveal">
-      <div class="shot"><img src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="Git panel showing branch, changed files, branch tree and commit history"></div>
+      <div class="shot"><picture><source srcset="screenshots/git-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="Git panel showing branch, changed files, branch tree and commit history"></picture></div>
     </div>
     <div class="wrap">
       <ul class="points cols reveal">

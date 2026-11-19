@@ -10,7 +10,15 @@ const call = (page, method, params = {}) => page.evaluate(async ([m, p]) => {
   const r = await fetch('/__call/' + m, { method: 'POST', body: JSON.stringify(p) });
   const j = await r.json(); if (!r.ok) throw new Error(j.error); return j;
 }, [method, params]);
-const shot = (page, name) => page.screenshot({ path: out(name), type: 'jpeg', quality: 86 });
+// Each picture in dark, then the same view in light (name-light.jpg) for visitors whose system is light.
+async function shot(page, name) {
+  await page.screenshot({ path: out(name), type: 'jpeg', quality: 86 });
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; });
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: out(name.replace(/\.jpg$/, '-light.jpg')), type: 'jpeg', quality: 86 });
+  await page.evaluate(() => { delete document.documentElement.dataset.theme; });
+  await page.waitForTimeout(100);
+}
 
 // The same editors on every machine, so the pictures don't depend on what's installed here
 const APPS = { apps: [
@@ -110,21 +118,13 @@ test('set up the demo workspace', async ({ page }) => {
   await call(page, 'sites.update', { folder: 'storefront', database: 'storefront' });
 });
 
-test('projects (dark and light)', async ({ page, browser }) => {
+test('projects (dark and light)', async ({ page }) => {
   await stubApps(page);
   await page.goto('/#projects/storefront'); await page.reload();
   await expect(page.locator('.row[data-row="storefront"]')).toBeVisible();
   await expect(page.locator('#detail')).toContainText('storefront');
   await page.waitForTimeout(800);
-  await shot(page, 'projects.jpg');
-  const light = await browser.newContext({ storageState: path.join(os.tmpdir(), 'lsui-auth.json'), viewport: { width: 1280, height: 809 }, deviceScaleFactor: 1.5625, colorScheme: 'light' });
-  const lp = await light.newPage();
-  await stubApps(lp);
-  await lp.goto('/#projects/storefront');
-  await expect(lp.locator('#detail')).toContainText('storefront');
-  await lp.waitForTimeout(800);
-  await shot(lp, 'projects-light.jpg');
-  await light.close();
+  await shot(page, 'projects.jpg'); // and projects-light.jpg
 });
 
 test('choose your editor', async ({ page }) => {

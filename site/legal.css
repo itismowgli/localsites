@@ -2,7 +2,7 @@
 :root {
   /* short names for the shared tokens (tokens.css, from design/tokens.json) */
   --bg: var(--background); --bg2: var(--card); --line: var(--border); --text: var(--foreground);
-  --muted: var(--muted-foreground); --dim: var(--text-faint); --fill2: var(--hover);
+  --ink-muted: var(--muted-foreground); --dim: var(--text-faint); --fill2: var(--hover);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -13,14 +13,14 @@ a { color: inherit; }
 .nav .wrap { max-width: 1120px; display: flex; align-items: center; height: 56px; gap: var(--space-6); }
 .brand { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; text-decoration: none; letter-spacing: -.01em; }
 .brand .logo { width: 24px; height: 24px; display: block; flex: none; }
-.nav .back { margin-left: auto; color: var(--muted); font: var(--type-body-sm); text-decoration: none; }
+.nav .back { margin-left: auto; color: var(--ink-muted); font: var(--type-body-sm); text-decoration: none; }
 .nav .back:hover { color: var(--text); }
 main { padding: var(--space-16) 0 calc(var(--space-section) * 1.5); }
 .eyebrow { color: var(--dim); font: var(--type-label-md); font-weight: 500; margin-bottom: var(--space-2); }
 h1 { font: var(--type-headline-lg); letter-spacing: var(--tracking-headline); line-height: 1.1; letter-spacing: -.03em; margin: 0 0 var(--space-2); }
 .updated { color: var(--dim); font: var(--type-body-sm); margin: 0 0 var(--space-8); }
 h2 { font: var(--type-headline-md); letter-spacing: -.015em; margin: var(--space-8) 0 var(--space-2); }
-p, li { color: var(--muted); }
+p, li { color: var(--ink-muted); }
 p strong, li strong { color: var(--text); font-weight: 600; }
 ul { padding-left: var(--space-6); }
 li { margin: var(--space-1) 0; }

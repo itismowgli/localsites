@@ -110,7 +110,22 @@ function rawColors() {
   return out;
 }
 
+// A page must not define a variable named like a theme role: the light theme is set with a stronger selector,
+// so in light mode the role would win over the page's own value (this once turned the site's grey text into a
+// background colour).
+function clashes() {
+  const files = ['desktop/frontend/dist/styles.css', ...readdirSync(join(root, 'site')).filter(f => /\.(css|html)$/.test(f) && f !== 'tokens.css').map(f => 'site/' + f)];
+  const out = [];
+  for (const f of files) {
+    const names = new Set([...readFileSync(join(root, f), 'utf8').matchAll(/(?<![\w-])--([a-z0-9-]+)\s*:/g)].map(m => m[1]));
+    for (const r of roles) if (names.has(r)) out.push(`${f}: defines --${r}, which is a theme role in tokens.css; use another name`);
+  }
+  return out;
+}
+
 if (process.argv.includes('--check')) {
+  const clash = clashes();
+  if (clash.length) { console.error(clash.join('\n')); process.exit(1); }
   const stale = outs.filter(f => !existsSync(join(root, f)) || readFileSync(join(root, f), 'utf8') !== css);
   if (stale.length) { console.error(`out of date: ${stale.join(', ')} (run node tools/build-tokens.mjs)`); process.exit(1); }
   const raw = rawColors();
