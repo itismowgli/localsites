@@ -558,6 +558,22 @@ test('share: project panel offers sharing right away (tunnl.gg needs only ssh)',
   }
 });
 
+test('share: a live share tells visitors to leave the username empty', async ({ page }) => {
+  await call(page, 'sites.update', { folder: 'hello', enabled: true });
+  await page.route('**/__call/status', async (route) => {
+    const r = await route.fetch(); const j = await r.json();
+    j.shares = [{ id: 'hello-1', folder: 'hello', domain: 'hello.test', provider: 'tunnl', url: 'https://quick-cedar-0a82c761.tunnl.gg', password: true,
+      started: new Date().toISOString(), expires: new Date(Date.now() + 3600e3).toISOString(), requests: 0, blocked: 0 }];
+    await route.fulfill({ json: j });
+  });
+  await page.goto('/#projects/hello');
+  const live = page.locator('#detail .share-live');
+  await expect(live).toContainText('leave the username empty and type the password');
+  // after a restart the app no longer knows the password, so it only copies the address
+  await expect(live.locator('[data-copy="https://quick-cedar-0a82c761.tunnl.gg"]')).toBeVisible();
+  await page.unroute('**/__call/status');
+});
+
 test('open in: preferred editor in settings, more apps menu in the project panel', async ({ page }) => {
   const { apps } = await call(page, 'apps.list');
   await page.goto('/#projects/hello');

@@ -1051,6 +1051,9 @@ async function pollApprovals() {
 
 /* --- sharing a site on the internet --- */
 const SF = { prov: '', mins: 60, pw: '', open: false }; // share form, kept across refreshes
+// The password of a share started from this window, by share id: memory only, never saved. The service never
+// hands passwords back, so after a restart the panel can only give the hint.
+const SHARE_PW = {};
 // four of 256 words and a number: about 39 bits, far beyond what the gateway's guess limits allow in a day
 const SHARE_WORDS = ['acorn', 'actor', 'agent', 'album', 'alarm', 'alpha', 'amber', 'angle', 'apple', 'apron', 'arena', 'arrow', 'aspen', 'atlas', 'attic', 'autumn', 'badge', 'bagel', 'baker', 'bamboo', 'banjo', 'barley', 'basil', 'basin', 'beach', 'beacon', 'berry', 'bison', 'blade', 'blaze', 'bloom', 'board', 'bonus', 'brave', 'bread', 'brick', 'bridge', 'brook', 'brush', 'bucket', 'bugle', 'cabin', 'cable', 'cactus', 'camel', 'canal', 'candle', 'canoe', 'canvas', 'carbon', 'cargo', 'carrot', 'castle', 'cedar', 'cello', 'chalk', 'charm', 'cherry', 'chess', 'chief', 'cider', 'cinema', 'circle', 'citrus', 'clay', 'cliff', 'cloud', 'clover', 'coast', 'cobalt', 'cocoa', 'comet', 'copper', 'coral', 'cotton', 'crane', 'crater', 'cricket', 'crown', 'crystal', 'cube', 'daisy', 'dance', 'delta', 'denim', 'desert', 'diesel', 'dolphin', 'domino', 'dragon', 'drum', 'dune', 'eagle', 'earth', 'echo', 'ember', 'engine', 'falcon', 'fable', 'feather', 'fern', 'fiddle', 'field', 'fig', 'flame', 'flint', 'flute', 'forest', 'fossil', 'fox', 'frost', 'fudge', 'galaxy', 'garden', 'garnet', 'gecko', 'ginger', 'glacier', 'globe', 'gold', 'grape', 'gravel', 'grove', 'guitar', 'habit', 'harbor', 'harvest', 'hazel', 'helmet', 'heron', 'hiking', 'honey', 'horizon', 'hotel', 'husky', 'igloo', 'indigo', 'iris', 'island', 'ivory', 'jacket', 'jaguar', 'jasmine', 'jelly', 'jewel', 'jungle', 'kayak', 'kelp', 'kettle', 'kiwi', 'koala', 'ladder', 'lagoon', 'lantern', 'lava', 'lemon', 'lily', 'linen', 'lion', 'lobster', 'lotus', 'lumen', 'lunar', 'magnet', 'mango', 'maple', 'marble', 'meadow', 'melon', 'mesa', 'meteor', 'mint', 'mirror', 'mocha', 'moon', 'mosaic', 'moss', 'motor', 'mountain', 'muffin', 'nectar', 'needle', 'nickel', 'noodle', 'nova', 'oak', 'oasis', 'ocean', 'olive', 'onyx', 'opal', 'orbit', 'orchid', 'otter', 'owl', 'paddle', 'palm', 'panda', 'paper', 'parrot', 'pastel', 'peach', 'pearl', 'pebble', 'pepper', 'piano', 'pilot', 'pine', 'pixel', 'planet', 'plum', 'polar', 'pony', 'poppy', 'prism', 'pumpkin', 'quartz', 'quill', 'rabbit', 'radar', 'radio', 'rain', 'raven', 'reef', 'ribbon', 'river', 'robin', 'rocket', 'rose', 'ruby', 'saddle', 'saffron', 'salmon', 'sand', 'sapphire', 'satin', 'scarf', 'shell', 'sierra', 'silk', 'silver', 'sketch', 'sky', 'slate', 'snow', 'solar', 'spark', 'spice', 'spruce', 'squid', 'star', 'stone', 'storm', 'sugar', 'summit', 'sunset'];
 function newSharePassword() {
@@ -1063,7 +1066,8 @@ function sharePane(s) {
   if (live) return `<div class="st">Shared on the internet</div>
     <div class="share-live"><div class="form-row" style="gap:6px;flex-wrap:nowrap">${UI.status('on', 'Live')}<a class="link ellipsis" data-openweb="${esc(live.url)}" title="${esc(live.url)}">${esc(live.url.replace(/^https?:\/\//, ''))}</a></div>
       <p class="note" style="margin:6px 0">Stops in ${minsLeft(live.expires)}${live.password ? ' · password protected' : ' · anyone with the address can open it'} · ${plural(live.requests || 0, 'visit')}${live.blocked ? ` · ${live.blocked} refused` : ''}</p>
-      <div class="form-row">${UI.btn('Copy address', { ic: 'copy', attrs: `data-copy="${esc(live.url)}"` })}${UI.btn('Open', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(live.url)}"` })}<span class="spacer"></span>${UI.btn('Stop sharing', { ic: 'stop', kind: 'danger', attrs: `data-sharestop="${esc(live.id)}"` })}</div></div>`;
+      ${live.password ? `<p class="note" style="margin:0 0 8px">Visitors see a sign-in box: they leave the username empty and type the password${SHARE_PW[live.id] ? `: <code>${esc(SHARE_PW[live.id])}</code>` : '.'}</p>` : ''}
+      <div class="form-row">${live.password && SHARE_PW[live.id] ? UI.btn('Copy link and password', { ic: 'copy', attrs: `data-copy="${esc(`${live.url}\nPassword: ${SHARE_PW[live.id]}\n(leave the username empty)`)}"` }) : UI.btn('Copy address', { ic: 'copy', attrs: `data-copy="${esc(live.url)}"` })}${UI.btn('Open', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(live.url)}"` })}<span class="spacer"></span>${UI.btn('Stop sharing', { ic: 'stop', kind: 'danger', attrs: `data-sharestop="${esc(live.id)}"` })}</div></div>`;
   const ready = provs.filter(p => p.installed);
   const what = `<p class="note" style="margin:0 0 10px">A public https link with a password, for a limited time. Only this project is reachable; <code>.env</code> and <code>.git</code> are never served.</p>`;
   const chosen = ready.find(p => p.id === SF.prov) || ready[0];
@@ -2487,7 +2491,11 @@ document.addEventListener('click', async (e) => {
     t.disabled = true; t.innerHTML = '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Connecting…';
     const r = await act(() => bridge.call('share.start', { folder: s.folder, provider: prov, password: pw, minutes: mins, no_password: SF.open }), 'Share');
     await act(loadStatus); render();
-    if (r) { await act(() => bridge.copy(r.url)); toast(`${s.name} is live at ${r.url} (address copied)${pw ? `. Password: ${pw}` : ''}`); SF.pw = ''; }
+    if (r) {
+      if (pw) SHARE_PW[r.id] = pw;
+      await act(() => bridge.copy(pw ? `${r.url}\nPassword: ${pw}\n(leave the username empty)` : r.url));
+      toast(`${s.name} is live at ${r.url}${pw ? '. Link and password copied' : ' (address copied)'}`); SF.pw = ''; render();
+    }
     return;
   }
   if (d.sharestop) { logToast(await act(() => bridge.call('share.stop', { id: d.sharestop }), 'Stop sharing')); await act(loadStatus); return render(); }
