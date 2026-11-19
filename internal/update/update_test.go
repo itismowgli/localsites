@@ -306,3 +306,36 @@ func TestBundleOf(t *testing.T) {
 		t.Fatal("the command-line tool was taken for the app")
 	}
 }
+
+func TestPickForLinuxPackages(t *testing.T) {
+	files := []File{
+		{Name: "LocalSites-1.5.0-macos-arm64.zip", OS: "darwin", Arch: "arm64"},
+		{Name: "localsites_1.5.0_amd64.deb", OS: "linux", Arch: "amd64", Format: "deb"},
+		{Name: "localsites_1.5.0_arm64.deb", OS: "linux", Arch: "arm64", Format: "deb"},
+		{Name: "localsites-1.5.0-1.x86_64.rpm", OS: "linux", Arch: "amd64", Format: "rpm"},
+	}
+	cases := []struct{ goos, arch, format, want string }{
+		{"darwin", "arm64", "", "LocalSites-1.5.0-macos-arm64.zip"},
+		{"linux", "amd64", "deb", "localsites_1.5.0_amd64.deb"},
+		{"linux", "arm64", "deb", "localsites_1.5.0_arm64.deb"},
+		{"linux", "amd64", "rpm", "localsites-1.5.0-1.x86_64.rpm"},
+		{"linux", "arm64", "rpm", ""}, // no arm64 rpm in this list
+		{"linux", "amd64", "", ""},    // not installed from a package: nothing to install from the app
+	}
+	for _, c := range cases {
+		f, ok := pickFor(files, c.goos, c.arch, c.format)
+		if (c.want == "") == ok || f.Name != c.want {
+			t.Errorf("%s/%s/%s: got %q %v, want %q", c.goos, c.arch, c.format, f.Name, ok, c.want)
+		}
+	}
+}
+
+func TestInstalledRecordsTheResult(t *testing.T) {
+	dir := t.TempDir()
+	u := New(dir)
+	u.Current = "1.4.0"
+	u.Installed("1.5.0", nil)
+	if got := New(dir).Status().Result; got != "Updated from 1.4.0 to 1.5.0." {
+		t.Fatalf("result = %q", got)
+	}
+}

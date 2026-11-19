@@ -92,8 +92,9 @@ func main() {
 		// after an update installed at night, LocalSites comes back in the menu bar only
 		StartHidden: len(os.Args) > 1 && os.Args[len(os.Args)-1] == "--hidden",
 		// macOS: closing the window keeps LocalSites in the menu bar; Quit (⌘Q or the menu bar) ends it.
-		// Linux: closing the window ends the app window; the sites keep running in the background service.
-		HideWindowOnClose: goruntime.GOOS == "darwin",
+		// Linux without a tray: closing the window ends the app window; the sites keep running in the service.
+		// Linux with a tray icon behaves like macOS (closing hides the window, the tray brings it back).
+		HideWindowOnClose: goruntime.GOOS == "darwin" || linuxTray(),
 		Bind:              []interface{}{app},
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHiddenInset(),

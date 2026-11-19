@@ -13,14 +13,44 @@ account `release-signing-key`). The public half is printed; it belongs in `inter
 Back up the private key in your password manager. Without it, nobody can update from inside the app,
 and a new key means everyone has to download the next version by hand.
 
+## Once: the Linux package key
+
+The `.rpm` packages and the apt and dnf repositories are signed with an OpenPGP key (ed25519). It was made
+in a throwaway container and stored straight into the keychain (service `LocalSites`, account
+`package-signing-key`); its public half is in `site/linux` (served by the website) and `packaging/linux` (inside
+the packages). Back the private key up in your password manager too. To make a new one (rarely; installed
+systems then need the new public key):
+
+```sh
+docker build -t localsites-repo-tools tests/linux/repo
+docker run --rm localsites-repo-tools new-key.sh | go run ./tools/release package-key
+```
+
 ## Every release
 
 1. Bump `internal/version/version.go` and add an entry to `internal/version/changelog.json`.
    Its title and items become the release notes people see before installing.
 2. Run the full test gate (`make test-all`).
-3. `make release` (add `SECURITY=1` for a security fix, `BETA=1` for the beta channel). This builds the app,
-   zips it (`ditto`, so the code signature survives) and writes `dist/release/update.json` with its signature.
-4. `gh release create vX.Y.Z dist/release/*` (`--prerelease` for beta).
+3. Merge into `master` and push. Start Docker Desktop (the Linux repositories are built in a container).
+4. `make release` (add `SECURITY=1` for a security fix, `BETA=1` for the beta channel). It:
+   - pushes the tag `vX.Y.Z`, which starts GitHub building the Linux programs (`.github/workflows/linux-packages.yml`);
+   - builds and zips the Mac app (`ditto`, so the code signature survives);
+   - waits for GitHub, downloads the Linux programs and packages them here as `.deb` and `.rpm` (nfpm), the `.rpm`
+     signed with the package key from the keychain;
+   - builds the signed apt repository (`dist/release/apt`) and dnf metadata (`site/linux/rpm`);
+   - writes `dist/release/update.json` with its signature, covering the Mac zip and every Linux package.
+5. Check `dist/release`, then `make publish`: it creates the GitHub release with notes from the changelog,
+   uploads the apt repository to the `linux-repo` release (a prerelease that only apt reads) and commits the dnf
+   metadata, which goes live with the website.
+
+The keys never leave this Mac: they reach nfpm and the container as a temporary file or on stdin.
+
+## How Linux installs update
+
+The `.deb` adds `/etc/apt/sources.list.d/localsites.list` and its key; the `.rpm` adds
+`/etc/yum.repos.d/localsites.repo` and its key. Later versions then arrive with the system's own updates, with
+signatures checked by apt and dnf. The app's own updater (Settings → Updates) also works: it downloads the
+package, checks it against the signed `update.json`, and installs it after one password prompt.
 
 The repository must be public, or the app can't read the release list.
 

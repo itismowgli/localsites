@@ -241,6 +241,20 @@ sudo apt install ./localsites_*_amd64.deb      # Ubuntu, Debian (arm64: the _arm
 sudo dnf install ./localsites-*.x86_64.rpm     # Fedora (arm64: the .aarch64.rpm)
 ```
 
+The package adds the signed LocalSites repository, so later versions arrive with your normal system updates. To
+install from the repository instead:
+
+```sh
+# Ubuntu, Debian
+curl -fsSL https://itismowgli.github.io/localsites/linux/localsites.gpg | sudo tee /usr/share/keyrings/localsites.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/localsites.gpg] https://github.com/itismowgli/localsites/releases/download/linux-repo ./" | sudo tee /etc/apt/sources.list.d/localsites.list
+sudo apt update && sudo apt install localsites
+
+# Fedora
+sudo dnf config-manager addrepo --from-repofile=https://itismowgli.github.io/localsites/linux/localsites.repo
+sudo dnf install localsites
+```
+
 Then open **LocalSites** from your applications. It works the same way as on a Mac:
 
 - **Install Homebrew** asks for your password once (the system's own prompt), then installs Homebrew in
@@ -252,8 +266,8 @@ Then open **LocalSites** from your applications. It works the same way as on a M
   use ports 80 and 443. One password prompt.
 - Passwords go to your desktop keyring (GNOME Keyring or KWallet). Closing the window leaves your sites running.
 
-Known limits of the beta: no tray icon yet, updates come from the release page (open the new package), and
-`.test` names need systemd-resolved (the default on Ubuntu and Fedora; Debian needs it switched on).
+Known limits of the beta: no tray icon yet, and `.test` names need systemd-resolved (the default on Ubuntu and
+Fedora; Debian needs it switched on).
 
 <a id="build-from-source"></a>
 <details>
@@ -356,7 +370,7 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 | HTTPS domains | ✅ Valet or built-in | ✅ built-in (systemd-resolved) | planned |
 | Passwords | ✅ Keychain | ✅ desktop keyring | planned |
 | Tray icon | ✅ menu bar | planned | planned |
-| In-app updates | ✅ | planned (update from the release page) | planned |
+| Updates | ✅ in the app | ✅ signed apt/dnf repository, or in the app | planned |
 | Import from MAMP PRO / MAMP / XAMPP | ✅ | not needed (no MAMP on Linux) | planned |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/PLAN.md](docs/PLAN.md) for what's next.

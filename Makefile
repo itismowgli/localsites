@@ -1,4 +1,4 @@
-.PHONY: build cli app dmg release linux-packages test e2e e2e-ui test-all lint support
+.PHONY: build cli app dmg release publish linux-binaries linux-packages test e2e e2e-ui test-all lint support
 
 VERSION := $(shell sed -n 's/^const Version = "\(.*\)"/\1/p' internal/version/version.go)
 ARCH := $(shell go env GOARCH)
@@ -34,27 +34,35 @@ app:
 
 # Update files for a GitHub release: the zipped app plus update.json and its signature (key in your keychain,
 # see tools/release). Upload everything in dist/release to the release named v$(VERSION).
-release: app
+release:
+	go run ./tools/release tag            # pushes v$(VERSION); GitHub starts building the Linux programs
+	$(MAKE) app
 	@rm -rf dist/release && mkdir -p dist/release
 	ditto -c -k --keepParent desktop/build/bin/LocalSites.app dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip
-	go run ./tools/release manifest -out dist/release $(if $(SECURITY),-security) $(if $(BETA),-channel beta) dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip
-	@echo "Next: gh release create v$(VERSION) dist/release/*"
+	go run ./tools/release linux -out dist/release   # waits for GitHub, packages .deb/.rpm here, signs the .rpm
+	go run ./tools/release repos -out dist/release   # the signed apt and dnf repositories (needs Docker)
+	go run ./tools/release manifest -out dist/release $(if $(SECURITY),-security) $(if $(BETA),-channel beta) dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip dist/release/*.deb dist/release/*.rpm
+	@echo "Check dist/release, then: make publish"
 
-# Linux packages (.deb and .rpm) for this machine's architecture. Needs GTK, WebKitGTK 4.1, wails and nfpm;
-# tests/linux/build has them all:
-#   docker build -t localsites-linux-build tests/linux/build
-#   docker run --rm -v "$PWD":/src -w /src localsites-linux-build make linux-packages
-LINUX_ARCH ?= $(shell go env GOARCH)
-linux-packages:
-	@test "$$(go env GOOS)" = linux || { echo "build Linux packages on Linux (see tests/linux/build)"; exit 1; }
+# Publishes what make release made: the GitHub release, the apt repository and the dnf metadata.
+publish:
+	go run ./tools/release publish -out dist/release
+
+# Linux programs for this machine's architecture: the app, the CLI and the icons (GitHub builds these for
+# each release; see .github/workflows/linux-packages.yml). Needs GTK, WebKitGTK 4.1, wails and ImageMagick.
+linux-binaries:
+	@test "$$(go env GOOS)" = linux || { echo "build the Linux programs on Linux (see tests/linux/build)"; exit 1; }
 	go build -trimpath -ldflags "$(LDFLAGS)" -o bin/localsites-linux ./cmd/localsites
 	cd desktop && wails build -tags webkit2_41 -trimpath -ldflags "$(LDFLAGS)" -o LocalSites
-	@mkdir -p dist/linux dist/release
+	@mkdir -p dist/linux
 	convert desktop/build/appicon.png -resize 256x256 dist/linux/localsites-256.png
 	convert desktop/build/appicon.png -resize 512x512 dist/linux/localsites-512.png
-	VERSION=$(VERSION) ARCH=$(LINUX_ARCH) nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
-	VERSION=$(VERSION) ARCH=$(LINUX_ARCH) nfpm package -f packaging/linux/nfpm.yaml -p rpm -t dist/release/
-	@ls -la dist/release/*.deb dist/release/*.rpm
+
+# Linux packages from those programs, on this machine (tests; releases package them on the Mac, see release).
+linux-packages: linux-binaries
+	@mkdir -p dist/release
+	VERSION=$(VERSION) ARCH=$$(go env GOARCH) RPM_SIGNING_KEY_FILE= nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
+	VERSION=$(VERSION) ARCH=$$(go env GOARCH) RPM_SIGNING_KEY_FILE= nfpm package -f packaging/linux/nfpm.yaml -p rpm -t dist/release/
 
 # Disk image for sharing. Unsigned unless SIGN_ID is set (a "Developer ID Application" identity);
 # notarizing needs an Apple Developer account: xcrun notarytool submit dist/LocalSites.dmg --wait …

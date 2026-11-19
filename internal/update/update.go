@@ -55,9 +55,11 @@ func init() {
 
 // File is one download in a manifest.
 type File struct {
-	Name   string `json:"name"`
-	OS     string `json:"os"`
-	Arch   string `json:"arch"` // amd64, arm64 or universal
+	Name string `json:"name"`
+	OS   string `json:"os"`
+	Arch string `json:"arch"` // amd64, arm64 or universal
+	// Format: "" (a zipped macOS app), "deb" or "rpm" (Linux packages)
+	Format string `json:"format,omitempty"`
 	Size   int64  `json:"size"`
 	SHA256 string `json:"sha256"`
 }
@@ -124,7 +126,7 @@ type saved struct {
 // New loads the saved state from dir.
 func New(dir string) *Updater {
 	u := &Updater{Dir: dir, Current: version.Version}
-	u.st = Status{Current: u.Current, Phase: Idle, Signed: PublicKey != "", Supported: runtime.GOOS == "darwin"}
+	u.st = Status{Current: u.Current, Phase: Idle, Signed: PublicKey != "", Supported: runtime.GOOS == "darwin" || installedFormat() != ""}
 	var s saved
 	if b, err := os.ReadFile(filepath.Join(dir, "state.json")); err == nil && json.Unmarshal(b, &s) == nil {
 		u.st.LastCheck = s.LastCheck
@@ -366,13 +368,19 @@ func Sign(priv ed25519.PrivateKey, raw []byte) []byte {
 }
 
 func pick(files []File) (File, bool) {
+	return pickFor(files, runtime.GOOS, runtime.GOARCH, installedFormat())
+}
+
+// pickFor chooses the download for a system: on Linux, the package of the kind LocalSites was installed with.
+func pickFor(files []File, goos, goarch, format string) (File, bool) {
+	ok := func(f File) bool { return f.OS == goos && (goos != "linux" || (format != "" && f.Format == format)) }
 	for _, f := range files {
-		if f.OS == runtime.GOOS && f.Arch == runtime.GOARCH {
+		if ok(f) && f.Arch == goarch {
 			return f, true
 		}
 	}
 	for _, f := range files {
-		if f.OS == runtime.GOOS && f.Arch == "universal" {
+		if ok(f) && f.Arch == "universal" {
 			return f, true
 		}
 	}
@@ -442,12 +450,18 @@ func (u *Updater) fetch(m *Manifest, f File, link string, raw, sig []byte) error
 		return err
 	}
 	zip := filepath.Join(dir, "update.zip")
+	if f.Format != "" { // a Linux package: kept as it is, installed by the package manager
+		zip = filepath.Join(dir, "update."+f.Format)
+	}
 	if err := u.download(link, zip, f); err != nil {
 		_ = os.RemoveAll(dir)
 		return err
 	}
 	_ = os.WriteFile(filepath.Join(dir, "update.json"), raw, 0o600)
 	_ = os.WriteFile(filepath.Join(dir, "update.json.sig"), sig, 0o600)
+	if f.Format != "" {
+		return os.WriteFile(filepath.Join(dir, "ok"), []byte(m.Version), 0o600)
+	}
 	if err := unpack(zip, filepath.Join(dir, "app"), m.Version); err != nil {
 		_ = os.RemoveAll(dir)
 		return err

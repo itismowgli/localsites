@@ -19,6 +19,9 @@ import (
 
 const service = "LocalSites"
 
+// maxKeychainValue keeps a value within what `security -i` reads as one line.
+const maxKeychainValue = 2000
+
 var (
 	ErrNotFound = errors.New("secret not found")
 	keyRe       = regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`)
@@ -92,10 +95,15 @@ func (keychain) Set(key, value string) error {
 	if strings.ContainsAny(value, "\"\\\n'") {
 		return errors.New("secret contains characters the keychain tool cannot take safely")
 	}
+	// security -i reads one command line of limited length; a longer value would be cut off
+	if len(value) > maxKeychainValue {
+		return fmt.Errorf("secret is too long for the keychain tool (%d characters, at most %d)", len(value), maxKeychainValue)
+	}
 	cmd := exec.Command("/usr/bin/security", "-i")
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("add-generic-password -U -s %s -a %s -l \"LocalSites %s\" -w \"%s\"\n", service, key, key, value))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("keychain: %v %s", err, strings.TrimSpace(string(out)))
+	// The tool's output can repeat the command, value included: never pass it on
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("keychain: couldn't save %s (%v)", key, err)
 	}
 	return nil
 }

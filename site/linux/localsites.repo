@@ -1,0 +1,10 @@
+# LocalSites repository for Fedora and other dnf systems:
+#   sudo dnf config-manager addrepo --from-repofile=https://itismowgli.github.io/localsites/linux/localsites.repo
+#   sudo dnf install localsites
+[localsites]
+name=LocalSites
+baseurl=https://itismowgli.github.io/localsites/linux/rpm
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://itismowgli.github.io/localsites/linux/localsites.asc

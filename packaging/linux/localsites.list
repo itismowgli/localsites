@@ -1,0 +1,2 @@
+# Added by the LocalSites package: signed updates come with your normal system updates.
+deb [signed-by=/usr/share/keyrings/localsites.gpg] https://github.com/itismowgli/localsites/releases/download/linux-repo ./

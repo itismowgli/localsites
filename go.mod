@@ -3,6 +3,7 @@ module github.com/localsites/localsites
 go 1.27.3
 
 require (
+	fyne.io/systray v1.12.2
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jackc/pgx/v5 v5.11.0

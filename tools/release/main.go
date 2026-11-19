@@ -4,8 +4,20 @@
 //	    makes the update signing key, saves the private half in the macOS keychain
 //	    (LocalSites / release-signing-key) and prints the public half for internal/update/key.go.
 //	go run ./tools/release manifest -out dist [-channel stable] [-security] dist/LocalSites-0.13.0-macos-arm64.zip ...
-//	    writes dist/update.json (version, notes from changelog.json, size and SHA-256 of each zip)
-//	    and dist/update.json.sig. Upload both with the zips to the GitHub release.
+//	    writes dist/update.json (version, notes from changelog.json, size and SHA-256 of each zip, .deb
+//	    and .rpm) and dist/update.json.sig. Upload both with the files to the GitHub release.
+//	go run ./tools/release tag
+//	    pushes the tag v<version> for the current commit, which starts GitHub building the Linux programs.
+//	go run ./tools/release linux -out dist
+//	    waits for that build, downloads the programs and packages them here as .deb and .rpm (nfpm), the
+//	    .rpm signed with the key in the keychain (LocalSites / rpm-signing-key).
+//	go run ./tools/release package-key < bundle
+//	    saves the OpenPGP key for packages and repositories in the keychain (LocalSites /
+//	    package-signing-key) and writes its public half to site/linux (see tests/linux/repo/README).
+//	go run ./tools/release repos -out dist/release
+//	    builds the signed apt and dnf repositories from the packages (in a container, tests/linux/repo).
+//	go run ./tools/release publish -out dist/release
+//	    creates the GitHub release, updates the apt repository and commits the dnf metadata (make publish).
 //
 // The private key never leaves the keychain except into this process's memory. Back it up once
 // (Keychain Access → LocalSites → release-signing-key) in your password manager: without it,
@@ -45,6 +57,16 @@ func main() {
 		err = keygen()
 	case "manifest":
 		err = manifest(os.Args[2:])
+	case "tag":
+		err = tag()
+	case "linux":
+		err = linux(os.Args[2:])
+	case "package-key":
+		err = packageKeyCmd()
+	case "repos":
+		err = repos(os.Args[2:])
+	case "publish":
+		err = publish(os.Args[2:])
 	default:
 		err = fmt.Errorf("unknown command %q", os.Args[1])
 	}
@@ -78,7 +100,29 @@ func keygen() error {
 	return nil
 }
 
-var zipName = regexp.MustCompile(`^LocalSites-([0-9][0-9A-Za-z.-]*)-(darwin|macos|windows|linux)-(arm64|amd64|universal)\.zip$`)
+var (
+	zipName = regexp.MustCompile(`^LocalSites-([0-9][0-9A-Za-z.-]*)-(darwin|macos|windows|linux)-(arm64|amd64|universal)\.zip$`)
+	debName = regexp.MustCompile(`^localsites_([0-9][0-9A-Za-z.~+-]*)_(amd64|arm64)\.deb$`)
+	rpmName = regexp.MustCompile(`^localsites-([0-9][0-9A-Za-z.~+]*)-\d+\.(x86_64|aarch64)\.rpm$`)
+)
+
+// releaseFile reads a release file's name: version, OS, architecture and format ("" for a zipped app).
+func releaseFile(name string) (ver, osName, arch, format string, ok bool) {
+	if g := zipName.FindStringSubmatch(name); g != nil {
+		osName = map[string]string{"macos": "darwin"}[g[2]]
+		if osName == "" {
+			osName = g[2]
+		}
+		return g[1], osName, g[3], "", true
+	}
+	if g := debName.FindStringSubmatch(name); g != nil {
+		return g[1], "linux", g[2], "deb", true
+	}
+	if g := rpmName.FindStringSubmatch(name); g != nil {
+		return g[1], "linux", map[string]string{"x86_64": "amd64", "aarch64": "arm64"}[g[2]], "rpm", true
+	}
+	return "", "", "", "", false
+}
 
 func manifest(args []string) error {
 	fs := flag.NewFlagSet("manifest", flag.ExitOnError)
@@ -87,7 +131,7 @@ func manifest(args []string) error {
 	security := fs.Bool("security", false, "this release fixes a security problem")
 	_ = fs.Parse(args)
 	if fs.NArg() == 0 {
-		return errors.New("give at least one zip")
+		return errors.New("give at least one file")
 	}
 	if *channel != "stable" && *channel != "beta" {
 		return errors.New("-channel must be stable or beta")
@@ -119,22 +163,18 @@ func manifest(args []string) error {
 		return fmt.Errorf("changelog.json has no entry for %s", version.Version)
 	}
 	for _, z := range fs.Args() {
-		g := zipName.FindStringSubmatch(filepath.Base(z))
-		if g == nil {
-			return fmt.Errorf("%s: name it LocalSites-<version>-<os>-<arch>.zip", z)
+		ver, osName, arch, format, ok := releaseFile(filepath.Base(z))
+		if !ok {
+			return fmt.Errorf("%s: name it LocalSites-<version>-<os>-<arch>.zip, localsites_<version>_<arch>.deb or localsites-<version>-1.<arch>.rpm", z)
 		}
-		if g[1] != version.Version {
-			return fmt.Errorf("%s is for %s, this build is %s", z, g[1], version.Version)
-		}
-		osName := map[string]string{"macos": "darwin"}[g[2]]
-		if osName == "" {
-			osName = g[2]
+		if ver != version.Version {
+			return fmt.Errorf("%s is for %s, this build is %s", z, ver, version.Version)
 		}
 		size, sum, err := hashFile(z)
 		if err != nil {
 			return err
 		}
-		m.Files = append(m.Files, update.File{Name: filepath.Base(z), OS: osName, Arch: g[3], Size: size, SHA256: sum})
+		m.Files = append(m.Files, update.File{Name: filepath.Base(z), OS: osName, Arch: arch, Format: format, Size: size, SHA256: sum})
 	}
 	raw, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {

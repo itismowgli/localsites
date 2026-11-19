@@ -1,6 +1,6 @@
 # Linux packages (.deb and .rpm) for LocalSites, built with nfpm (https://nfpm.goreleaser.com):
 #   VERSION=1.4.0 ARCH=amd64 nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
-# make linux-packages runs this inside tests/linux/build.
+# Releases run this on the maintainer's Mac (go run ./tools/release linux); make linux-packages runs it in tests/linux/build.
 name: localsites
 arch: ${ARCH}
 platform: linux
@@ -21,6 +21,10 @@ overrides:
   rpm:
     depends: [gtk3, webkit2gtk4.1, ca-certificates, curl, git]
     recommends: [nss-tools, libnotify]
+rpm:
+  signature:
+    # the release tool sets this to a temporary copy of the key from the maintainer's Keychain
+    key_file: ${RPM_SIGNING_KEY_FILE}
 contents:
   - src: desktop/build/bin/LocalSites
     dst: /opt/LocalSites/LocalSites
@@ -34,3 +38,18 @@ contents:
     dst: /usr/share/icons/hicolor/256x256/apps/localsites.png
   - src: dist/linux/localsites-512.png
     dst: /usr/share/icons/hicolor/512x512/apps/localsites.png
+  # the LocalSites repository and its key: signed updates arrive with the system's own updates
+  - src: packaging/linux/localsites.list
+    dst: /etc/apt/sources.list.d/localsites.list
+    type: config|noreplace
+    packager: deb
+  - src: packaging/linux/localsites.gpg
+    dst: /usr/share/keyrings/localsites.gpg
+    packager: deb
+  - src: packaging/linux/localsites.repo
+    dst: /etc/yum.repos.d/localsites.repo
+    type: config|noreplace
+    packager: rpm
+  - src: packaging/linux/localsites.asc
+    dst: /etc/pki/rpm-gpg/RPM-GPG-KEY-localsites
+    packager: rpm

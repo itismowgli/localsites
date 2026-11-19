@@ -5,6 +5,7 @@ import (
 	"github.com/localsites/localsites/internal/notices"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"sort"
 	"sync"
 	"time"
@@ -127,6 +128,12 @@ func (e *Engine) InstallUpdate(appExe string, appPID int, then string, rollback 
 	}
 	if appPID <= 1 {
 		return errors.New("app_pid is required")
+	}
+	if goruntime.GOOS == "linux" {
+		if rollback {
+			return errors.New("on Linux, install the older package from the release page to go back")
+		}
+		return e.installLinuxPackage(appExe, appPID, then)
 	}
 	app, err := update.BundleOf(appExe)
 	if err != nil {
