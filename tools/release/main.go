@@ -67,6 +67,12 @@ func main() {
 		err = repos(os.Args[2:])
 	case "publish":
 		err = publish(os.Args[2:])
+	case "sums":
+		err = sumsCmd(os.Args[2:])
+	case "changelog":
+		err = changelogCmd(os.Args[2:])
+	case "notes-sync":
+		err = notesSync(os.Args[2:])
 	default:
 		err = fmt.Errorf("unknown command %q", os.Args[1])
 	}

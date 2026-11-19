@@ -55,7 +55,12 @@ func tag() error {
 	if existing, _ := output("git", "rev-parse", "-q", "--verify", "refs/tags/"+t); existing != "" && existing != head {
 		return fmt.Errorf("%s already points to another commit", t)
 	}
-	if err := run("", nil, "git", "tag", "-f", t, head); err != nil {
+	// annotated, carrying the release title, like every release tag (docs/RELEASING.md)
+	e, ok := entryFor(version.Version)
+	if !ok {
+		return fmt.Errorf("changelog.json has no entry for %s", version.Version)
+	}
+	if err := run("", nil, "git", "tag", "-f", "-a", t, "-m", releaseTitle(e), head); err != nil {
 		return err
 	}
 	return run("", nil, "git", "push", "origin", "refs/tags/"+t)
@@ -277,26 +282,20 @@ func publish(args []string) error {
 	_ = fs.Parse(args)
 	t := "v" + version.Version
 	var files []string
-	for _, pattern := range []string{"LocalSites-*.zip", "*.deb", "*.rpm", "update.json", "update.json.sig"} {
+	for _, pattern := range append(releaseAssets, "SHA256SUMS") {
 		m, _ := filepath.Glob(filepath.Join(*out, pattern))
 		files = append(files, m...)
 	}
-	if len(files) < 5 {
-		return errors.New("run make release first: " + *out + " doesn't have the app, the packages and the signed update files")
+	if len(files) < 6 {
+		return errors.New("run make release first: " + *out + " doesn't have the app, the packages, the signed update files and SHA256SUMS")
 	}
-	var title string
-	var notes strings.Builder
-	for _, e := range version.Changelog() {
-		if e.Version == version.Version {
-			title = "LocalSites " + e.Version + ": " + e.Title
-			for _, item := range e.Items {
-				notes.WriteString("- " + item + "\n")
-			}
-		}
+	e, ok := entryFor(version.Version)
+	if !ok {
+		return fmt.Errorf("changelog.json has no entry for %s", version.Version)
 	}
-	notes.WriteString(releaseInstallNotes(version.Version))
+	title := releaseTitle(e)
 	nf := filepath.Join(*out, "notes.md")
-	if err := os.WriteFile(nf, []byte(notes.String()), 0o644); err != nil {
+	if err := os.WriteFile(nf, []byte(releaseNotes(e, true)), 0o644); err != nil {
 		return err
 	}
 	if err := run("", nil, "gh", append([]string{"release", "create", t, "-R", repoOwner, "--verify-tag", "--title", title, "--notes-file", nf}, files...)...); err != nil {
@@ -338,19 +337,4 @@ func publish(args []string) error {
 	}
 	fmt.Println("Published " + t + ". The website (and the dnf repository) update in a minute.")
 	return nil
-}
-
-func releaseInstallNotes(v string) string {
-	return `
-## Install
-
-**macOS (Apple silicon):** download ` + "`LocalSites-" + v + "-macos-arm64.zip`" + `, unzip it and drag LocalSites into Applications. Existing installs update from Settings → Updates.
-
-**Linux (beta):** Ubuntu 24.04+, Debian 12+ and Fedora, x86_64 and arm64. Install the package once; it adds the signed LocalSites repository, so later versions arrive with your normal system updates.
-
-` + "```sh" + `
-sudo apt install ./localsites_` + v + `_amd64.deb        # Ubuntu, Debian (arm64: _arm64.deb)
-sudo dnf install ./localsites-` + v + `-1.x86_64.rpm     # Fedora (arm64: .aarch64.rpm)
-` + "```" + `
-`
 }

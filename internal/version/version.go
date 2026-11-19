@@ -18,6 +18,9 @@ type Entry struct {
 	Date    string   `json:"date"`
 	Title   string   `json:"title"`
 	Items   []string `json:"items"`
+	// Kinds labels each item, in order: new, improved, fixed or security. Release notes and CHANGELOG.md
+	// group the items by it; the app shows the plain list.
+	Kinds []string `json:"kinds,omitempty"`
 }
 
 // Changelog returns releases, newest first. Later this is merged with a signed remote feed.

@@ -1,0 +1,328 @@
+# Changelog
+
+Every LocalSites release, newest first. Written from `internal/version/changelog.json` by
+`go run ./tools/release changelog`; the app shows the same list under What's new. Versions follow
+[semantic versioning](https://semver.org): a new feature raises the middle number, a fix the last one.
+
+## 1.6.0 (2026-11-19): Safer agents, sharing with nothing to install, and a new look
+
+### New
+
+- Share a project through tunnl.gg, which uses the ssh already on your computer, so there's nothing to install. Cloudflare and bore are still one click away
+
+### Improved
+
+- Approve the same everyday action for 10 minutes. Request cards also show which agent is asking
+- A new look built on shared design tokens, with figures in empty states and a pixel loader
+
+### Fixed
+
+- macOS no longer asks for folder access again after every update. You'll see the prompt one last time after this update
+- Notifications always show the LocalSites icon, even before you open the app
+
+### Security
+
+- More agent actions now wait for your Approve: copying a database from another tool, installing dependencies or Homebrew software, taking over a Valet site, editing other agent apps' settings and switching Adminer on
+- On a Mac, LocalSites now checks who is asking: only the signed LocalSites app can approve requests, so a script can't pretend to be it
+
+## 1.5.0 (2026-11-19): Notifications you can find again, and Linux that updates itself
+
+### New
+
+- A bell in the status bar keeps every notification for 30 days: services that stopped, finished installs, agent requests, shares about to end, updates and problems. Click one to open what it's about
+- Do Not Disturb from the bell (1 hour, until tomorrow, or until you turn it off), and a switch per kind in Settings → Notifications. Agent requests always show, since an agent waits for your answer
+- macOS notifications have buttons: Approve or Deny an agent request, Extend or Stop a share that's about to end, Open logs after a crash
+- Linux: the .deb and .rpm add the signed LocalSites repository, so later versions arrive with your normal system updates, signatures checked by apt and dnf
+- Linux: LocalSites can also update itself from Settings → Updates, after one password prompt
+- Linux: a tray icon with the same menu as the Mac menu bar, on desktops that show tray icons
+- localsites notices lists notifications in the terminal; localsites notices quiet 60 turns on Do Not Disturb
+
+### Improved
+
+- A share now warns you 5 minutes before it ends, and can be extended (up to 24 hours)
+
+## 1.4.0 (2026-11-18): Linux beta, your editor, and .test without Valet
+
+### New
+
+- LocalSites runs on Linux (beta): Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Install the .deb or .rpm from the release page; PHP, Apache, MySQL 8.4 and add-ons come from Homebrew, which LocalSites installs for you after one password prompt
+- On Linux, .test domains, HTTPS and the web ports are set up from the same Setup card (systemd-resolved, the system and browser certificate stores), passwords are kept in your desktop keyring, notifications and start at login work, and closing the window leaves your sites running
+- Choose your code editor and terminal: the Open buttons no longer guess. The first time, LocalSites asks which installed one to use and remembers it; change it in Settings, pick Make default in the Open menu, or choose Ask every time. localsites open and AI agents use the same choice
+- Macs without Laravel Valet get working .test addresses with HTTPS: one Setup step sends .test to LocalSites and trusts its certificate (which can only sign .test names), with one password prompt. Ports 80 and 443 need no password at all
+- Projects can be renamed (settings, logs and the address move along), hidden from LocalSites (the folder stays), or moved to the Trash after typing the project's name. A project's database is never touched by any of these
+
+### Improved
+
+- Importing from free MAMP and XAMPP finds the projects in htdocs, with MAMP's PHP version, instead of Apache's example hosts. The Import screen offers to add htdocs as a projects folder
+
+### Fixed
+
+- Menus close as soon as you click outside them, also on the window's drag areas, when you switch to another app, or click their button again
+- Fixed: projects on PHP 7.2 or older couldn't run, because PHP-FPM before 7.3 refuses an option LocalSites always wrote. Every installed PHP version is now tested with the configuration LocalSites writes for it
+- Fixed: Fix everything couldn't install some PHP versions from the shivammathur/php tap (php@8.5 needs other formulas from the same tap); the tap is now trusted as a whole
+- Fixed: dev servers didn't find npm installed with Snap, Volta, Bun, nvm's default version or in your own folder
+
+## 1.3.0 (2026-11-15): LocalSites sets itself up
+
+### New
+
+- Overview lists what LocalSites needs from Homebrew and isn't there or is broken: Apache, MySQL 8.4, PHP, Nginx when a project uses it, every PHP version your projects are set to, and installed PHP versions that can't start or can't load an extension. One click on Fix everything installs and repairs all of it in the background, and projects restart by themselves when it's done
+- No Homebrew? Install Homebrew downloads Homebrew's official installer, checks that Apple has notarized it, and opens it
+- localsites setup lists the same things in the terminal; localsites setup fix does them. AI agents get setup_status and setup_run tools, and setup_run waits for your approval
+
+### Improved
+
+- Repairs work even when Homebrew has removed the library an old PHP needs (icu4c@77, libjpeg 9): PHP is reinstalled against the current libraries, and PHP from the shivammathur/php tap is trusted first
+- When some Homebrew files belong to root (an install once run with sudo), macOS asks for your Mac password once and LocalSites gives the files back, instead of the reinstall stopping half way
+- Doctor shows a Repair or Install button on each fixable check, and suggests reinstalling instead of installing a library Homebrew no longer has
+
+## 1.2.4 (2026-11-15): Doctor finds broken PHP installs
+
+### Improved
+
+- Doctor lists PHP versions that are installed but can't start, says which library is missing, how many projects use that version, and the command that fixes it
+- Doctor names PHP extensions that fail to load (for example intl when icu4c is missing) instead of marking that PHP as fine
+
+### Fixed
+
+- A PHP build that can't start isn't started again for an hour, so macOS no longer saves a crash report every time LocalSites or a localsites command looks for PHP
+- PHP logs no longer fill with "Unable to set php_admin_value 'xdebug.mode'" errors: Xdebug settings are only written where Xdebug is loaded
+
+## 1.2.3 (2026-11-15): One LocalSites in your apps list
+
+### Improved
+
+- LocalSites appears under Developer Tools in the Apps list and Launchpad
+
+### Fixed
+
+- Copies LocalSites keeps for itself (downloaded updates, the version kept for switching back) no longer show up in the Apps list, Login Items or "Open with"
+
+## 1.2.2 (2026-11-15): Notifications always show the LocalSites icon
+
+### Fixed
+
+- Notifications show LocalSites' name and icon even when the background service was started from the command line. Before, they showed a blank script icon in that case
+
+## 1.2.1 (2026-11-14): Clearer approval requests
+
+### Improved
+
+- Approval requests and notifications say "A script or command" when the request didn't come from an AI agent, for example a localsites command run without a terminal
+- Recent activity shows such calls as "Script" instead of "Unknown"
+
+## 1.2.0 (2026-11-14): AI agents ask first, and imports can't run anything
+
+### Fixed
+
+- AI agents started with --allow-secrets can use the database tools again
+
+### Security
+
+- AI agents now need your approval to set a project's start command or environment variables, export or import a database, edit a project's .env, or change where projects live, start at login, problem reports or updates. Before, an agent tricked by a project file could run a command on your Mac without asking
+- Scripts and programs that call localsites without a terminal (including agents with a shell) wait for the same approval
+- Importing a .sql file can no longer run commands on your Mac. SQLite imports use sqlite3's safe mode, PostgreSQL imports switch psql's own commands off and run without superuser rights
+- MySQL imports run with the database's own login, so a file can't delete or change your other databases or create logins. DEFINER and GTID lines that need admin rights are removed, so mysqldump files still load
+- The PostgreSQL add-on now needs a password for connections over the network port, so other users and programs on this Mac can't log in as its admin. The Services page shows the new settings to copy; update projects that use it
+- New MinIO setups get a random password instead of a fixed one (existing MinIO data keeps its login)
+- "Connect database" keeps its .env backups in LocalSites' own folder, outside the project, and won't write through a link planted in a project
+- Shared sites: the site sees the visitor's address instead of 127.0.0.1, so "localhost only" pages stay closed; the share password isn't passed on to the site; visitors with the right password get in even while someone is guessing
+- Suggested share passwords are much stronger (four words and a number), typed ones need 8 characters, and bore shares always need a password
+- Exports never follow links or replace a file that appeared meanwhile, and stay inside your home folder
+- Automatic problem reports leave out log lines, and the debug bundle leaves out saved connections and web access logs and lists its files before you send it
+- SSH tunnels go through a private socket, remote PostgreSQL connections are encrypted by default (with a setting for servers without TLS), and read-only queries can't write files or end other sessions
+- Doctor warns when Valet's certificate key is readable by other users or a dev server is reachable from the network
+- Passwords for MySQL tools no longer go through the environment, and git commands from the app never run a project's hooks
+
+## 1.1.0 (2026-11-09): Update when it suits you, and a badge for what needs you
+
+### New
+
+- When an update is ready, LocalSites asks whether to restart now or install it when you quit
+- The Dock icon shows a badge with how many things need you: folders waiting for access, failed Doctor checks, projects with a problem, agent requests, problems to look at, and an update waiting to be installed
+
+### Improved
+
+- While an update downloads, you can pick between restarting as soon as it's ready or installing it when you quit
+- "Install when I quit" works with any update setting, not only the automatic ones
+- Overview → Needs attention lists every one of them and says what the Dock number is made of, and the menu bar menu starts with the same summary
+- macOS asks once whether LocalSites may show the badge. If you said no earlier, turn on "Badge application icon" in System Settings → Notifications → LocalSites
+
+## 1.0.2 (2026-11-09): Notifications with the LocalSites icon
+
+### Improved
+
+- The first time you open this version, macOS asks whether LocalSites may send notifications. Click Allow to keep getting update and problem alerts
+
+### Fixed
+
+- Notifications now come from LocalSites itself and show its icon, instead of looking like they came from Script Editor
+
+## 1.0.1 (2026-11-09): Clearer wording
+
+### Improved
+
+- The data browser shows row ranges as "1 to 12 of 12"
+- Storage settings say "Nothing to clean" where they used to show a lone dash
+- A project with no Git branch shows "none" instead of a dash
+- Read-only database errors read as two plain sentences
+- The export option now says compressed files are usually 5 to 10 times smaller
+- Skipped checks in localsites doctor are marked with a plain hyphen
+
+## 1.0.0 (2026-11-09): The first release for macOS
+
+### New
+
+- LocalSites is ready for everyday use on macOS: projects, PHP versions, HTTPS domains, databases, sharing, Git and AI agents in one app
+- A new app icon, with the macOS 26 Liquid Glass look, plus a matching menu bar icon and sidebar logo
+
+### Improved
+
+- Recent activity: times stay on one line, actions are described in plain words, and repeats are counted (×3) instead of listed again
+
+### Fixed
+
+- Adminer: clicking it again while it is being set up no longer starts a second setup
+- Database names can no longer start with a dash
+- Buttons no longer show an icon's name as text when the icon is missing
+
+### Security
+
+- Shared sites: the limit on wrong passwords can no longer be dodged by faking where a visitor comes from
+
+## 0.16.0 (2026-11-02): Database tools for every database
+
+- Databases: each row has Open and a ⋯ menu, so the page never spills sideways
+- Export a database to .sql or .sql.gz: structure and data, structure only, or data only
+- Import a .sql, .sql.gz or .zip file. Lines that would create or switch to another database are skipped, so everything lands where you chose
+- Backups and restore, Duplicate, Empty and Delete. Anything that removes or replaces data is backed up first; Delete asks you to type the name
+- PostgreSQL add-on: its databases are listed under Databases with the same tools, and each opens in the data browser
+- Data browser: Export and Import for any connection (MAMP MySQL, remote MySQL/MariaDB over SSH, PostgreSQL, SQLite). Export only reads; import needs a connection that allows changes and saves what is there first
+- Problem reports: when a DNS or ad blocker stops the report server, LocalSites says so and how to allow it, instead of failing
+
+## 0.15.0 (2026-11-02): Problems: see what went wrong, report it if you want
+
+- Settings → Problems lists crashes of the app or the background service, services that stopped unexpectedly or kept crashing, failed installs and updates, and errors in the app, with the details needed to fix them
+- Problem reports are off by default. Choose Ask me (review each report first) or Automatic; you can also just copy a report into a GitHub issue
+- Every report is cleaned before you see it: passwords, tokens, e-mail and IP addresses and your user name are removed, and project names become codes
+- Optional: attach a debug bundle, cleaned the same way
+- Readable text: the Filter badge, quiet text and placeholders now have enough contrast in both themes; settings pages no longer spill sideways
+
+## 0.14.0 (2026-11-02): Quieter in the background
+
+- The app and the menu bar no longer ask the service for news every few seconds: the service tells them when something changes, so changes show at once and an idle LocalSites does nothing
+- A window left in the menu bar, minimized or hidden for 3 minutes unloads its page and stops all of its timers; it comes back on the same tabs when you open it. Never while something is unsaved
+- Fixed: tests that could fail on a busy Mac
+
+## 0.13.0 (2026-11-02): Updates inside the app: opt-in, signed, with a way back
+
+- Settings → Updates: check now, or let LocalSites check once a day (off until you turn it on; only the public release list is read)
+- Choose what happens: tell me, download and install when I quit, or install automatically at night
+- Download and install in one click: LocalSites restarts by itself and projects pause for a few seconds. Release notes and security fixes show before you install
+- Every update is signed. The signature, the checksum and the new app itself are checked before anything is replaced; a bad download is deleted
+- The previous version is kept: switch back in one click. Settings are backed up before every update
+- Stable or beta channel; skip a version you don't want; the menu bar and the help button show when an update is waiting
+
+## 0.12.0 (2026-11-01): Lighter and safer: MySQL sleeps, Storage page, safer shares
+
+- LocalSites MySQL uses about 65% less memory (486 → 172 MB) and less disk, and it starts only when a project, Adminer or Data needs it. After 20 minutes unused it stops (Settings → MySQL → Keep running to turn this off)
+- Apache and PHP keep fewer idle processes
+- Settings → Storage shows what uses disk space (databases, add-on data, backups, logs, .env backups) with clean-up buttons
+- Shares have a password by default; “No password” must be chosen on purpose. After 10 wrong passwords in 10 minutes a visitor is refused for a while, and dotfiles (.env, .git) are never served. The share box shows visits and refused attempts
+- The app's page only loads its own files (Content-Security-Policy)
+- Fixed: PHP workers could keep running after a project or test stopped
+
+## 0.11.0 (2026-10-28): Menu bar, notifications, update check
+
+- Menu bar icon: running projects open in one click, shared sites, agent requests waiting for approval, restart services, open or quit LocalSites
+- Closing the window keeps LocalSites running in the menu bar
+- Notifications when a service had to be restarted after a crash and when an install finishes
+- Settings → What's new → Check now looks for a newer release on GitHub
+
+## 0.10.0 (2026-10-28): PostgreSQL, search and storage add-ons; GitHub status; smarter agents
+
+- New add-ons: PostgreSQL (set up on first start, browsable in Data), Meilisearch (search) and MinIO (S3-compatible storage), with settings for every stack
+- Git panel: the open pull request and latest CI run for the current branch on GitHub (works with SSH host aliases)
+- AI agents: a one-call project summary (no secrets), project summaries and logs as MCP resources, and ready-made prompts to diagnose or explain a project
+
+## 0.9.0 (2026-10-28): Nginx, Xdebug, PHP extensions, MySQL root password
+
+- Serve any PHP project with Nginx instead of Apache (pretty URLs fall back to index.php; dotfiles stay private)
+- Xdebug per project: switch it on for the project you're debugging; others stay fast. LocalSites loads Xdebug only in its own PHP, never changing your php.ini
+- Settings → PHP lists each version's extensions
+- Change the LocalSites MySQL root password (random and strong by default); everything keeps working and it stays in the keychain
+
+## 0.8.0 (2026-10-28): AI agents: connect in one click, approve risky actions
+
+- Settings → AI agents: connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click; the config file is backed up first and only the LocalSites entry changes. Zed gets a copyable snippet
+- Risky agent actions (stop services, share a site, save data edits, empty a cache) wait for you to click Approve in the app, with a macOS notification; agents can't approve themselves
+- Agents no longer pass a confirm flag themselves; the decision is always yours
+
+## 0.7.0 (2026-10-28): Open in your apps, Adminer, steadier service
+
+- Open a project in the editors, terminals, git apps and browsers you have (VS Code, Cursor, Zed, PhpStorm, iTerm2, Warp, Ghostty, GitHub Desktop, Fork…); pick your editor and terminal in Settings
+- Open a database in TablePlus or Sequel Ace with the details filled in; the password goes to your clipboard, never on a command line
+- Adminer at adminer.test: a checked copy is downloaded the first time; sign in with a database's own login
+- The service never freezes on a macOS folder-permission prompt: the folder is shown as waiting and is picked up after you click Allow; running projects keep running
+- Background refreshes only redraw what changed, so clicks are never lost
+
+## 0.6.0 (2026-10-27): Share a site on the internet
+
+- Share a running project through a free tunnel (Cloudflare quick tunnel or bore), no account needed
+- Each share has its own gateway: optional password, only that one site is reachable, redirects use the public address
+- Shares stop by themselves after 15 minutes to 24 hours; the status bar shows what is live; stop any time
+- Tunnel clients install with one click (Homebrew), like add-ons
+- CI on GitHub: lint, unit tests and build on every push
+
+## 0.5.0 (2026-10-27): Add-ons for any language
+
+- Add-ons in Services: Mailpit (catches outgoing email), Valkey, Redis and Memcached. Install with one click; Homebrew runs in the background and the app shows the command first
+- PHP mail() goes to Mailpit automatically while it is on; the inbox opens at mail.test
+- Connect a project: ready-to-copy settings for Laravel, Node / Next.js, Django, Rails or any language
+- Flush a cache, send a test email, change ports and options; Doctor checks every add-on you switch on
+- Native Mac window: double-click the title bar to zoom, ⌃⌘F full screen, Window menu, no white flash or lag while resizing
+- A shared design system (docs/DESIGN.md) so every screen and service looks the same
+- Connect to LocalSites MySQL: copy-paste settings for Laravel, Node / Next.js, Django, Rails, WordPress, PHP, the terminal and GUI apps, with the real port, socket and each database's own login
+- Ports and addresses: one table in Services with every address LocalSites uses, each copyable
+- Narrow windows: a project opens full width with its properties as chips under the title
+- Smoother window resizing (about 1 ms of layout per frame instead of 7 ms)
+
+## 0.4.0 (2026-10-27): Git, safe editing and a calmer, faster app
+
+- Filters: Filter → Type, Status, Folder, Group, Git account or PHP version, shown as chips you can change or remove; Display options for grouping, ordering and which properties show
+- Nested sidebar: folders open into their groups, Databases lists each database and opens it in the data browser
+- Data browser View and Edit modes: edits are staged in the grid, you review the exact SQL, and everything is saved in one transaction (nothing is saved if a row changed meanwhile)
+- Git panel per project: changed files, ahead/behind, fetch, fast-forward pull, branch tree, switch and create branches (refused when you have uncommitted work), commit graph
+- Per-project environment variables and php.ini overrides; Docker projects (any command and the port it publishes)
+- Serve a Valet site with LocalSites in one click, without editing Valet's settings
+- SSH tunnels for remote databases (your own ssh keys), SQL history and autocomplete, CSV export to a file
+- Smooth panel, menu and dialog animations; the layout adapts down to phone-width windows
+- Uses less CPU: project scans and PHP detection are cached and the app refreshes less often in the background; logs are rotated at 10 MB
+
+## 0.3.0 (2026-10-27): Every project, every folder
+
+- Add as many projects folders as you like, each with a label; group folders (one per git account) are found automatically
+- Laravel, WordPress, Next.js, Node and plain PHP detected; Laravel gets public/ and the PHP version its composer.json asks for
+- Run anything with a custom command ({port} is filled in): Python, Ruby, Go, Rust…
+- Next.js and Node dev servers behind https://name.test, restarted if they crash; busy ports move automatically
+- Git branch and account (GitHub, GitLab, Bitbucket or your SSH aliases) on every project; group by folder, account or type
+- Sites Laravel Valet already serves show up as “Served by Valet”
+- A new Overview and empty states
+
+## 0.2.0 (2026-10-26): Settings, database browser, What's new and a cleaner interface
+
+- Data: a TablePlus-style browser for MAMP PRO MySQL, LocalSites MySQL, any MySQL/MariaDB, PostgreSQL and SQLite with tables, rows, structure and SQL
+- Every database connection starts read-only; changes need an explicit switch and are blocked by the server otherwise
+- Settings you can edit: projects folder, start at login, domains and ports, PHP defaults, MySQL port
+- Connect a project to its copied database in one click (.env is backed up first, with undo)
+- Help menu with What's new, debug bundle, status and keyboard shortcuts
+- Lucide icons and the Inter font, bundled for offline use; consistent spacing, focus rings and dialogs
+- Activity feed showing what the app, CLI and AI agents changed
+
+## 0.1.0 (2026-10-26): First working version on macOS
+
+- Apache with .htaccess, one PHP pool per project, PHP 7.4 to 8.5 per project
+- MySQL 8.4 LTS with a separate login per project, passwords in the Keychain
+- Copy databases from MAMP PRO read-only, verified row by row
+- Doctor, connection checks, debug bundle and an MCP server for AI agents
+- Desktop app with tabs, command palette and keyboard shortcuts

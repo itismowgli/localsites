@@ -52,6 +52,7 @@ release:
 	go run ./tools/release linux -out dist/release   # waits for GitHub, packages .deb/.rpm here, signs the .rpm
 	go run ./tools/release repos -out dist/release   # the signed apt and dnf repositories (needs Docker)
 	go run ./tools/release manifest -out dist/release $(if $(SECURITY),-security) $(if $(BETA),-channel beta) dist/release/LocalSites-$(VERSION)-macos-$(ARCH).zip dist/release/*.deb dist/release/*.rpm
+	go run ./tools/release sums -out dist/release      # SHA256SUMS for every file
 	@echo "Check dist/release, then: make publish"
 
 # Publishes what make release made: the GitHub release, the apt repository and the dnf metadata.
@@ -109,4 +110,5 @@ lint:
 	node --check desktop/frontend/dist/app.js
 	node tools/support.mjs --check
 	node tools/build-tokens.mjs --check   # tokens.css current; no raw colors in the app or the site
+	go run ./tools/release changelog -check   # CHANGELOG.md matches changelog.json
 	@! grep -n '@container\|cqw' desktop/frontend/dist/styles.css || (echo 'No CSS container queries: they make window resizing lag in WebKit. Use the size classes (docs/DESIGN.md).'; exit 1)

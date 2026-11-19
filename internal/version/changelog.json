@@ -11,6 +11,15 @@
       "A new look built on shared design tokens, with figures in empty states and a pixel loader",
       "macOS no longer asks for folder access again after every update. You'll see the prompt one last time after this update",
       "Notifications always show the LocalSites icon, even before you open the app"
+    ],
+    "kinds": [
+      "new",
+      "security",
+      "security",
+      "improved",
+      "improved",
+      "fixed",
+      "fixed"
     ]
   },
   {
@@ -26,6 +35,16 @@
       "Linux: LocalSites can also update itself from Settings → Updates, after one password prompt",
       "Linux: a tray icon with the same menu as the Mac menu bar, on desktops that show tray icons",
       "localsites notices lists notifications in the terminal; localsites notices quiet 60 turns on Do Not Disturb"
+    ],
+    "kinds": [
+      "new",
+      "new",
+      "new",
+      "improved",
+      "new",
+      "new",
+      "new",
+      "new"
     ]
   },
   {
@@ -43,6 +62,18 @@
       "Fixed: projects on PHP 7.2 or older couldn't run, because PHP-FPM before 7.3 refuses an option LocalSites always wrote. Every installed PHP version is now tested with the configuration LocalSites writes for it",
       "Fixed: Fix everything couldn't install some PHP versions from the shivammathur/php tap (php@8.5 needs other formulas from the same tap); the tap is now trusted as a whole",
       "Fixed: dev servers didn't find npm installed with Snap, Volta, Bun, nvm's default version or in your own folder"
+    ],
+    "kinds": [
+      "new",
+      "new",
+      "new",
+      "new",
+      "new",
+      "improved",
+      "fixed",
+      "fixed",
+      "fixed",
+      "fixed"
     ]
   },
   {
@@ -56,6 +87,14 @@
       "When some Homebrew files belong to root (an install once run with sudo), macOS asks for your Mac password once and LocalSites gives the files back, instead of the reinstall stopping half way",
       "Doctor shows a Repair or Install button on each fixable check, and suggests reinstalling instead of installing a library Homebrew no longer has",
       "localsites setup lists the same things in the terminal; localsites setup fix does them. AI agents get setup_status and setup_run tools, and setup_run waits for your approval"
+    ],
+    "kinds": [
+      "new",
+      "new",
+      "improved",
+      "improved",
+      "improved",
+      "new"
     ]
   },
   {
@@ -67,6 +106,12 @@
       "Doctor names PHP extensions that fail to load (for example intl when icu4c is missing) instead of marking that PHP as fine",
       "A PHP build that can't start isn't started again for an hour, so macOS no longer saves a crash report every time LocalSites or a localsites command looks for PHP",
       "PHP logs no longer fill with \"Unable to set php_admin_value 'xdebug.mode'\" errors: Xdebug settings are only written where Xdebug is loaded"
+    ],
+    "kinds": [
+      "improved",
+      "improved",
+      "fixed",
+      "fixed"
     ]
   },
   {
@@ -76,6 +121,10 @@
     "items": [
       "LocalSites appears under Developer Tools in the Apps list and Launchpad",
       "Copies LocalSites keeps for itself (downloaded updates, the version kept for switching back) no longer show up in the Apps list, Login Items or \"Open with\""
+    ],
+    "kinds": [
+      "improved",
+      "fixed"
     ]
   },
   {
@@ -84,6 +133,9 @@
     "title": "Notifications always show the LocalSites icon",
     "items": [
       "Notifications show LocalSites' name and icon even when the background service was started from the command line. Before, they showed a blank script icon in that case"
+    ],
+    "kinds": [
+      "fixed"
     ]
   },
   {
@@ -93,12 +145,16 @@
     "items": [
       "Approval requests and notifications say \"A script or command\" when the request didn't come from an AI agent, for example a localsites command run without a terminal",
       "Recent activity shows such calls as \"Script\" instead of \"Unknown\""
+    ],
+    "kinds": [
+      "improved",
+      "improved"
     ]
   },
   {
     "version": "1.2.0",
     "date": "2026-11-14",
-    "title": "Security fixes: AI agents ask first, imports can't run anything",
+    "title": "AI agents ask first, and imports can't run anything",
     "items": [
       "AI agents now need your approval to set a project's start command or environment variables, export or import a database, edit a project's .env, or change where projects live, start at login, problem reports or updates. Before, an agent tricked by a project file could run a command on your Mac without asking",
       "Scripts and programs that call localsites without a terminal (including agents with a shell) wait for the same approval",
@@ -115,6 +171,23 @@
       "Doctor warns when Valet's certificate key is readable by other users or a dev server is reachable from the network",
       "Passwords for MySQL tools no longer go through the environment, and git commands from the app never run a project's hooks",
       "AI agents started with --allow-secrets can use the database tools again"
+    ],
+    "kinds": [
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "security",
+      "fixed"
     ]
   },
   {
@@ -128,6 +201,14 @@
       "The Dock icon shows a badge with how many things need you: folders waiting for access, failed Doctor checks, projects with a problem, agent requests, problems to look at, and an update waiting to be installed",
       "Overview → Needs attention lists every one of them and says what the Dock number is made of, and the menu bar menu starts with the same summary",
       "macOS asks once whether LocalSites may show the badge. If you said no earlier, turn on \"Badge application icon\" in System Settings → Notifications → LocalSites"
+    ],
+    "kinds": [
+      "new",
+      "improved",
+      "improved",
+      "new",
+      "improved",
+      "improved"
     ]
   },
   {
@@ -137,6 +218,10 @@
     "items": [
       "Notifications now come from LocalSites itself and show its icon, instead of looking like they came from Script Editor",
       "The first time you open this version, macOS asks whether LocalSites may send notifications. Click Allow to keep getting update and problem alerts"
+    ],
+    "kinds": [
+      "fixed",
+      "improved"
     ]
   },
   {
@@ -150,12 +235,20 @@
       "Read-only database errors read as two plain sentences",
       "The export option now says compressed files are usually 5 to 10 times smaller",
       "Skipped checks in localsites doctor are marked with a plain hyphen"
+    ],
+    "kinds": [
+      "improved",
+      "improved",
+      "improved",
+      "improved",
+      "improved",
+      "improved"
     ]
   },
   {
     "version": "1.0.0",
     "date": "2026-11-09",
-    "title": "LocalSites 1.0 for macOS",
+    "title": "The first release for macOS",
     "items": [
       "LocalSites is ready for everyday use on macOS: projects, PHP versions, HTTPS domains, databases, sharing, Git and AI agents in one app",
       "A new app icon, with the macOS 26 Liquid Glass look, plus a matching menu bar icon and sidebar logo",
@@ -164,6 +257,15 @@
       "Shared sites: the limit on wrong passwords can no longer be dodged by faking where a visitor comes from",
       "Database names can no longer start with a dash",
       "Buttons no longer show an icon's name as text when the icon is missing"
+    ],
+    "kinds": [
+      "new",
+      "new",
+      "improved",
+      "fixed",
+      "security",
+      "fixed",
+      "fixed"
     ]
   },
   {

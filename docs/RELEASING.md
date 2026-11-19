@@ -41,6 +41,28 @@ version, and permissions stay granted.
   user would be asked for folder permissions once more.
 - It doesn't replace an Apple Developer ID: a downloaded copy still needs Open Anyway the first time.
 
+## The release pattern
+
+Every release looks the same, so nothing stands out as different:
+
+- **Version**: semantic versioning. A new feature raises the middle number (1.5.0 → 1.6.0), a fix only the last
+  (1.2.3 → 1.2.4). Breaking changes would raise the first.
+- **Tag**: `vX.Y.Z`, annotated, its message the release title. Only made from a clean tree that is on `master`
+  (`go run ./tools/release tag` refuses anything else).
+- **Title**: `LocalSites X.Y.Z: <title>`, the title from `internal/version/changelog.json` (no colon inside it).
+- **Notes**: the changelog items grouped under New, Improved, Fixed and Security (each item's `kinds` entry
+  says which), then Install, Verify (`SHA256SUMS`) and a "Full changes" link to the release before.
+- **Files**: `LocalSites-X.Y.Z-macos-arm64.zip`, the `.deb` and `.rpm` packages (their names follow each
+  distro's convention), `update.json` and its signature, and `SHA256SUMS` for all of them.
+- **Changelog**: `CHANGELOG.md` is written from `changelog.json` (`go run ./tools/release changelog`); `make lint`
+  fails when it's out of date, and a test fails when an item has no kind.
+- **Copy**: every item is one plain sentence, passed through the humanizer before it's written.
+- The `linux-repo` release isn't a version: it holds the apt repository that installed packages point at, so its
+  tag must never change.
+
+`go run ./tools/release notes-sync` rewrites every published release's title and notes in this shape and adds a
+missing `SHA256SUMS`; use it after changing the template.
+
 ## Every release
 
 1. Bump `internal/version/version.go` and add an entry to `internal/version/changelog.json`.
