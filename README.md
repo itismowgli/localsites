@@ -137,6 +137,13 @@ down to 460 px wide, plus a **menu bar icon** with your running projects, shares
 
 <img src="docs/screenshots/projects-light.jpg" alt="LocalSites in the light theme" width="900">
 
+### Notifications
+
+A bell in the status bar keeps everything LocalSites told you for 30 days: services that stopped, finished
+installs, agent requests, shares about to end, updates and problems. Do Not Disturb and a switch per kind live
+there and in Settings → Notifications. On macOS, notifications have buttons: **Approve** or **Deny** an agent
+request, **Extend** or **Stop** a share that's about to end, **Open logs** after a crash.
+
 ### Doctor, logs and problems
 
 - **Doctor** checks runtimes, services, ports, configs, domains, certificate trust and every running project,
@@ -266,7 +273,7 @@ Then open **LocalSites** from your applications. It works the same way as on a M
   use ports 80 and 443. One password prompt.
 - Passwords go to your desktop keyring (GNOME Keyring or KWallet). Closing the window leaves your sites running.
 
-Known limits of the beta: no tray icon yet, and `.test` names need systemd-resolved (the default on Ubuntu and
+Known limits of the beta: the tray icon needs a desktop that shows tray icons (Ubuntu and KDE do; Fedora's GNOME needs the AppIndicator extension), and `.test` names need systemd-resolved (the default on Ubuntu and
 Fedora; Debian needs it switched on).
 
 <a id="build-from-source"></a>
@@ -369,7 +376,7 @@ Found a security problem? Please report it privately (see [SECURITY.md](SECURITY
 | PHP / Apache / MySQL runtimes | ✅ Homebrew | ✅ Homebrew | planned |
 | HTTPS domains | ✅ Valet or built-in | ✅ built-in (systemd-resolved) | planned |
 | Passwords | ✅ Keychain | ✅ desktop keyring | planned |
-| Tray icon | ✅ menu bar | planned | planned |
+| Tray icon | ✅ menu bar | ✅ beta (StatusNotifierItem) | planned |
 | Updates | ✅ in the app | ✅ signed apt/dnf repository, or in the app | planned |
 | Import from MAMP PRO / MAMP / XAMPP | ✅ | not needed (no MAMP on Linux) | planned |
 

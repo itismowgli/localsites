@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-11-19",
+    "title": "Notifications you can find again, and Linux that updates itself",
+    "items": [
+      "A bell in the status bar keeps every notification for 30 days: services that stopped, finished installs, agent requests, shares about to end, updates and problems. Click one to open what it's about",
+      "Do Not Disturb from the bell (1 hour, until tomorrow, or until you turn it off), and a switch per kind in Settings → Notifications. Agent requests always show, since an agent waits for your answer",
+      "macOS notifications have buttons: Approve or Deny an agent request, Extend or Stop a share that's about to end, Open logs after a crash",
+      "A share now warns you 5 minutes before it ends, and can be extended (up to 24 hours)",
+      "Linux: the .deb and .rpm add the signed LocalSites repository, so later versions arrive with your normal system updates, signatures checked by apt and dnf",
+      "Linux: LocalSites can also update itself from Settings → Updates, after one password prompt",
+      "Linux: a tray icon with the same menu as the Mac menu bar, on desktops that show tray icons",
+      "localsites notices lists notifications in the terminal; localsites notices quiet 60 turns on Do Not Disturb"
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-11-18",
     "title": "Linux beta, your editor, and .test without Valet",
