@@ -569,8 +569,9 @@ test('share: a live share tells visitors to leave the username empty', async ({ 
   await page.goto('/#projects/hello');
   const live = page.locator('#detail .share-live');
   await expect(live).toContainText('leave the username empty and type the password');
-  // after a restart the app no longer knows the password, so it only copies the address
-  await expect(live.locator('[data-copy="https://quick-cedar-0a82c761.tunnl.gg"]')).toBeVisible();
+  // the link and the password are copied separately; after a restart the app no longer knows the password
+  await expect(live.locator('[data-copy="https://quick-cedar-0a82c761.tunnl.gg"]')).toContainText('Copy link');
+  await expect(live.getByText('Copy password')).toHaveCount(0);
   await page.unroute('**/__call/status');
 });
 

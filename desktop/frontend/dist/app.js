@@ -1067,7 +1067,7 @@ function sharePane(s) {
     <div class="share-live"><div class="form-row" style="gap:6px;flex-wrap:nowrap">${UI.status('on', 'Live')}<a class="link ellipsis" data-openweb="${esc(live.url)}" title="${esc(live.url)}">${esc(live.url.replace(/^https?:\/\//, ''))}</a></div>
       <p class="note" style="margin:6px 0">Stops in ${minsLeft(live.expires)}${live.password ? ' · password protected' : ' · anyone with the address can open it'} · ${plural(live.requests || 0, 'visit')}${live.blocked ? ` · ${live.blocked} refused` : ''}</p>
       ${live.password ? `<p class="note" style="margin:0 0 8px">Visitors see a sign-in box: they leave the username empty and type the password${SHARE_PW[live.id] ? `: <code>${esc(SHARE_PW[live.id])}</code>` : '.'}</p>` : ''}
-      <div class="form-row">${live.password && SHARE_PW[live.id] ? UI.btn('Copy link and password', { ic: 'copy', attrs: `data-copy="${esc(`${live.url}\nPassword: ${SHARE_PW[live.id]}\n(leave the username empty)`)}"` }) : UI.btn('Copy address', { ic: 'copy', attrs: `data-copy="${esc(live.url)}"` })}${UI.btn('Open', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(live.url)}"` })}<span class="spacer"></span>${UI.btn('Stop sharing', { ic: 'stop', kind: 'danger', attrs: `data-sharestop="${esc(live.id)}"` })}</div></div>`;
+      <div class="form-row">${UI.btn('Copy link', { ic: 'copy', attrs: `data-copy="${esc(live.url)}"` })}${live.password && SHARE_PW[live.id] ? UI.btn('Copy password', { ic: 'key', attrs: `data-copy="${esc(SHARE_PW[live.id])}"` }) : ''}${UI.btn('Open', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(live.url)}"` })}<span class="spacer"></span>${UI.btn('Stop sharing', { ic: 'stop', kind: 'danger', attrs: `data-sharestop="${esc(live.id)}"` })}</div></div>`;
   const ready = provs.filter(p => p.installed);
   const what = `<p class="note" style="margin:0 0 10px">A public https link with a password, for a limited time. Only this project is reachable; <code>.env</code> and <code>.git</code> are never served.</p>`;
   const chosen = ready.find(p => p.id === SF.prov) || ready[0];
@@ -2493,8 +2493,8 @@ document.addEventListener('click', async (e) => {
     await act(loadStatus); render();
     if (r) {
       if (pw) SHARE_PW[r.id] = pw;
-      await act(() => bridge.copy(pw ? `${r.url}\nPassword: ${pw}\n(leave the username empty)` : r.url));
-      toast(`${s.name} is live at ${r.url}${pw ? '. Link and password copied' : ' (address copied)'}`); render(); // the form keeps this password, so sharing again doesn't switch to a new one
+      await act(() => bridge.copy(r.url)); // the link only: send the password separately
+      toast(`${s.name} is live at ${r.url} (link copied${pw ? '; copy the password with its own button' : ''})`); render(); // the form keeps this password, so sharing again doesn't switch to a new one
     }
     return;
   }
