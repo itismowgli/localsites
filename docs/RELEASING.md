@@ -26,6 +26,21 @@ docker build -t localsites-repo-tools tests/linux/repo
 docker run --rm localsites-repo-tools new-key.sh | go run ./tools/release package-key
 ```
 
+## Once: the macOS code-signing certificate
+
+macOS remembers folder permissions (Documents, Desktop, Downloads) by who signed an app. An app signed ad hoc
+has a new identity with every build, so each update asked for those permissions again. Every release is now
+signed with one self-signed certificate, **LocalSites Code Signing** (valid until 2036), kept in the login
+keychain. The app's identity becomes "com.wails.localsites signed by that certificate", the same for every
+version, and permissions stay granted.
+
+- `make app` signs with it when it's in the keychain and signs ad hoc otherwise; `make release` refuses to run
+  without it.
+- **Back it up**: Keychain Access → My Certificates → LocalSites Code Signing → Export as `.p12`, and keep the
+  file and its password in your password manager. A new certificate would be a new identity again: every
+  user would be asked for folder permissions once more.
+- It doesn't replace an Apple Developer ID: a downloaded copy still needs Open Anyway the first time.
+
 ## Every release
 
 1. Bump `internal/version/version.go` and add an entry to `internal/version/changelog.json`.

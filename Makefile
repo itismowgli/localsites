@@ -5,6 +5,11 @@ ARCH := $(shell go env GOARCH)
 APP := $(CURDIR)/desktop/build/bin/LocalSites.app
 XCODE_DEV ?= /Applications/Xcode.app/Contents/Developer
 
+# Every release is signed with the "LocalSites Code Signing" certificate from the keychain. macOS remembers
+# folder permissions (Documents, Desktop…) by the signer, so they stay granted across updates; an app signed
+# ad hoc is a new app to macOS with every build. Builds on machines without the certificate are signed ad hoc.
+MAC_SIGN := $(shell security find-identity 2>/dev/null | awk '/"LocalSites Code Signing"/ { print $$2; exit }')
+
 # Where problem reports go: the Sentry project pixel-perfection-ru/localsites. Reports are only sent
 # when the person agrees (Settings → Problems). Plain `go build`/`go run` builds leave it empty.
 # Set REPORT_DSN= to build without it.
@@ -27,14 +32,17 @@ app:
 			--platform macosx --minimum-deployment-target 11.0 --app-icon LocalSites \
 			--output-partial-info-plist $(CURDIR)/desktop/build/.icon-info.plist >/dev/null && \
 		rm -f $(APP)/Contents/Resources/LocalSites.icns $(CURDIR)/desktop/build/.icon-info.plist && \
-		codesign --force --deep --sign - $(APP) && echo "Added the macOS 26 glass icon"; \
+		echo "Added the macOS 26 glass icon"; \
 	else echo "Xcode not found: built with the classic icon only"; fi
+	codesign --force --deep --sign "$(or $(MAC_SIGN),-)" $(APP)
+	@if [ -z "$(MAC_SIGN)" ]; then echo "Signed ad hoc (no LocalSites Code Signing certificate in the keychain)"; fi
 	@# a broken Info.plist would make every in-app update fail its bundle check
 	plutil -lint -s desktop/build/bin/LocalSites.app/Contents/Info.plist
 
 # Update files for a GitHub release: the zipped app plus update.json and its signature (key in your keychain,
 # see tools/release). Upload everything in dist/release to the release named v$(VERSION).
 release:
+	@test -n "$(MAC_SIGN)" || { echo "The LocalSites Code Signing certificate isn't in the keychain (see docs/RELEASING.md)"; exit 1; }
 	go run ./tools/release tag            # pushes v$(VERSION); GitHub starts building the Linux programs
 	$(MAKE) app
 	@rm -rf dist/release && mkdir -p dist/release

@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.1",
+    "date": "2026-11-19",
+    "title": "Permissions that survive updates",
+    "items": [
+      "macOS no longer asks again for access to your folders after every update. LocalSites is now signed the same way in every version, so macOS recognises it as the same app. You'll be asked one last time after installing this update"
+    ]
+  },
+  {
     "version": "1.5.0",
     "date": "2026-11-19",
     "title": "Notifications you can find again, and Linux that updates itself",
