@@ -304,7 +304,7 @@ func publish(args []string) error {
 	}
 	// apt: the linux-repo release holds the current packages and the signed index
 	if _, err := output("gh", "release", "view", aptRelease, "-R", repoOwner); err != nil {
-		if err := run("", nil, "gh", "release", "create", aptRelease, "-R", repoOwner, "--prerelease", "--title", "Linux package repository",
+		if err := run("", nil, "gh", "release", "create", aptRelease, "-R", repoOwner, "--prerelease", "--title", "LocalSites apt repository: updates for the .deb packages",
 			"--notes", "The apt repository LocalSites' .deb packages add on install. Download LocalSites from the latest release instead."); err != nil {
 			return err
 		}
