@@ -2494,7 +2494,7 @@ document.addEventListener('click', async (e) => {
     if (r) {
       if (pw) SHARE_PW[r.id] = pw;
       await act(() => bridge.copy(pw ? `${r.url}\nPassword: ${pw}\n(leave the username empty)` : r.url));
-      toast(`${s.name} is live at ${r.url}${pw ? '. Link and password copied' : ' (address copied)'}`); SF.pw = ''; render();
+      toast(`${s.name} is live at ${r.url}${pw ? '. Link and password copied' : ' (address copied)'}`); render(); // the form keeps this password, so sharing again doesn't switch to a new one
     }
     return;
   }
