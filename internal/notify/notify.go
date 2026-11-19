@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -18,14 +19,31 @@ var AppFile string
 
 // AppExe returns the LocalSites app's executable from AppFile, when it still exists and is the real app.
 func AppExe() string {
-	if AppFile == "" {
-		return ""
+	if AppFile != "" {
+		if b, err := os.ReadFile(AppFile); err == nil {
+			if exe := realApp(strings.TrimSpace(string(b))); exe != "" {
+				return exe
+			}
+		}
 	}
-	b, err := os.ReadFile(AppFile)
-	if err != nil {
-		return ""
+	// the app hasn't started since the service did: use the installed one, so the notification still has
+	// LocalSites' icon instead of Script Editor's
+	for _, exe := range installedApps() {
+		if realApp(exe) != "" {
+			return exe
+		}
 	}
-	exe := strings.TrimSpace(string(b))
+	return ""
+}
+
+// installedApps: where an installed LocalSites app's executable may be (replaced in tests).
+var installedApps = func() []string {
+	home, _ := os.UserHomeDir()
+	return []string{"/Applications/LocalSites.app/Contents/MacOS/LocalSites", filepath.Join(home, "Applications", "LocalSites.app", "Contents", "MacOS", "LocalSites")}
+}
+
+// realApp returns exe when it is the LocalSites app's executable.
+func realApp(exe string) string {
 	if !strings.HasSuffix(exe, ".app/Contents/MacOS/LocalSites") {
 		return ""
 	}
@@ -45,7 +63,7 @@ func Send(title, text string) { SendNotice(title, text, "", "") }
 // SendNotice shows a notification. kind and ref (an approval or share id) let the macOS app add buttons
 // (Approve / Deny, Extend / Stop, Open logs). Replaceable: the app sends natively; tests stub it.
 var SendNotice = func(title, text, kind, ref string) {
-	if os.Getenv("LOCALSITES_HOME") != "" {
+	if os.Getenv("LOCALSITES_HOME") != "" || testing.Testing() { // never from test runs
 		return
 	}
 	if runtime.GOOS == "linux" { // freedesktop notifications (GNOME, KDE, …); arguments, never a shell

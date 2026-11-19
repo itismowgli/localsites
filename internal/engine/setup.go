@@ -459,17 +459,33 @@ func (e *Engine) runSetup(brew, prefix string, items []planItem) {
 	e.setup.running, e.setup.step = false, ""
 	var failed []string
 	for _, it := range items {
-		if r := e.setup.results[it.ID]; r != "ok" {
+		if r := e.setup.results[it.ID]; r != "ok" && it.Title != "" {
 			failed = append(failed, it.Title)
 		}
 	}
 	e.setup.mu.Unlock()
-	if len(failed) == 0 {
+	if len(failed) == 0 && !anyFailed(e, items) {
 		e.Notify(notices.Notice{Kind: notices.KindSetup, Title: "Everything is installed and repaired", Text: "Your projects were restarted.", Open: "view:overview"})
 	} else {
-		e.Notify(notices.Notice{Kind: notices.KindSetup, Title: "Setup finished, but some steps didn't work", Text: strings.Join(failed, ", ") + ". Overview has the details.", Open: "view:overview"})
+		text := "Overview has the details."
+		if len(failed) > 0 {
+			text = strings.Join(failed, ", ") + " didn't finish. " + text
+		}
+		e.Notify(notices.Notice{Kind: notices.KindSetup, Title: "Setup finished, but some steps didn't work", Text: text, Open: "view:overview"})
 	}
 	e.Changes.Bump()
+}
+
+// anyFailed reports whether any setup item failed, named or not.
+func anyFailed(e *Engine, items []planItem) bool {
+	e.setup.mu.Lock()
+	defer e.setup.mu.Unlock()
+	for _, it := range items {
+		if e.setup.results[it.ID] != "ok" {
+			return true
+		}
+	}
+	return false
 }
 
 // InstallHomebrew downloads Homebrew's official installer and opens it. macOS checks the package is

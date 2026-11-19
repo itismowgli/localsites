@@ -8,6 +8,7 @@ import (
 
 // The service only hands notifications to the real LocalSites app recorded in AppFile.
 func TestAppExe(t *testing.T) {
+	installedApps = func() []string { return nil }
 	dir := t.TempDir()
 	AppFile = filepath.Join(dir, "app-path")
 	defer func() { AppFile = "" }()
