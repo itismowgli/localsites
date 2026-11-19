@@ -314,7 +314,7 @@ test('settings: add and remove a projects folder, errors next to the row', async
 test('overview has sections and a status side panel', async ({ page }) => {
   await call(page, 'sites.update', { folder: 'hello', enabled: true });
   await page.goto('/#overview');
-  await expect(page.locator('.ov-head h1')).toHaveText(/Good (morning|afternoon|evening)/);
+  await expect(page.locator('.ov-head h1')).toHaveText(/^\d+ of \d+ projects? running$/); // a status, not a greeting
   await expect(page.locator('.ov-sec', { hasText: 'Running' })).toContainText('hello');
   for (const h of ['Services', 'Health', 'Projects', 'Folders']) await expect(page.locator('.ov-side')).toContainText(h);
 });
@@ -550,7 +550,7 @@ test('share: project panel offers sharing right away (tunnl.gg needs only ssh)',
     await expect(page.locator('#detail [data-sharestart="hello"]')).toBeVisible();
     await page.locator('#detail [data-cmd="sharegenpw"]').click();
     await expect(page.locator('#sharePw')).toHaveValue(/^[a-z]+-[a-z]+-[a-z]+-[a-z]+-\d{2}$/);
-    await expect(page.locator('#shareProv option[value="tunnl"]')).toHaveCount(1);
+    await expect(page.locator('#detail [data-shareprov="tunnl"]')).toHaveCount(1);
     const missing = st.share_providers.filter(p => !p.installed && p.install_command);
     for (const p of missing) await expect(page.locator(`#detail [data-shareinstall="${p.id}"]`)).toBeVisible();
   } else {

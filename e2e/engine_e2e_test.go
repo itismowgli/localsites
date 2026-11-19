@@ -1220,7 +1220,7 @@ func TestShareRealSite(t *testing.T) {
 	os.Chmod(bin, 0o755)
 	old := share.Providers
 	defer func() { share.Providers = old }()
-	p := share.Providers[0]
+	p, _ := share.FindProvider("cloudflared")
 	p.Bin = bin
 	share.Providers = []share.Provider{p}
 

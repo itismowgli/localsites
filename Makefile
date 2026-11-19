@@ -108,4 +108,5 @@ lint:
 	go vet ./...
 	node --check desktop/frontend/dist/app.js
 	node tools/support.mjs --check
+	node tools/build-tokens.mjs --check   # tokens.css current; no raw colors in the app or the site
 	@! grep -n '@container\|cqw' desktop/frontend/dist/styles.css || (echo 'No CSS container queries: they make window resizing lag in WebKit. Use the size classes (docs/DESIGN.md).'; exit 1)

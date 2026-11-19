@@ -1,11 +1,16 @@
 [
   {
-    "version": "1.5.1",
+    "version": "1.6.0",
     "date": "2026-11-19",
-    "title": "Permissions that survive updates",
+    "title": "Safer agents, sharing with nothing to install, and a new look",
     "items": [
-      "macOS no longer asks again for access to your folders after every update. LocalSites is now signed the same way in every version, so macOS recognises it as the same app. You'll be asked one last time after installing this update",
-      "Notifications from LocalSites always show its icon, also when the app window hasn't been opened since the Mac started"
+      "Share a project through tunnl.gg, which uses the ssh already on your computer, so there's nothing to install. Cloudflare and bore are still one click away",
+      "More agent actions now wait for your Approve: copying a database from another tool, installing dependencies or Homebrew software, taking over a Valet site, editing other agent apps' settings and switching Adminer on",
+      "On a Mac, LocalSites now checks who is asking: only the signed LocalSites app can approve requests, so a script can't pretend to be it",
+      "Approve the same everyday action for 10 minutes. Request cards also show which agent is asking",
+      "A new look built on shared design tokens, with figures in empty states and a pixel loader",
+      "macOS no longer asks for folder access again after every update. You'll see the prompt one last time after this update",
+      "Notifications always show the LocalSites icon, even before you open the app"
     ]
   },
   {

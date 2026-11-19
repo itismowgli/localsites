@@ -8,7 +8,7 @@ const lucide = path.resolve('node_modules', 'lucide-static', 'icons');
 
 // UI name -> Lucide icon name
 const ICONS = {
-  overview: 'zap', projects: 'box', db: 'database', agent: 'navigation-2', services: 'server', logs: 'scroll-text',
+  overview: 'zap', projects: 'box', db: 'database', agent: 'bot', services: 'server', logs: 'scroll-text',
   doctor: 'activity', import: 'download', settings: 'settings', search: 'search', compose: 'square-pen',
   sidebar: 'panel-left', clock: 'history', back: 'chevron-left', fwd: 'chevron-right', plus: 'plus', x: 'x',
   caret: 'chevron-down', globe: 'globe', folder: 'folder', folderOpen: 'folder-open', terminal: 'terminal',

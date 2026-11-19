@@ -69,10 +69,26 @@ function hostIcon(host = '') {
   return brand('git', '#F05033');
 }
 // Empty state: icon tile, title, one sentence, actions, optional keyboard hint
-function emptyState({ ic = 'inbox', title, text = '', actions = '', hint = '' }) {
-  return `<div class="empty-state"><div class="es-icon">${icon[ic] || ic}</div><h3>${esc(title)}</h3>${text ? `<p>${text}</p>` : ''}
+// fig: a Hairline figure (vendor/hairline.js) shown instead of the icon, for the empty states it explains
+function emptyState({ ic = 'inbox', fig = '', title, text = '', actions = '', hint = '' }) {
+  return `<div class="empty-state">${fig ? `<div class="es-fig" data-fig="${fig}" aria-hidden="true"></div>` : `<div class="es-icon">${icon[ic] || ic}</div>`}<h3>${esc(title)}</h3>${text ? `<p>${text}</p>` : ''}
     ${actions ? `<div class="es-actions">${actions}</div>` : ''}${hint ? `<div class="es-hint">${hint}</div>` : ''}</div>`;
 }
+
+/* --------------------------------------------------- Hairline figures */
+// Line figures that answer the pointer (vendor/hairline.js, MIT). Any element with data-fig is mounted when it
+// appears and destroyed when it leaves the page; the module is only loaded the first time one is needed.
+const figures = new Map(); // element -> figure
+let hairline = null;
+function mountFigures() {
+  for (const [el, f] of figures) if (!el.isConnected) { f.destroy(); figures.delete(el); }
+  const fresh = [...document.querySelectorAll('[data-fig]')].filter(el => !figures.has(el));
+  if (!fresh.length) return;
+  (hairline ||= import('./vendor/hairline.js')).then(HL => {
+    for (const el of fresh) if (el.isConnected && !figures.has(el) && HL[el.dataset.fig]) figures.set(el, HL[el.dataset.fig](el, { intensity: 0.5 }));
+  }).catch(() => {});
+}
+new MutationObserver(() => mountFigures()).observe(document.documentElement, { childList: true, subtree: true });
 
 /* --------------------------------------------------- design system (docs/DESIGN.md) */
 // Shared building blocks. Screens compose these instead of writing one-off markup, so every service looks the same.
@@ -447,7 +463,7 @@ function renderStatus() {
   const dot = (on, label) => `<span class="item" data-view="services"><span class="dot ${on ? 'on' : 'off'}"></span>${esc(label)}</span>`;
   const php = st ? st.php.filter(p => p.running).map(p => p.version).join(', ') : '';
   const left = st ? dot(st.front_door_running, 'Domains') + dot(st.apache.running, 'Apache') + dot(st.mysql.running, 'MySQL') + dot(!!php, 'PHP ' + php)
-    : '<span class="item"><span class="spinner"></span>Connecting…</span>';
+    : '<span class="item"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Connecting…</span>';
   const agentCalls = S.activity.filter(a => a.client === 'mcp').length;
   const shares = st?.shares || [];
   const sharing = shares.length ? `<button class="item sharing" data-proj="${esc(shares[0].folder)}" title="${esc(shares.map(x => `${x.folder}: ${x.url}`).join('\n'))}"><span class="dot on"></span>Sharing ${shares.length > 1 ? shares.length + ' sites' : esc(shares[0].folder)}</button>` : '';
@@ -539,7 +555,7 @@ function activityRows(items, empty) {
 function setupCard() {
   const su = S.setup; if (!su) return '';
   const res = su.results || {}, failed = Object.entries(res).filter(([k, v]) => v !== 'ok' && v !== 'opened');
-  if (su.running) return `<section class="ov-sec setup"><div class="setup-h"><span class="spinner"></span><div><h2>Getting LocalSites ready</h2>
+  if (su.running) return `<section class="ov-sec setup"><div class="setup-h"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><div><h2>Getting LocalSites ready</h2>
     <p class="note">${esc(su.step || 'Working…')}</p></div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
     <p class="note">This can take a few minutes. You can keep using LocalSites; projects restart by themselves when it’s done.</p></section>`;
   if (!su.homebrew) return `<section class="ov-sec setup"><div class="setup-h"><span class="st-ic">${icon.download2}</span><div><h2>One step before your projects run</h2>
@@ -555,7 +571,7 @@ function setupCard() {
   const title = need ? `${need === 1 ? 'One thing needs' : `${need} things need`} fixing before every project can run` : 'LocalSites can fix these for you';
   return `<section class="ov-sec setup"><div class="setup-h"><span class="${need ? 'bad' : 'note'}">${icon.alertCircle}</span><div><h2>${esc(title)}</h2>
     <p class="note">${su.items.every(i => i.kind === 'system') ? 'One click sets this up' : 'One click installs or repairs everything below with Homebrew'}${pw ? (isMac ? '. macOS asks for your Mac password once' : '. It asks for your password once') : ''}.</p></div></div>
-    ${su.items.map(i => `<div class="ov-row"><span class="chip">${{ repair: 'Repair', system: 'Set up' }[i.kind] || 'Install'}</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
+    ${su.items.map(i => `<div class="ov-row su-row"><span class="chip">${{ repair: 'Repair', system: 'Set up' }[i.kind] || 'Install'}</span><span class="su-t"><span class="ov-title">${esc(i.title)}</span><span class="note">${esc(i.why)}</span></span>
       ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span>` : ''}</div>`).join('')}
     <details class="setup-cmds"><summary class="note">Commands it runs</summary><pre class="mini">${esc(su.items.flatMap(i => i.steps).join('\n'))}</pre></details>
     <div class="form-row">${UI.btn(need ? 'Fix everything' : 'Fix these', { ic: 'wrench', kind: 'primary', attrs: 'data-cmd="setuprun"' })}${failed.length ? UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' }) : ''}</div></section>`;
@@ -600,12 +616,12 @@ function viewOverview() {
     ...S.sites.filter(s => s.enabled && s.problems?.length).map(s => ({ ic: 'alertCircle', title: s.name, text: s.problems[0], action: `<button class="btn sm" data-proj="${esc(s.folder)}">Open</button>` })),
     ...needsYou(),
   ];
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const summary = `${running.length} running${valetCount ? ` · ${valetCount} on Valet` : ''} · ${S.sites.length} projects in ${(st?.roots || []).length || 1} folder${(st?.roots || []).length === 1 ? '' : 's'}`;
+  // the title says where things stand, not hello
+  const greet = !S.sites.length ? 'No projects yet' : running.length ? `${running.length} of ${S.sites.length} ${S.sites.length === 1 ? 'project' : 'projects'} running` : 'Nothing running';
+  const summary = `${valetCount ? `${valetCount} on Valet · ` : ''}${S.sites.length} projects in ${(st?.roots || []).length || 1} folder${(st?.roots || []).length === 1 ? '' : 's'}`;
   const runRows = running.map(s => `<div class="ov-row link" data-proj="${esc(s.folder)}"><span class="tbadge">${typeOf(s).icon()}</span><span class="ov-title">${esc(s.name)}</span>
       ${s.group ? `<span class="note">${esc(s.group)}</span>` : ''}<span class="spacer"></span>
-      ${s.git?.branch ? `<span class="chip mono">${icon.branch}${esc(s.git.branch)}</span>` : ''}<span class="chip mono">${s.runtime === 'php' ? 'PHP ' + esc(s.php) : esc(typeOf(s).label)}</span>
+      ${s.git?.branch ? branchChip(s.git.branch) : ''}<span class="chip mono">${s.runtime === 'php' ? 'PHP ' + esc(s.php) : esc(typeOf(s).label)}</span>
       <a class="note" data-openurl="${esc(s.folder)}">${esc(s.domain)} ↗</a></div>`).join('');
   const byType = {};
   for (const s of S.sites) byType[s.type] = (byType[s.type] || 0) + 1;
@@ -615,7 +631,7 @@ function viewOverview() {
       ...st.php.filter(p => p.running).map(p => ['PHP ' + p.version, true, `${p.sites} project${p.sites === 1 ? '' : 's'}`])].map(([n, ok, x]) =>
       `<div class="ov-prop" data-view="services"><span class="dot ${ok ? 'on' : 'off'}"></span><span>${esc(n)}</span><span class="spacer"></span><span class="note">${esc(x || (ok ? 'Running' : 'Stopped'))}</span></div>`).join('') : '<span class="skeleton" style="width:60%"></span>'}
     <div class="ov-prop-h">Health</div>
-    <div class="ov-prop" data-view="doctor">${d ? `<span class="${fails.length ? 'bad' : 'ok'}">${fails.length ? icon.alertCircle : icon.status}</span><span>${fails.length ? `${fails.length} problem${fails.length > 1 ? 's' : ''}` : 'All good'}</span><span class="spacer"></span><span class="note">${d.length} checks</span>` : '<span class="spinner"></span><span class="note">Checking…</span>'}</div>
+    <div class="ov-prop" data-view="doctor">${d ? `<span class="${fails.length ? 'bad' : 'ok'}">${fails.length ? icon.alertCircle : icon.status}</span><span>${fails.length ? `${fails.length} problem${fails.length > 1 ? 's' : ''}` : 'All good'}</span><span class="spacer"></span><span class="note">${d.length} checks</span>` : '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="note">Checking…</span>'}</div>
     <div class="ov-prop-h">Projects</div>
     ${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<div class="ov-prop" data-ptabgo="${k}"><span class="tbadge">${(TYPES[k] || TYPES.other).icon()}</span><span>${esc((TYPES[k] || TYPES.other).label)}</span><span class="spacer"></span><span class="note">${n}</span></div>`).join('')}
     <div class="ov-prop-h">Folders<span class="spacer"></span><button class="icon-btn" data-cmd="addfolder" title="Add a folder">${icon.plus}</button></div>
@@ -734,7 +750,7 @@ function displayMenuHTML() {
     <div class="dm-row"><span>${icon.sort}Ordering</span>${sel('orderBy', S.order, [['status', 'Running first'], ['name', 'Name'], ['type', 'Type']])}</div>
     <div class="dm-h">Display properties</div>
     <div class="dm-props">${[['type', 'Type icon'], ['domain', 'Address'], ['branch', 'Branch'], ['account', 'Git account'], ['version', 'Version']].map(([k, l]) =>
-      `<button data-dprop="${k}" class="pp ${S.props.has(k) ? 'on' : ''}" aria-pressed="${S.props.has(k)}">${l}</button>`).join('')}</div></div>`;
+      `<button data-dprop="${k}" class="pp ${S.props.has(k) ? 'on' : ''}" aria-pressed="${S.props.has(k)}">${S.props.has(k) ? icon.check : ''}${l}</button>`).join('')}</div></div>`;
 }
 function startCards(title, cards, dismiss = '') {
   if (dismiss && store.get('hide.' + dismiss, false)) return '';
@@ -750,14 +766,14 @@ function viewProjects() {
     <span class="spacer"></span>
     <button class="btn ghost sm ${nf ? 'active' : ''}" data-cmd="filtermenu" title="Filter (F)">${icon.listFilter}<span class="lbl">Filter</span>${nf ? `<span class="badge">${nf}</span>` : ''}</button>
     <button class="btn ghost sm" data-cmd="displaymenu" title="Display options">${icon.sliders}<span class="lbl">Display</span></button></div>${filterChips()}`;
-  if (!S.sites.length) return bar + emptyState({ ic: 'projects', title: 'No projects yet', text: 'Add a folder that holds your projects, or create a new one. LocalSites detects PHP, Laravel, WordPress, Next.js and Node projects.',
+  if (!S.sites.length) return bar + emptyState({ fig: 'rail', ic: 'projects', title: 'No projects yet', text: 'Add a folder that holds your projects, or create a new one. LocalSites detects PHP, Laravel, WordPress, Next.js and Node projects.',
     actions: `<button class="btn primary" data-cmd="newproject">${icon.plus}New project</button><button class="btn" data-cmd="addfolder">${icon.folderPlus}Add a folder</button>` })
     + startCards('Get started', [
       { ic: 'folderPlus', title: 'Add a projects folder', text: 'Every project inside shows up here.', attrs: 'data-cmd="addfolder"' },
       { ic: 'import', title: 'Move from MAMP PRO', text: 'Bring over PHP versions and databases.', attrs: 'data-view="import"' },
       { ic: 'compose', title: 'Start a new project', text: 'An empty folder with its own .test address.', attrs: 'data-cmd="newproject"' }]);
   const groups = groupedSites();
-  if (!groups.size) return bar + emptyState({ ic: 'search2', title: 'No matching projects', text: S.filter ? `Nothing matches “${esc(S.filter)}” with these filters.` : 'No projects match these filters.',
+  if (!groups.size) return bar + emptyState({ fig: 'loupe', ic: 'search2', title: 'No matching projects', text: S.filter ? `Nothing matches “${esc(S.filter)}” with these filters.` : 'No projects match these filters.',
     actions: `<button class="btn" data-cmd="clearfilter">Clear filters</button>` });
   let h = bar + (S.status?.waiting_for_access || []).map(p => `<div class="callout warn" style="margin:12px 20px 0">${icon.lock}<div><b>macOS hasn't let LocalSites read ${esc(p)} yet.</b> Projects there appear as soon as you click <b>Allow</b> in the macOS prompt (or turn LocalSites on in System Settings → Privacy &amp; Security → Files and Folders). Projects already running keep running.</div></div>`).join('');
   for (const [k, list] of groups) {
@@ -767,13 +783,19 @@ function viewProjects() {
   }
   return h;
 }
+// A branch as a quiet chip: the usual base branches (main, master…) stay muted so feature branches stand out.
+function branchChip(name, attrs = '') {
+  const base = /^(main|master|trunk|develop|dev)$/.test(name);
+  const tag = attrs ? 'button' : 'span';
+  return `<${tag} class="chip mono br ${base ? 'base' : ''}" title="Git branch ${esc(name)}${attrs ? ' · open Git' : ''}" ${attrs}>${icon.branch}<span class="bn">${esc(name)}</span></${tag}>`;
+}
 function row(s) {
   const err = s.problems?.length, valet = s.served_by === 'valet', t = typeOf(s), P = S.props;
   const ver = s.runtime === 'php' ? `PHP ${s.php}` : s.framework?.version ? `${t.label} ${s.framework.version.split('.').slice(0, 2).join('.')}` : '';
   const chips = [];
   if (err) chips.push(`<span class="chip warn" title="${esc(s.problems.join('\n'))}">${icon.alertCircle}<span class="lbl">Needs attention</span></span>`);
   if (valet) chips.push(`<span class="chip valet" title="Served by Laravel Valet">Valet</span>`);
-  if (P.has('branch') && s.git?.branch) chips.push(`<span class="chip mono br" title="Git branch">${icon.branch}${esc(s.git.branch)}</span>`);
+  if (P.has('branch') && s.git?.branch) chips.push(branchChip(s.git.branch));
   if (P.has('account') && s.git?.account && S.groupBy !== 'account') chips.push(`<span class="chip acct" title="${esc(s.git.remote || '')}">${hostIcon(s.git.host)}${esc(s.git.account)}</span>`);
   if (P.has('version') && ver) chips.push(`<span class="chip mono ver">${esc(ver)}</span>`);
   const live = s.enabled || valet;
@@ -868,7 +890,7 @@ function detailsPane(s) {
   const prop = (html) => narrow ? '' : html;
   return `${narrow ? chips : ''}
       ${s.problems?.length ? `<div class="callout warn">${icon.alertCircle}<div>${s.problems.map(esc).join('<br>')}
-        ${needsDeps ? `<div style="margin-top:8px"><button class="btn sm" data-install="${esc(s.folder)}" ${s.installing ? 'disabled' : ''}>${s.installing ? '<span class="spinner"></span>Installing…' : `${icon.download}Install dependencies`}</button></div>` : ''}</div></div>` : ''}
+        ${needsDeps ? `<div style="margin-top:8px"><button class="btn sm" data-install="${esc(s.folder)}" ${s.installing ? 'disabled' : ''}>${s.installing ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Installing…' : `${icon.download}Install dependencies`}</button></div>` : ''}</div></div>` : ''}
       ${valet ? `<div class="callout">${icon.info}<div>Served by <b>Laravel Valet</b> at <a data-openurl="${esc(s.folder)}">${esc(s.domain)}</a>${s.php ? ` with PHP ${esc(s.php)}` : ''}. Valet keeps managing it; LocalSites shows it so all your projects are in one place.
         <div style="margin-top:8px"><button class="btn sm" data-takeover="${esc(s.folder)}">${icon.login}Serve with LocalSites instead…</button></div></div></div>` : ''}
       ${prop(`<div class="prop chipped"><label>Status</label><div class="form-row">${valet ? '<span class="note">Running (Valet)</span>' : s.runtime === 'none' ? '<span class="note">Not a website. Set a type to serve it.</span>'
@@ -902,7 +924,7 @@ function detailsPane(s) {
         <button class="btn" data-openwith="terminal" data-folder="${esc(s.folder)}">${icon.terminal}${esc(prefLabel('terminal'))}</button>
         <button class="btn" data-openwith="editor" data-folder="${esc(s.folder)}">${icon.code}${esc(prefLabel('editor'))}</button></div>
       ${s.git ? `<div class="st">Git<span class="spacer"></span><button class="btn ghost sm" data-dpane="git">${icon.branch}Open git</button></div>
-        <div class="kv"><span>Branch</span><code>${esc(s.git.branch || 'none')}</code></div>
+        <div class="kv"><span>Branch</span><span class="form-row" style="gap:8px">${s.git.branch ? branchChip(s.git.branch, `data-dpane="git"`) : '<span class="note">No branch yet</span>'}${S.git[s.folder]?.st?.files?.length ? `<span class="note">${plural(S.git[s.folder].st.files.length, 'change')}</span>` : ''}</span></div>
         ${s.git.account ? `<div class="kv"><span>Account</span><span class="form-row" style="gap:6px">${hostIcon(s.git.host)}${esc(s.git.account)}${s.git.host && !/\./.test(s.git.host) ? ` <span class="note">(SSH alias ${esc(s.git.host)})</span>` : ''}</span></div>` : ''}
         ${s.git.repo ? `<div class="kv"><span>Repository</span><span>${esc(s.git.repo)}</span></div>` : ''}` : ''}
       ${!valet && s.runtime !== 'none' ? `<div class="st">Connection<span class="spacer"></span><button class="btn ghost sm" data-check="${esc(s.folder)}" ${s.enabled ? '' : 'disabled'}>${icon.doctor}Check</button></div>
@@ -1043,28 +1065,28 @@ function sharePane(s) {
       <p class="note" style="margin:6px 0">Stops in ${minsLeft(live.expires)}${live.password ? ' · password protected' : ' · anyone with the address can open it'} · ${plural(live.requests || 0, 'visit')}${live.blocked ? ` · ${live.blocked} refused` : ''}</p>
       <div class="form-row">${UI.btn('Copy address', { ic: 'copy', attrs: `data-copy="${esc(live.url)}"` })}${UI.btn('Open', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(live.url)}"` })}<span class="spacer"></span>${UI.btn('Stop sharing', { ic: 'stop', kind: 'danger', attrs: `data-sharestop="${esc(live.id)}"` })}</div></div>`;
   const ready = provs.filter(p => p.installed);
-  if (!ready.length) return `<div class="st">Share on the internet</div>
-    <p class="note" style="margin:0 0 8px">Show this site to someone outside your network for a while. Needs one free, open-source tunnel client:</p>
-    <div class="form-row">${provs.map(p => p.installing ? `<span class="note"><span class="spinner"></span> Installing ${esc(p.name)}…</span>` : UI.btn(`Install ${p.name}`, { ic: 'download2', attrs: `data-shareinstall="${p.id}"`, title: p.install_command })).join('')}</div>`;
-  if (!s.enabled && s.served_by !== 'valet') return `<div class="st">Share on the internet</div><p class="note" style="margin:0">Switch the project on to share it.</p>`;
+  const what = `<p class="note" style="margin:0 0 10px">A public https link with a password, for a limited time. Only this project is reachable; <code>.env</code> and <code>.git</code> are never served.</p>`;
+  const chosen = ready.find(p => p.id === SF.prov) || ready[0];
+  // the tunnels, laid out like the Open buttons: pick one, or install one that isn't here yet
+  const short = (p) => ({ cloudflared: 'Cloudflare' })[p.id] || p.name;
+  const tag = (p) => p.installing ? 'installing…' : !p.installed ? 'install' : p.id === 'tunnl' ? 'nothing to install' : !p.https ? 'http only' : 'installed';
+  const tunnels = `<div class="grid2 tunnels" role="radiogroup" aria-label="Tunnel">${provs.map(p => p.installed
+    ? `<button class="btn tunnel ${chosen?.id === p.id ? 'on' : ''}" role="radio" aria-checked="${chosen?.id === p.id}" data-shareprov="${p.id}" title="${esc(p.description)}">${icon.globe}<span class="tw"><span class="tn">${esc(short(p))}</span><span class="tt">${tag(p)}</span></span></button>`
+    : `<button class="btn tunnel" data-shareinstall="${p.id}" title="${esc(p.install_command || p.description)}" ${p.installing ? 'disabled' : ''}>${p.installing ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : icon.download2}<span class="tw"><span class="tn">${esc(short(p))}</span><span class="tt">${tag(p)}</span></span></button>`).join('')}</div>`;
+  if (!ready.length) return `<div class="st">Share on the internet</div>${what}${tunnels}
+    <p class="note" style="margin:8px 0 0">tunnl.gg needs the <code>ssh</code> that comes with your computer, and it wasn't found here. Install one of the others to share.</p>`;
+  if (!s.enabled && s.served_by !== 'valet') return `<div class="st">Share on the internet</div>${what}<p class="note" style="margin:0">Switch the project on to share it.</p>`;
   if (!SF.pw && !SF.open) SF.pw = newSharePassword(); // a password by default
-  return `<div class="st">Share on the internet</div>
-    <div class="share-form">
-      <select class="input sm" id="shareProv" aria-label="Tunnel">${ready.map(p => `<option value="${p.id}" ${SF.prov === p.id ? 'selected' : ''}>${esc(p.name)}${p.https ? '' : ' (http only)'}</option>`).join('')}</select>
-      <select class="input sm" id="shareMins" aria-label="For how long">${SHARE_MINUTES.map(([m, l]) => `<option value="${m}" ${m === SF.mins ? 'selected' : ''}>${l}</option>`).join('')}</select>
+  return `<div class="st">Share on the internet</div>${what}${tunnels}
+    <div class="share-form" style="margin-top:6px">
+      <select class="input sm" id="shareMins" aria-label="For how long" style="grid-column:1/-1">${SHARE_MINUTES.map(([m, l]) => `<option value="${m}" ${m === SF.mins ? 'selected' : ''}>For ${l}</option>`).join('')}</select>
       <label class="form-row note" style="gap:6px;grid-column:1/-1"><input type="checkbox" id="shareOpen" ${SF.open ? 'checked' : ''}> No password (anyone with the address can open it)</label>
       <div class="form-row" style="gap:6px;flex-wrap:nowrap;${SF.open ? 'display:none' : ''}"><input class="input sm" id="sharePw" value="${esc(SF.pw)}" placeholder="Password" autocomplete="off" spellcheck="false" style="flex:1;min-width:0" aria-label="Password">
         ${UI.iconBtn('key', 'Make up a password', 'data-cmd="sharegenpw"')}</div>
-      ${UI.btn('Share', { ic: 'globe', kind: 'primary', attrs: `data-sharestart="${esc(s.folder)}"` })}
-    </div>${shareMore(provs)}`;
+      ${UI.btn('Share', { ic: 'globe', kind: 'primary', attrs: `data-sharestart="${esc(s.folder)}" data-shareprov-use="${chosen.id}"` })}
+    </div><p class="note" style="margin:8px 0 0">${esc(chosen.description || '')}</p>`;
 }
 
-// Tunnels that can still be installed, offered quietly under the form.
-function shareMore(provs) {
-  const rest = provs.filter(p => !p.installed && p.install_command);
-  if (!rest.length) return '';
-  return `<p class="note" style="margin:8px 0 0">Other tunnels: ${rest.map(p => p.installing ? `<span><span class="spinner"></span> installing ${esc(p.name)}…</span>` : `<a class="link" data-shareinstall="${p.id}" title="${esc(p.install_command)}">install ${esc(p.name)}</a>`).join(' · ')}</p>`;
-}
 
 /* --- git panel --- */
 async function gitLoad(folder) {
@@ -1115,12 +1137,12 @@ function gitPane(s) {
       <div class="gsync">${st.upstream ? `<span class="chip ${st.ahead ? 'accent' : ''}" title="Commits to push">${icon.up}${st.ahead}</span><span class="chip ${st.behind ? 'accent' : ''}" title="Commits to pull">${icon.down}${st.behind}</span>` : ''}
         ${dirty ? `<span class="chip warn">${plural(files.length, 'change')}</span>` : '<span class="chip ok">' + icon.check + 'Clean</span>'}${st.stashes ? `<span class="chip">${plural(st.stashes, 'stash')}</span>` : ''}</div>
       <div class="gacts">
-        <button class="btn sm" data-gitop="fetch" data-gfolder="${esc(s.folder)}" ${op ? 'disabled' : ''} title="Download new commits from the remote. Your files are not changed.">${op === 'git.fetch' ? '<span class="spinner"></span>' : icon.fetch}Fetch</button>
-        <button class="btn sm" data-gitop="pull" data-gfolder="${esc(s.folder)}" ${op || pullWhy ? 'disabled' : ''} title="${esc(pullWhy || 'Fast-forward to ' + st.upstream + ' (never merges or rewrites)')}">${op === 'git.pull' ? '<span class="spinner"></span>' : icon.pull}Pull${st.behind ? ` ${st.behind}` : ''}</button>
+        <button class="btn sm" data-gitop="fetch" data-gfolder="${esc(s.folder)}" ${op ? 'disabled' : ''} title="Download new commits from the remote. Your files are not changed.">${op === 'git.fetch' ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : icon.fetch}Fetch</button>
+        <button class="btn sm" data-gitop="pull" data-gfolder="${esc(s.folder)}" ${op || pullWhy ? 'disabled' : ''} title="${esc(pullWhy || 'Fast-forward to ' + st.upstream + ' (never merges or rewrites)')}">${op === 'git.pull' ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : icon.pull}Pull${st.behind ? ` ${st.behind}` : ''}</button>
         <button class="btn sm" data-gitop="branch" data-gfolder="${esc(s.folder)}" ${op ? 'disabled' : ''}>${icon.plus}Branch</button>
         <span class="spacer"></span>
         ${st.web_url ? `<button class="icon-btn" data-openweb="${esc(st.web_url)}" title="Open repository on the web">${hostIcon(st.web_url)}</button>` : ''}
-        <button class="icon-btn" data-gitreload="${esc(s.folder)}" title="Refresh">${g.busy ? '<span class="spinner"></span>' : icon.refresh}</button></div>
+        <button class="icon-btn" data-gitreload="${esc(s.folder)}" title="Refresh">${g.busy ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : icon.refresh}</button></div>
       ${st.last_fetch ? `<p class="note" style="margin:6px 0 0">Last fetched ${esc(ago(st.last_fetch))}</p>` : ''}${hostingRow(g.host)}</div>`;
   const shown = g.allFiles ? files : files.slice(0, 12);
   const changes = `<div class="st">Changes<span class="n">${files.length || ''}</span></div>${files.length ? `<div class="gfiles">${shown.map(f => { const [ch, cls] = GS[f.status] || ['?', 'unt'];
@@ -1133,7 +1155,7 @@ function gitPane(s) {
   return head + changes + branches + `<div class="st">History</div><div class="ghist">${hist || '<p class="note">No commits yet</p>'}</div>`;
 }
 // Commit graph: lanes are assigned from parent hashes (newest first), each row draws its own slice as SVG
-const LANE_COLORS = ['#7b80ef', '#4cb782', '#f2994a', '#e2b93b', '#eb5757', '#4ea7fc', '#b06ef5', '#26b5ce'];
+const LANE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `var(--lane-${n})`); // tokens: told apart, toned for each theme
 function commitGraph(log) {
   if (!log.length) return '';
   const H = 44, GAP = 12, X0 = 8, MAXL = 8;
@@ -1314,9 +1336,9 @@ async function dbAction(action, kind, name) {
   }
 }
 function viewDatabases() {
-  if (S.dbs === null) return emptyState({ ic: '<span class="spinner"></span>', title: 'Starting LocalSites MySQL…', text: 'This takes a few seconds. The very first start sets up MySQL and can take up to a minute.' });
+  if (S.dbs === null) return emptyState({ ic: '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>', title: 'Starting LocalSites MySQL…', text: 'This takes a few seconds. The very first start sets up MySQL and can take up to a minute.' });
   if (S.dbErr) return emptyState({ ic: 'alertCircle', title: 'MySQL 8.4 is not available', text: esc(S.dbErr), actions: `<button class="btn" data-view="doctor">${icon.doctor}Run Doctor</button>` });
-  if (!S.dbs.length) return emptyState({ ic: 'db', title: 'No databases in LocalSites MySQL', text: 'Your projects can keep using MAMP PRO’s MySQL. Create a database here when a project should have its own, or copy one from MAMP PRO.',
+  if (!S.dbs.length) return emptyState({ fig: 'drawer', ic: 'db', title: 'No databases in LocalSites MySQL', text: 'Your projects can keep using MAMP PRO’s MySQL. Create a database here when a project should have its own, or copy one from MAMP PRO.',
     actions: `<button class="btn primary" data-cmd="newdb">${icon.plus}New database</button>` }) + startCards('Or start from', [
       { ic: 'import', title: 'Copy from MAMP PRO', text: 'Read-only copy, verified row by row.', attrs: 'data-view="import"' },
       { ic: 'table', title: 'Browse MAMP PRO data', text: 'Look through your existing databases without changing them.', attrs: 'data-dataconn="mamp-pro"' },
@@ -1597,7 +1619,7 @@ function showSQLHistory(anchor) {
 function viewData() {
   const d = D();
   if (!d.conns) return '<div class="pad"><span class="skeleton" style="width:30%"></span></div>';
-  if (!d.conns.length) return emptyState({ ic: 'table', title: 'No database connections', text: 'Browse MySQL, MariaDB, PostgreSQL or SQLite. Connections are read-only until you allow changes.',
+  if (!d.conns.length) return emptyState({ fig: 'plug', ic: 'table', title: 'No database connections', text: 'Browse MySQL, MariaDB, PostgreSQL or SQLite. Connections are read-only until you allow changes.',
     actions: `<button class="btn primary" data-cmd="dnewconn">${icon.plus}New connection</button>` });
   const conn = d.conns.find(c => c.id === d.conn);
   const lock = conn?.read_only
@@ -1607,7 +1629,7 @@ function viewData() {
   const left = `<aside class="dpane">
     <div class="form-row" style="gap:6px;flex-wrap:nowrap"><select class="input" id="dConn" style="flex:1" aria-label="Connection">${d.conns.map(c => `<option value="${esc(c.id)}" ${c.id === d.conn ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
       <button class="tb-btn" data-cmd="dnewconn" title="New connection">${icon.plus}</button>${conn && !conn.builtin ? `<button class="tb-btn" data-cmd="ddelconn" title="Remove connection">${icon.trash}</button>` : ''}</div>
-    <div class="form-row dp-status" style="margin:8px 0;justify-content:space-between">${d.info ? `<span class="note ellipsis"><span class="dot on"></span> ${esc(d.info.server)}</span>` : d.err ? '<span class="note"><span class="dot err"></span> Not connected</span>' : '<span class="note"><span class="spinner"></span></span>'}${lock}</div>
+    <div class="form-row dp-status" style="margin:8px 0;justify-content:space-between">${d.info ? `<span class="note ellipsis"><span class="dot on"></span> ${esc(d.info.server)}</span>` : d.err ? '<span class="note"><span class="dot err"></span> Not connected</span>' : '<span class="note"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>'}${lock}</div>
     ${d.schemas.length ? `<select class="input" id="dSchema" style="width:100%" aria-label="Database">${d.schemas.map(x => `<option ${x === d.schema ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>` : ''}
     ${conn && d.info ? `<div class="form-row dp-tools">${UI.btn('Export', { ic: 'download2', kind: 'ghost', attrs: 'data-cmd="dexport"', title: `Export ${d.schema || conn.name} to a .sql file` })}${UI.btn('Import', { ic: 'import', kind: 'ghost', attrs: 'data-cmd="dimport"', title: conn.read_only ? 'Read-only: allow changes first' : `Import a .sql file into ${d.schema || conn.name}` })}</div>` : ''}
     ${d.tables.length ? `<select class="input dtsel" id="dTableSel" aria-label="Table"><option value="">Choose a table…</option>${d.tables.map(t => `<option ${t.name === d.table ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>` : ''}
@@ -1617,7 +1639,7 @@ function viewData() {
   let main;
   if (d.err) {
     const firstTime = d.needPw && conn && !conn.has_password;
-    main = emptyState({ ic: firstTime ? 'key' : 'plug', title: firstTime ? `Connect to ${conn.name}` : `Can’t connect to ${conn?.name || ''}`,
+    main = emptyState({ ic: firstTime ? 'key' : 'plug', fig: firstTime ? '' : 'plug', title: firstTime ? `Connect to ${conn.name}` : `Can’t connect to ${conn?.name || ''}`,
       text: firstTime ? `Enter the ${esc(conn.user || 'root')} password for this server once. Browsing is read-only.` : `<span role="alert">${esc(d.err)}</span>`,
       actions: d.needPw ? `<input class="input" id="dPw" type="password" placeholder="${esc(conn?.user || 'root')} password" style="width:220px" aria-label="Password"><button class="btn primary" data-cmd="dsavepw">Connect</button>` : `<button class="btn" data-cmd="dretry">${icon.refresh}Try again</button>`,
       hint: d.needPw ? 'Saved in the system keychain.' : esc(conn?.note || '') });
@@ -1638,7 +1660,7 @@ function viewData() {
         const modeSeg = `<div class="seg mode" role="group" aria-label="Mode"><button data-cmd="dview" class="${edit ? '' : 'on'}" title="Browse only: nothing can change">${icon.eye}View</button>
           <button data-cmd="dedit" class="${edit ? 'on' : ''}" ${noKey ? 'disabled title="This table has no primary key, so rows can’t be identified safely. Use SQL."' : 'title="Change, add and delete rows; nothing is saved until you review it"'}>${icon.edit}Edit</button></div>`;
         body = `<div class="dbar">${modeSeg}<div class="fchips inline">${dataFilterChips()}</div>
-          <span class="spacer"></span>${d.busy ? '<span class="spinner"></span>' : ''}<span class="note">${r && !r.error ? `${from.toLocaleString()} to ${to.toLocaleString()} of ${total.toLocaleString()}${r.ms !== undefined ? ` · ${r.ms} ms` : ''}` : ''}</span>
+          <span class="spacer"></span>${d.busy ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : ''}<span class="note">${r && !r.error ? `${from.toLocaleString()} to ${to.toLocaleString()} of ${total.toLocaleString()}${r.ms !== undefined ? ` · ${r.ms} ms` : ''}` : ''}</span>
           <button class="tb-btn" data-cmd="dprev" title="Previous page" ${d.page > 0 ? '' : 'disabled'}>${icon.back}</button><button class="tb-btn" data-cmd="dnext" title="Next page" ${to < total ? '' : 'disabled'}>${icon.fwd}</button>
           <button class="tb-btn" data-cmd="dexport" title="Export rows">${icon.download2}</button></div>
           ${edit ? `<div class="editbar" role="status"><span class="pill">${icon.edit}Editing</span><span class="note">Click a cell to change it. Nothing is written until you review and save.</span><span class="spacer"></span>
@@ -1734,10 +1756,10 @@ function viewAgent() {
   S.agent.sel = Math.min(S.agent.sel, Math.max(0, sug.length - 1));
   const res = S.agent.result;
   return `<div class="agent">
-    <div class="glyph">${icon.agent}</div>
+    <div class="glyph-fig" data-fig="hub" aria-hidden="true"></div>
     <div class="composer"><textarea id="agentInput" rows="1" placeholder="Ask LocalSites…  e.g. “switch primec to PHP 8.3” or “why is shop broken”">${esc(S.agent.text)}</textarea>
-      <div class="bar"><span class="note">Matched on this computer · nothing is sent anywhere</span><span class="spacer"></span>
-        <button class="send" data-cmd="agentsend" ${sug.length ? '' : 'disabled'} title="Run (Enter)">${S.agent.busy ? '<span class="spinner"></span>' : icon.send}</button></div></div>
+      <div class="composer-bar"><span class="note">Matched on this computer · nothing is sent anywhere</span><span class="spacer"></span>
+        <button class="send" data-cmd="agentsend" ${sug.length ? '' : 'disabled'} title="Run (Enter)">${S.agent.busy ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : icon.send}</button></div></div>
     ${sug.length ? `<div class="suggest">${sug.map((c, i) => `<div class="item ${i === S.agent.sel ? 'sel' : ''}" data-agentrun="${i}">${icon[c.icon] || ''}<span>${esc(c.label)}</span><span class="hint">${i === S.agent.sel ? '↵' : esc(c.hint || '')}</span></div>`).join('')}</div>` : ''}
     ${!S.agent.text && !res ? startCards('Get started with some examples', [
       { ic: 'php', title: 'Change a PHP version', text: `switch ${S.sites[0]?.folder || 'shop'} to php 8.3`, attrs: `data-agentex="switch ${esc(S.sites[0]?.folder || 'shop')} to php 8.3"` },
@@ -1834,7 +1856,7 @@ function addonCard(a) {
   const [state, label] = addonState(a);
   const clash = (S.status?.addons || []).find(o => o.id !== a.id && o.enabled && (a.conflicts || []).includes(o.id));
   let foot;
-  if (!a.installed) foot = a.installing ? `<span class="note"><span class="spinner"></span> Installing with Homebrew…</span><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: `data-addonlog="${a.id}" data-install="1"` })}`
+  if (!a.installed) foot = a.installing ? `<span class="note"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span> Installing with Homebrew…</span><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: `data-addonlog="${a.id}" data-install="1"` })}`
     : `${UI.btn('Install', { ic: 'download2', kind: 'primary', attrs: `data-addoninstall="${a.id}"`, title: a.install_command })}<span class="note mono-s">${esc(a.install_command || 'Homebrew is needed: brew.sh')}</span>`;
   else foot = `${UI.toggle(a.enabled, `data-addontoggle="${a.id}"`, a.enabled ? 'Switch off' : 'Switch on')}
     ${a.id === 'mailpit' && a.running ? UI.btn('Open inbox', { ic: 'inbox', attrs: `data-openweb="${esc(a.ui_url)}"` }) + UI.btn('Send test', { ic: 'mailCheck', kind: 'ghost', attrs: 'data-cmd="addontestmail"' }) : ''}
@@ -1961,7 +1983,7 @@ async function loadLog(scroll = true) {
 
 /* --- doctor --- */
 function viewDoctor() {
-  if (!S.doctor) return emptyState({ ic: '<span class="spinner"></span>', title: 'Running checks…', text: 'Runtimes, services, domains, certificates and every running project.' });
+  if (!S.doctor) return emptyState({ ic: '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>', title: 'Running checks…', text: 'Runtimes, services, domains, certificates and every running project.' });
   return `<div class="pad"><div class="card">${checksTable(S.doctor)}</div>
     <p class="note" style="margin-top:12px">Same checks from the terminal: <code>localsites doctor</code>. AI agents can run them with the <code>doctor</code> and <code>sites_check</code> tools.</p></div>`;
 }
@@ -1970,7 +1992,7 @@ function viewDoctor() {
 function viewImport() {
   const st = S.status; if (!st) return '';
   const srcs = st.import_sources.filter(s => (s.found || s.mysql_running) && !s.same_mysql_as), im = S.imp;
-  if (!srcs.length) return emptyState({ ic: 'import', title: 'Nothing to import', text: 'LocalSites didn’t find MAMP, MAMP PRO or XAMPP on this computer. Projects in your folders are picked up automatically.',
+  if (!srcs.length) return emptyState({ fig: 'loupe', ic: 'import', title: 'Nothing to import', text: 'LocalSites didn’t find MAMP, MAMP PRO or XAMPP on this computer. Projects in your folders are picked up automatically.',
     actions: `<button class="btn" data-cmd="addfolder">${icon.folderPlus}Add a projects folder</button>` });
   const srcChips = srcs.length ? srcs.map(s => `<span class="chip"><span class="dot ${s.mysql_running ? 'on' : 'off'}"></span>${esc(s.name)} ${s.mysql_running ? '· MySQL running' : '· MySQL stopped'}</span>`).join(' ') : '<span class="note">No MAMP, MAMP PRO or XAMPP found.</span>';
   const hosts = S.sites.filter(s => s.imported_from).length;
@@ -1991,7 +2013,7 @@ function viewImport() {
       im.dbs.map(d => {
         const rep = im.reports[d.name], already = existing.has(d.name) && !rep;
         let result = already ? '<span class="note">Already in LocalSites</span>' : '';
-        if (rep?.running) result = '<span class="spinner"></span>';
+        if (rep?.running) result = '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>';
         else if (rep?.error) result = `<span class="bad">${esc(rep.error)}</span>`;
         else if (rep) result = rep.ok ? `<span class="ok">✓ ${rep.tables.length} tables identical · ${esc(rep.duration)}</span>` : '<span class="bad">✗ differences found</span>';
         return `<tr><td style="width:30px"><input type="checkbox" data-impdb="${esc(d.name)}" ${im.chosen.has(d.name) ? 'checked' : ''} ${already || rep ? 'disabled' : ''}></td>
@@ -2185,7 +2207,7 @@ async function reviewProblem(id) {
     send.onclick = async () => {
       send.disabled = true; send.textContent = 'Sending…';
       const r = await act(() => bridge.call('problems.send', { id, bundle }), 'Report');
-      close(); if (r) { toast('Report sent. Thank you!'); await act(loadProblems); renderView(); }
+      close(); if (r) { toast('Report sent. Thank you'); await act(loadProblems); renderView(); }
     };
   }
   await load();
@@ -2456,12 +2478,13 @@ document.addEventListener('click', async (e) => {
     if (await act(() => bridge.call('db.open_in', { name, app }), 'Open')) toast(`Opening ${name}. The password is on your clipboard: paste it when asked.`);
     return;
   }
+  if (d.shareprov) { SF.prov = d.shareprov; return renderDetail(); }
   if (d.sharestart) {
-    const s = site(d.sharestart), prov = $('#shareProv').value, mins = +$('#shareMins').value, pw = SF.open ? '' : $('#sharePw').value.trim();
+    const s = site(d.sharestart), prov = d.shareprovUse, mins = +$('#shareMins').value, pw = SF.open ? '' : $('#sharePw').value.trim();
     if (!pw && !SF.open) return toast('Enter a password, or tick “No password”', 'warn');
     const until = new Date(Date.now() + mins * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     if (!await confirmBox(`Share ${s.name} on the internet?`, `Anyone with the address can open ${s.domain} until ${until}${pw ? ' (they need the password)' : ', without a password'}. Only this site is reachable; your other sites and databases are not. You can stop it at any time.`, 'Share')) return;
-    t.disabled = true; t.innerHTML = '<span class="spinner"></span>Connecting…';
+    t.disabled = true; t.innerHTML = '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Connecting…';
     const r = await act(() => bridge.call('share.start', { folder: s.folder, provider: prov, password: pw, minutes: mins, no_password: SF.open }), 'Share');
     await act(loadStatus); render();
     if (r) { await act(() => bridge.copy(r.url)); toast(`${s.name} is live at ${r.url} (address copied)${pw ? `. Password: ${pw}` : ''}`); SF.pw = ''; }
@@ -2601,7 +2624,7 @@ async function pollInstall(folder) {
   }
 }
 async function runCheck(folder) {
-  const box = $('#siteChecks'); if (box) box.innerHTML = '<span class="spinner"></span>';
+  const box = $('#siteChecks'); if (box) box.innerHTML = '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>';
   S.checks[folder] = await act(() => bridge.call('sites.check', { folder })) || [];
   renderDetail();
 }
@@ -2654,7 +2677,6 @@ document.addEventListener('change', async (e) => {
     if (r) S.notices = r; else e.target.checked = !e.target.checked;
     return;
   }
-  if (e.target.id === 'shareProv') SF.prov = e.target.value;
   if (e.target.id === 'shareOpen') { SF.open = e.target.checked; return renderDetail(); }
   if (e.target.id === 'shareMins') SF.mins = +e.target.value;
   if (e.target.id === 'dTableSel' && e.target.value) return dataOpenTable(e.target.value);

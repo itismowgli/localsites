@@ -1,4 +1,4 @@
-// Adds a content fingerprint to every image and font the website links to (?v=<8 hex>), so a changed
+// Adds a content fingerprint to every image, font, stylesheet and script the website links to (?v=<8 hex>), so a changed
 // file gets a new address and browsers, CDNs and link previews (LinkedIn, X) never show a stale copy.
 // Unchanged files keep their address and their cache.
 //   node tools/cachebust.mjs _site/index.html [more.html …]
@@ -7,8 +7,9 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const SITE_URL = 'https://itismowgli.github.io/localsites/';
-// relative or absolute links into these folders, without a query yet
-const ref = /(["'(=])((?:https:\/\/itismowgli\.github\.io\/localsites\/)?((?:screenshots|brand|fonts)\/[^"'?#)\s]+))(?=["')\s])/g;
+// relative or absolute links into these folders, and the shared stylesheets, icon sprite and scripts,
+// without a query yet (a #fragment, as in icons.svg#i-bell, stays after the version)
+const ref = /(["'(=])((?:https:\/\/itismowgli\.github\.io\/localsites\/)?(?:\.\/)?((?:screenshots|brand|fonts|vendor)\/[^"'?#)\s]+|(?:tokens|legal)\.css|icons\.svg))(?=["')\s#])/g;
 
 for (const page of process.argv.slice(2)) {
   const root = dirname(page);

@@ -18,7 +18,7 @@ func fakeProvider(t *testing.T) {
 	os.WriteFile(bin, []byte("#!/bin/sh\necho 'starting'\necho 'INF |  https://test-abc.trycloudflare.com  |'\nsleep 60\n"), 0o755)
 	old := Providers
 	t.Cleanup(func() { Providers = old })
-	p := Providers[0]
+	p, _ := FindProvider("cloudflared")
 	p.Bin = bin
 	Providers = []Provider{p}
 }

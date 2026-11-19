@@ -48,18 +48,19 @@ type Provider struct {
 	URLFrom func(m []string) string `json:"-"`
 }
 
-// Providers, best first. Tests replace Bin with a stand-in.
+// Providers, best first: tunnl.gg needs nothing installed, Cloudflare is one install away. Tests replace
+// Bin with a stand-in.
 var Providers = []Provider{
+	{ID: "tunnl", Name: "tunnl.gg", Bin: "ssh", License: "MIT", HTTPS: true,
+		Description: "Free, no account, nothing to install: it uses the ssh already on this computer. A random https://….tunnl.gg address. Visitors see a short tunnl.gg safety notice the first time each day.",
+		Args:        tunnlArgs,
+		URLRe:       regexp.MustCompile(`https://[a-z0-9]+(?:-[a-z0-9]+)+\.tunnl\.gg`)},
 	{ID: "cloudflared", Name: "Cloudflare quick tunnel", Formula: "cloudflared", Bin: "cloudflared", License: "Apache-2.0", HTTPS: true,
 		Description: "Free, no account. A random https://….trycloudflare.com address.",
 		Args: func(p int, _ string) []string {
 			return []string{"tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://127.0.0.1:%d", p)}
 		},
 		URLRe: regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)},
-	{ID: "tunnl", Name: "tunnl.gg", Bin: "ssh", License: "MIT", HTTPS: true,
-		Description: "Free, no account, nothing to install: it uses the ssh already on this computer. A random https://….tunnl.gg address. Visitors see a short tunnl.gg safety notice the first time each day.",
-		Args:        tunnlArgs,
-		URLRe:       regexp.MustCompile(`https://[a-z0-9]+(?:-[a-z0-9]+)+\.tunnl\.gg`)},
 	{ID: "bore", Name: "bore", Formula: "bore-cli", Bin: "bore", License: "MIT",
 		Description: "Free, no account, open source end to end (bore.pub or your own server). Plain http:// address: the password and pages travel unencrypted, so share nothing secret this way.",
 		Args:        func(p int, _ string) []string { return []string{"local", fmt.Sprint(p), "--to", "bore.pub"} },
