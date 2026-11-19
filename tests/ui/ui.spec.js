@@ -541,7 +541,7 @@ test('native drag regions: headers drag, controls and open dialogs never do', as
   await ctx.close();
 });
 
-test('share: project panel offers sharing (install a tunnel first when none is installed)', async ({ page }) => {
+test('share: project panel offers sharing right away (tunnl.gg needs only ssh)', async ({ page }) => {
   await call(page, 'sites.update', { folder: 'hello', enabled: true });
   await page.goto('/#projects/hello');
   await expect(page.locator('#detail .st', { hasText: /Share/ })).toBeVisible();
@@ -550,6 +550,9 @@ test('share: project panel offers sharing (install a tunnel first when none is i
     await expect(page.locator('#detail [data-sharestart="hello"]')).toBeVisible();
     await page.locator('#detail [data-cmd="sharegenpw"]').click();
     await expect(page.locator('#sharePw')).toHaveValue(/^[a-z]+-[a-z]+-[a-z]+-[a-z]+-\d{2}$/);
+    await expect(page.locator('#shareProv option[value="tunnl"]')).toHaveCount(1);
+    const missing = st.share_providers.filter(p => !p.installed && p.install_command);
+    for (const p of missing) await expect(page.locator(`#detail [data-shareinstall="${p.id}"]`)).toBeVisible();
   } else {
     await expect(page.locator('#detail [data-shareinstall="cloudflared"]')).toBeVisible();
   }

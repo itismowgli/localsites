@@ -107,8 +107,9 @@ from your Mac.
 
 ### Share a site on the internet
 
-Show a client or test a webhook: share any running project through a free **Cloudflare quick tunnel** or
-**bore**, with no account. Each share has its own gateway that reaches only that one site. It has a password
+Show a client or test a webhook: share any running project with no account. **tunnl.gg** works right away,
+since it only needs the `ssh` that comes with macOS and Linux. A **Cloudflare quick tunnel** or **bore** are one
+click to install. Each share has its own gateway that reaches only that one site. It has a password
 by default and limits wrong guesses, never serves `.env` or `.git`, and stops by itself after 15 minutes to 24 hours.
 
 ### AI agents (MCP)

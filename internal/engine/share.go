@@ -27,7 +27,11 @@ func (e *Engine) ShareProviders() []ProviderView {
 	out := make([]ProviderView, 0, len(share.Providers))
 	for _, p := range share.Providers {
 		_, ok := p.Binary()
-		out = append(out, ProviderView{Provider: p, Installed: ok, Installing: e.Sup.Status(shareInstallProc(p.ID)).Running, Install: "brew install " + p.Formula})
+		install := "brew install " + p.Formula
+		if p.Formula == "" {
+			install = ""
+		}
+		out = append(out, ProviderView{Provider: p, Installed: ok, Installing: e.Sup.Status(shareInstallProc(p.ID)).Running, Install: install})
 	}
 	return out
 }
@@ -40,6 +44,9 @@ func (e *Engine) InstallShareProvider(id string) (string, error) {
 	}
 	if _, ok := p.Binary(); ok {
 		return "", errors.New(p.Name + " is already installed")
+	}
+	if p.Formula == "" {
+		return "", fmt.Errorf("%s needs %s, which comes with the system", p.Name, p.Bin)
 	}
 	return e.brewInstall(shareInstallProc(id), p.Formula, filepath.Join(e.P.Logs, "share-"+id+"-install.log"))
 }

@@ -31,6 +31,7 @@ import (
 )
 
 // Provider is a tunnel service with a free, open-source client and no account needed.
+// Formula is empty when nothing needs installing (tunnl.gg uses the system's ssh).
 type Provider struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -39,9 +40,10 @@ type Provider struct {
 	License     string `json:"license"`
 	Description string `json:"description"`
 	HTTPS       bool   `json:"https"`
-	// Args builds the command for a local port; URLRe finds the public address in its output.
-	Args  func(port int) []string `json:"-"`
-	URLRe *regexp.Regexp          `json:"-"`
+	// Args builds the command for a local port (dir keeps the provider's own files); URLRe finds the
+	// public address in its output.
+	Args  func(port int, dir string) []string `json:"-"`
+	URLRe *regexp.Regexp                      `json:"-"`
 	// URLFrom turns the regexp match into the public URL (default: the match itself).
 	URLFrom func(m []string) string `json:"-"`
 }
@@ -50,15 +52,31 @@ type Provider struct {
 var Providers = []Provider{
 	{ID: "cloudflared", Name: "Cloudflare quick tunnel", Formula: "cloudflared", Bin: "cloudflared", License: "Apache-2.0", HTTPS: true,
 		Description: "Free, no account. A random https://….trycloudflare.com address.",
-		Args: func(p int) []string {
+		Args: func(p int, _ string) []string {
 			return []string{"tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://127.0.0.1:%d", p)}
 		},
 		URLRe: regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)},
+	{ID: "tunnl", Name: "tunnl.gg", Bin: "ssh", License: "MIT", HTTPS: true,
+		Description: "Free, no account, nothing to install: it uses the ssh already on this computer. A random https://….tunnl.gg address. Visitors see a short tunnl.gg safety notice the first time each day.",
+		Args:        tunnlArgs,
+		URLRe:       regexp.MustCompile(`https://[a-z0-9]+(?:-[a-z0-9]+)+\.tunnl\.gg`)},
 	{ID: "bore", Name: "bore", Formula: "bore-cli", Bin: "bore", License: "MIT",
 		Description: "Free, no account, open source end to end (bore.pub or your own server). Plain http:// address: the password and pages travel unencrypted, so share nothing secret this way.",
-		Args:        func(p int) []string { return []string{"local", fmt.Sprint(p), "--to", "bore.pub"} },
+		Args:        func(p int, _ string) []string { return []string{"local", fmt.Sprint(p), "--to", "bore.pub"} },
 		URLRe:       regexp.MustCompile(`listening at ([a-z0-9.-]+):(\d+)`),
 		URLFrom:     func(m []string) string { return "http://" + m[1] + ":" + m[2] }},
+}
+
+// tunnlArgs: plain ssh with a reverse forward to tunnl.gg. None of the person's ssh settings, keys or agent
+// are used (a random address needs no key, and tunnl.gg shouldn't learn who they are); its host key is
+// remembered in LocalSites' own file and must match from then on.
+func tunnlArgs(p int, dir string) []string {
+	return []string{"-tt", "-F", "/dev/null",
+		"-o", "UserKnownHostsFile=" + filepath.Join(dir, "tunnl-known-hosts"), "-o", "StrictHostKeyChecking=accept-new",
+		"-o", "IdentitiesOnly=yes", "-o", "IdentityFile=/dev/null", "-o", "IdentityAgent=none",
+		"-o", "PasswordAuthentication=no", "-o", "KbdInteractiveAuthentication=no",
+		"-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=3", "-o", "ConnectTimeout=20",
+		"-R", fmt.Sprintf("80:127.0.0.1:%d", p), "proxy.tunnl.gg"}
 }
 
 // FindProvider returns a provider by id.
@@ -76,7 +94,11 @@ func (p Provider) Binary() (string, bool) {
 	cands := []string{p.Bin}
 	if !filepath.IsAbs(p.Bin) {
 		cands = nil
-		for _, d := range append(platform.BrewBins(), "/usr/local/bin", "/usr/bin") {
+		dirs := append(platform.BrewBins(), "/usr/local/bin", "/usr/bin")
+		if p.Formula == "" { // a system tool (ssh): only the system's own copy
+			dirs = []string{"/usr/bin"}
+		}
+		for _, d := range dirs {
 			cands = append(cands, filepath.Join(d, p.Bin))
 		}
 	}
@@ -154,6 +176,9 @@ func (m *Manager) Start(folder string, t Target, providerID, password string, d 
 	}
 	bin, ok := p.Binary()
 	if !ok {
+		if p.Formula == "" {
+			return Share{}, fmt.Errorf("%s needs %s, which isn't on this computer", p.Name, p.Bin)
+		}
 		return Share{}, fmt.Errorf("%s is not installed (brew install %s)", p.Name, p.Formula)
 	}
 	if d <= 0 || d > 24*time.Hour {
@@ -175,7 +200,8 @@ func (m *Manager) Start(folder string, t Target, providerID, password string, d 
 	s := &Share{ID: strings.ReplaceAll(folder, "/", "-") + "-" + fmt.Sprint(time.Now().Unix()), Folder: folder, Domain: t.Domain,
 		Provider: p.ID, Password: password != "", Started: time.Now(), Expires: time.Now().Add(d), Gateway: ln.Addr().String(), done: make(chan struct{})}
 	s.stats = &counters{}
-	gw, err := gateway(t, password, p.ID == "cloudflared", func() string { return s.URL }, s.stats)
+	// Cloudflare tunnels and tunnl.gg (behind Cloudflare) set the visitor's address and overwrite a forged one
+	gw, err := gateway(t, password, p.ID == "cloudflared" || p.ID == "tunnl", func() string { return s.URL }, s.stats)
 	if err != nil {
 		ln.Close()
 		return Share{}, err
@@ -185,7 +211,7 @@ func (m *Manager) Start(folder string, t Target, providerID, password string, d 
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel = cancel
-	cmd := exec.CommandContext(ctx, bin, p.Args(ln.Addr().(*net.TCPAddr).Port)...)
+	cmd := exec.CommandContext(ctx, bin, p.Args(ln.Addr().(*net.TCPAddr).Port, m.LogDir)...)
 	logf, _ := os.Create(filepath.Join(m.LogDir, "share-"+s.ID+".log"))
 	pr, pw := io.Pipe()
 	cmd.Stdout, cmd.Stderr = pw, pw

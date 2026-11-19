@@ -1055,7 +1055,14 @@ function sharePane(s) {
       <div class="form-row" style="gap:6px;flex-wrap:nowrap;${SF.open ? 'display:none' : ''}"><input class="input sm" id="sharePw" value="${esc(SF.pw)}" placeholder="Password" autocomplete="off" spellcheck="false" style="flex:1;min-width:0" aria-label="Password">
         ${UI.iconBtn('key', 'Make up a password', 'data-cmd="sharegenpw"')}</div>
       ${UI.btn('Share', { ic: 'globe', kind: 'primary', attrs: `data-sharestart="${esc(s.folder)}"` })}
-    </div>`;
+    </div>${shareMore(provs)}`;
+}
+
+// Tunnels that can still be installed, offered quietly under the form.
+function shareMore(provs) {
+  const rest = provs.filter(p => !p.installed && p.install_command);
+  if (!rest.length) return '';
+  return `<p class="note" style="margin:8px 0 0">Other tunnels: ${rest.map(p => p.installing ? `<span><span class="spinner"></span> installing ${esc(p.name)}…</span>` : `<a class="link" data-shareinstall="${p.id}" title="${esc(p.install_command)}">install ${esc(p.name)}</a>`).join(' · ')}</p>`;
 }
 
 /* --- git panel --- */

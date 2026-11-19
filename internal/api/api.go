@@ -32,6 +32,7 @@ import (
 	"github.com/localsites/localsites/internal/problems"
 	lsruntime "github.com/localsites/localsites/internal/runtime"
 	"github.com/localsites/localsites/internal/secrets"
+	"github.com/localsites/localsites/internal/share"
 	"github.com/localsites/localsites/internal/version"
 )
 
@@ -152,7 +153,7 @@ var Methods = []Method{
 	{Name: "git.branch", Description: "Create a branch from the current commit and switch to it", Mutates: true, Params: []Param{pFolder, {Name: "name", Type: "string", Description: "New branch name", Required: true}}},
 	{Name: "share.list", Description: "Projects currently shared on the internet, with their public address and expiry"},
 	{Name: "share.start", Description: "Put a running project on the internet through a free tunnel (Cloudflare quick tunnel or bore) for a limited time. Anyone with the address can open it; a password is recommended", Mutates: true, Destructive: true, Params: []Param{pFolder,
-		{Name: "provider", Type: "string", Description: "Tunnel", Enum: []string{"cloudflared", "bore"}},
+		{Name: "provider", Type: "string", Description: "Tunnel: cloudflared (Cloudflare quick tunnel), tunnl (tunnl.gg, needs only ssh) or bore", Enum: []string{"cloudflared", "tunnl", "bore"}},
 		{Name: "password", Type: "string", Description: "Visitors must enter this password (any user name). Required unless no_password is true"},
 		{Name: "no_password", Type: "boolean", Description: "Share without a password: anyone with the address can open it"},
 		{Name: "minutes", Type: "integer", Description: "Stop sharing after this many minutes (default 60, max 1440)"}}},
@@ -502,8 +503,13 @@ func (s *Server) call(method string, body []byte) (any, error) {
 	case "share.list":
 		return e.Shares.List(), nil
 	case "share.start":
-		if a.Provider == "" {
-			a.Provider = "cloudflared"
+		if a.Provider == "" { // the best installed one (tunnl.gg needs only ssh, so there always is one)
+			for _, p := range share.Providers {
+				if _, ok := p.Binary(); ok && p.HTTPS {
+					a.Provider = p.ID
+					break
+				}
+			}
 		}
 		return e.StartShare(a.Folder, a.Provider, a.Password, a.Minutes, a.NoPassword)
 	case "share.stop":
