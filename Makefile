@@ -34,7 +34,9 @@ app:
 		rm -f $(APP)/Contents/Resources/LocalSites.icns $(CURDIR)/desktop/build/.icon-info.plist && \
 		echo "Added the macOS 26 glass icon"; \
 	else echo "Xcode not found: built with the classic icon only"; fi
-	codesign --force --deep --sign "$(or $(MAC_SIGN),-)" $(APP)
+	@# with the certificate, also the hardened runtime: no other program can load code into LocalSites, so
+	@# the service can trust a caller signed like itself (see internal/api/peer_darwin.go)
+	codesign --force --deep $(if $(MAC_SIGN),--options runtime) --sign "$(or $(MAC_SIGN),-)" $(APP)
 	@if [ -z "$(MAC_SIGN)" ]; then echo "Signed ad hoc (no LocalSites Code Signing certificate in the keychain)"; fi
 	@# a broken Info.plist would make every in-app update fail its bundle check
 	plutil -lint -s desktop/build/bin/LocalSites.app/Contents/Info.plist

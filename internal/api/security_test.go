@@ -48,7 +48,7 @@ func TestApproveTwice(t *testing.T) {
 	notify = func(string, string) {}
 	var a approvals
 	done := make(chan struct{})
-	go func() { _ = a.wait("quit", "mcp", nil, done) }()
+	go func() { _ = a.wait("quit", "mcp", "", nil, done) }()
 	var id string
 	for i := 0; i < 100 && id == ""; i++ {
 		time.Sleep(10 * time.Millisecond)
@@ -56,11 +56,11 @@ func TestApproveTwice(t *testing.T) {
 			id = l[0].ID
 		}
 	}
-	if err := a.decide(id, true); err != nil {
+	if err := a.decide(id, true, false); err != nil {
 		t.Fatal(err)
 	}
 	second := make(chan error, 1)
-	go func() { second <- a.decide(id, false) }()
+	go func() { second <- a.decide(id, false, false) }()
 	select {
 	case err := <-second:
 		if err == nil {

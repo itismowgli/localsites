@@ -105,7 +105,7 @@ var Methods = []Method{
 		Params: []Param{pFolder, {Name: "new_name", Type: "string", Description: "New folder name", Required: true}}},
 	{Name: "sites.trash", Description: "Move a project's folder to the Trash (it can be put back from there). The database is kept. The app and CLI only; agents can't", Mutates: true, Destructive: true,
 		Params: []Param{pFolder, {Name: "name", Type: "string", Description: "The project's folder name again, to confirm", Required: true}}},
-	{Name: "sites.takeover", Description: "Serve a project that Laravel Valet serves with LocalSites instead, at the same address (Valet's own config is not changed; switching off gives it back)", Mutates: true, Params: []Param{pFolder}},
+	{Name: "sites.takeover", Description: "Serve a project that Laravel Valet serves with LocalSites instead, at the same address (Valet's own config is not changed; switching off gives it back)", Mutates: true, Approve: true, Params: []Param{pFolder}},
 	{Name: "sites.create", Description: "Create a new project folder with a starter PHP page (switched off until enabled)", Mutates: true,
 		Params: []Param{{Name: "folder", Type: "string", Description: "New folder name (letters, numbers, - and _)", Required: true}}},
 	{Name: "version", Description: "LocalSites version and the What's new feed"},
@@ -177,13 +177,13 @@ var Methods = []Method{
 		{Name: "keep_mail", Type: "boolean", Description: "Mailpit: keep emails after a restart"},
 		{Name: "persist", Type: "boolean", Description: "Valkey/Redis: save data to disk"},
 		{Name: "memory_mb", Type: "integer", Description: "Memcached memory limit in MB"}}},
-	{Name: "addons.install", Description: "Install an add-on with Homebrew in the background (brew install <formula>)", Mutates: true, Params: []Param{
+	{Name: "addons.install", Description: "Install an add-on with Homebrew in the background (brew install <formula>)", Mutates: true, Approve: true, Params: []Param{
 		{Name: "id", Type: "string", Description: "Add-on id", Required: true, Enum: []string{"mailpit", "valkey", "redis", "memcached", "postgres", "meilisearch", "minio"}}}},
 	{Name: "addons.test_mail", Description: "Send a test email through Mailpit", Mutates: true},
 	{Name: "addons.flush", Description: "Empty a cache add-on (Valkey, Redis or Memcached). Cached data is lost", Mutates: true, Destructive: true, Params: []Param{
 		{Name: "id", Type: "string", Description: "Add-on id", Required: true, Enum: []string{"valkey", "redis", "memcached"}}}},
 	{Name: "activity", Description: "Recent changes made through the app, CLI and AI agents (newest first)"},
-	{Name: "sites.install", Description: "Install a project's dependencies in the background (composer or npm/pnpm/yarn/bun)", Mutates: true, Params: []Param{pFolder}},
+	{Name: "sites.install", Description: "Install a project's dependencies in the background (composer or npm/pnpm/yarn/bun)", Mutates: true, Approve: true, Params: []Param{pFolder}},
 	{Name: "sites.check", Description: "Test one project end to end: DNS, PHP pool, database socket, HTTPS response and certificate trust", Params: []Param{pFolder}},
 	{Name: "setup.status", Description: "What LocalSites needs from Homebrew and isn't there or is broken (Apache, MySQL, Nginx, the PHP versions projects use), with the commands that fix each, and the progress of a running fix"},
 	{Name: "setup.run", Description: "Install and repair everything setup.status lists (or only the given ids) in the background: Homebrew software, and on Macs without Valet the one-time .test domains and certificate setup (id \"domains\"). May ask for the Mac password once", Mutates: true, Approve: true, Params: []Param{
@@ -223,13 +223,13 @@ var Methods = []Method{
 		{Name: "id", Type: "string", Description: "Connection id", Required: true}, {Name: "schema", Type: "string"}, pFile}},
 	{Name: "import.sources", Description: "Other local tools found on this computer (MAMP PRO, MAMP, XAMPP)"},
 	{Name: "import.databases", Description: "List databases in another tool's MySQL", Sensitive: true, Params: []Param{pSource, pSrcUser, pSrcPass}},
-	{Name: "import.database", Description: "Copy one database read-only from another tool into LocalSites and verify every row. Never overwrites.", Mutates: true, Sensitive: true,
+	{Name: "import.database", Description: "Copy one database read-only from another tool into LocalSites and verify every row. Never overwrites.", Mutates: true, Approve: true, Sensitive: true,
 		Params: []Param{pSource, pSrcUser, pSrcPass, pDB}},
 	{Name: "debug.bundle", Description: "Zip logs, generated configs and a doctor report (secrets removed) for a bug report; returns the file path", Mutates: true},
 	{Name: "open", Description: "Open a project in an app on this computer. Without app it opens the person's chosen code editor; if none is chosen the error lists the installed ones (ask the person which, then pass app and remember)", Params: []Param{pFolder,
 		{Name: "app", Type: "string", Description: "\"editor\" or \"terminal\" for the person's chosen one (the default is editor), an app id from apps.list, or \"browser\" for the default browser"},
 		{Name: "remember", Type: "boolean", Description: "Also make this app the default code editor or terminal"}}},
-	{Name: "tools.adminer", Description: "Switch Adminer (web database tool, like phpMyAdmin) on or off at https://adminer.test. The first time, a pinned release is downloaded and checked", Mutates: true, Params: []Param{{Name: "enabled", Type: "boolean", Required: true}}},
+	{Name: "tools.adminer", Description: "Switch Adminer (web database tool, like phpMyAdmin) on or off at https://adminer.test. The first time, a pinned release is downloaded and checked. Switching it on needs the user's approval: LocalSites asks them in the app and waits up to 90 seconds", Mutates: true, Params: []Param{{Name: "enabled", Type: "boolean", Required: true}}},
 	{Name: "mysql.root_password", Description: "Change the LocalSites MySQL root password (random and strong if none is given); kept in the keychain", Mutates: true, Destructive: true, Sensitive: true,
 		Params: []Param{{Name: "password", Type: "string", Description: "New password (optional, at least 12 characters)"}}},
 	{Name: "version.check", Description: "Check GitHub for a newer LocalSites release (reads only; nothing is installed)"},
@@ -253,10 +253,10 @@ var Methods = []Method{
 	{Name: "storage.clean", Description: "Run one clean-up from storage.list (removes only files LocalSites created)", Mutates: true, Destructive: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "php.info", Description: "Each installed PHP version's extensions and whether Xdebug is installed"},
 	{Name: "agents.list", Description: "AI agent apps on this Mac (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Zed) and whether LocalSites is connected to each"},
-	{Name: "agents.connect", Description: "Add LocalSites to an agent app's MCP settings (backs up the file first; only the localsites entry changes)", Mutates: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
-	{Name: "agents.disconnect", Description: "Remove LocalSites from an agent app's MCP settings", Mutates: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
+	{Name: "agents.connect", Description: "Add LocalSites to an agent app's MCP settings (backs up the file first; only the localsites entry changes)", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
+	{Name: "agents.disconnect", Description: "Remove LocalSites from an agent app's MCP settings", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "approvals.list", Description: "Requests from AI agents waiting for the user's approval in the app"},
-	{Name: "approvals.decide", Description: "Approve or deny a waiting request (the app only; agents can't)", Params: []Param{{Name: "id", Type: "string", Required: true}, {Name: "approve", Type: "boolean", Required: true}}},
+	{Name: "approvals.decide", Description: "Approve or deny a waiting request (the app only; agents can't)", Params: []Param{{Name: "id", Type: "string", Required: true}, {Name: "approve", Type: "boolean", Required: true}, {Name: "for_a_while", Type: "boolean", Description: "Also approve the same request from the same caller on the same project for 10 minutes (everyday actions only)"}}},
 	{Name: "apps.list", Description: "Editors, terminals, git apps, database apps and browsers installed on this computer (for open), and the default editor and terminal the person chose"},
 	{Name: "apps.default", Description: "Choose the default code editor or terminal for the Open buttons (app \"\" forgets the choice, \"ask\" asks every time). Only when the person asked for it", Mutates: true, Params: []Param{
 		{Name: "kind", Type: "string", Required: true, Enum: []string{"editor", "terminal"}}, {Name: "app", Type: "string", Description: "App id from apps.list, \"ask\" or \"\"", Required: true}}},
@@ -316,7 +316,11 @@ func (s *Server) Listen() error {
 	_ = os.Chmod(socketPath(p), 0o600)
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/{method}", s.handle)
-	s.srv = &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	s.srv = &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second,
+		// who is on the other end, checked once per connection (see callerTrust)
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			return context.WithValue(ctx, peerKey{}, peerIsSelf(c))
+		}}
 	go s.srv.Serve(ln)
 	return nil
 }
@@ -342,6 +346,11 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	method := r.PathValue("method")
 	client := r.Header.Get("X-LocalSites-Client")
+	proven, _ := r.Context().Value(peerKey{}).(bool)
+	trusted, askable := callerTrust(client, proven, canProveApp())
+	if client == "app" && !trusted {
+		client = "unproven-app" // said it was the app, but isn't LocalSites signed like this service
+	}
 	start := time.Now()
 	var res any
 	var err error
@@ -355,27 +364,28 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	case method == "approvals.list":
 		res = s.pending.list()
 	case method == "approvals.decide":
-		if !TrustedClient(client) {
-			err = errors.New("only the person using LocalSites can approve requests")
+		if !trusted {
+			err = errors.New("only the person using LocalSites can approve requests, in the app")
 			break
 		}
 		var d struct {
-			ID      string `json:"id"`
-			Approve bool   `json:"approve"`
+			ID        string `json:"id"`
+			Approve   bool   `json:"approve"`
+			ForAWhile bool   `json:"for_a_while"` // the same request, same caller, same project: 10 minutes
 		}
 		_ = json.Unmarshal(body, &d)
-		err = s.pending.decide(d.ID, d.Approve)
+		err = s.pending.decide(d.ID, d.Approve, d.ForAWhile)
 		res = map[string]any{"ok": err == nil}
-	case !TrustedClient(client) && (method == "update.install" || method == "update.rollback"):
+	case !trusted && !askable && (method == "update.install" || method == "update.rollback"):
 		err = errors.New("only the person using LocalSites can install updates, from the app")
-	case !TrustedClient(client) && method == "sites.trash":
+	case !trusted && !askable && method == "sites.trash":
 		err = errors.New("only the person using LocalSites can move projects to the Trash, from the app or the CLI")
-	case !TrustedClient(client) && method == "setup.homebrew":
+	case !trusted && !askable && method == "setup.homebrew":
 		err = errors.New("only the person using LocalSites can install Homebrew, from the app")
-	case !TrustedClient(client) && (method == "problems.send" || method == "problems.ui"):
+	case !trusted && !askable && (method == "problems.send" || method == "problems.ui"):
 		err = errors.New("only the person using LocalSites can send problem reports, from the app")
-	case NeedsApproval(client, method, body):
-		if err = s.pending.wait(method, client, body, r.Context().Done()); err == nil {
+	case needsApproval(trusted, method, body) || askable && personOnly(method):
+		if err = s.pending.wait(method, client, agentName(r.Header.Get("X-LocalSites-Agent")), body, r.Context().Done()); err == nil {
 			res, err = s.call(method, body)
 		}
 	default:
@@ -859,6 +869,14 @@ type Client struct {
 	hc    *http.Client
 	token string
 	name  string // shown in the activity feed: app, cli, mcp, devui
+	agent string // the agent app's own name, from its MCP hello (shown on approval requests)
+}
+
+// WithAgent returns a copy of the client that also names the agent app it serves.
+func (c *Client) WithAgent(name string) *Client {
+	cp := *c
+	cp.agent = name
+	return &cp
 }
 
 // As returns a copy of the client that identifies itself as name in the activity feed.
@@ -902,6 +920,9 @@ func (c *Client) Call(method string, params any) (json.RawMessage, error) {
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	if c.name != "" {
 		req.Header.Set("X-LocalSites-Client", c.name)
+	}
+	if c.agent != "" {
+		req.Header.Set("X-LocalSites-Agent", c.agent)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	res, err := c.hc.Do(req)
@@ -965,11 +986,49 @@ func ApprovalFields(method string, names []string) []string {
 
 // NeedsApproval reports whether a call waits for the person to approve it in the app.
 func NeedsApproval(client, method string, body []byte) bool {
-	if TrustedClient(client) {
+	return needsApproval(TrustedClient(client), method, body)
+}
+
+type peerKey struct{}
+
+// callerTrust decides how far a caller is trusted.
+//
+// When this service can check signatures (a signed release on macOS), only LocalSites itself, signed like
+// the service, is the app. A command typed in a terminal is no longer taken at its word (a program can give
+// itself a pretend terminal), but its person-only requests wait for Approve in the app instead of being
+// refused: askable. Without signatures (Linux, development builds) the caller's own name decides, as before.
+func callerTrust(client string, proven, canProve bool) (trusted, askable bool) {
+	if !canProve {
+		return TrustedClient(client), false
+	}
+	if client == "app" && proven {
+		return true, false
+	}
+	return false, client == "cli"
+}
+
+// personOnly: requests agents and scripts can't make at all; a terminal command asks for them instead.
+func personOnly(method string) bool {
+	switch method {
+	case "update.install", "update.rollback", "sites.trash", "setup.homebrew", "problems.send", "problems.ui":
+		return true
+	}
+	return false
+}
+
+func needsApproval(trusted bool, method string, body []byte) bool {
+	if trusted {
 		return false
 	}
 	if isDestructive(method) {
 		return true
+	}
+	if method == "tools.adminer" { // switching it on opens every database to a web page
+		var m struct {
+			Enabled bool `json:"enabled"`
+		}
+		_ = json.Unmarshal(body, &m)
+		return m.Enabled
 	}
 	if f, ok := approvalFields[method]; ok {
 		var m map[string]json.RawMessage

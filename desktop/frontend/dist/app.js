@@ -1011,10 +1011,11 @@ function renderApprovals(list) {
   box.innerHTML = list.map(a => {
     let p = {}; try { p = JSON.parse(a.summary || '{}'); } catch (_) { /* summary may be empty */ }
     const what = describe({ method: a.method, summary: a.summary }) || a.method;
-    return `<div class="approval" role="alertdialog" aria-label="Approve ${esc(a.method)}"><div class="ap-h">${icon.agent}<b>${a.client === 'mcp' ? 'An AI agent' : 'A script or command (no terminal)'} wants to:</b><span class="spacer"></span><span class="note" data-left="${esc(a.expires)}"></span></div>
+    const who = a.client === 'mcp' ? (a.agent || 'An AI agent') : { cli: 'A command in the terminal', 'unproven-app': 'A program calling itself LocalSites' }[a.client] || 'A script or command (no terminal)';
+    return `<div class="approval" role="alertdialog" aria-label="Approve ${esc(a.method)}"><div class="ap-h">${icon.agent}<b>${esc(who)} wants to:</b><span class="spacer"></span><span class="note" data-left="${esc(a.expires)}"></span></div>
       <div class="ap-what">${esc(what === a.method ? a.method.replace('.', ' ') : what)}</div>
       ${Object.keys(p).length ? `<pre class="mini">${esc(JSON.stringify(p, null, 2))}</pre>` : ''}
-      <div class="form-row" style="justify-content:flex-end">${UI.btn('Deny', { attrs: `data-approve="${a.id}|0"` })}${UI.btn('Approve', { kind: 'primary', attrs: `data-approve="${a.id}|1"` })}</div></div>`;
+      <div class="form-row" style="justify-content:flex-end">${UI.btn('Deny', { attrs: `data-approve="${a.id}|0"` })}${a.grantable ? UI.btn('Approve for 10 min', { attrs: `data-approve="${a.id}|1|w"`, title: `Also allow ${a.method.replace('.', ' ')} by ${who} on this ${a.scope?.startsWith('folder:') ? 'project' : 'item'} for 10 minutes without asking` }) : ''}${UI.btn('Approve', { kind: 'primary', attrs: `data-approve="${a.id}|1"` })}</div></div>`;
   }).join('');
   renderApprovals(list);
 }
@@ -2443,9 +2444,9 @@ document.addEventListener('click', async (e) => {
   }
   if (d.agentoff) { logToast(await act(() => bridge.call('agents.disconnect', { id: d.agentoff }), 'Disconnect')); S.agents = null; return loadAgents(); }
   if (d.approve) {
-    const [id, ok] = d.approve.split('|');
-    await act(() => bridge.call('approvals.decide', { id, approve: ok === '1' }), 'Approval');
-    toast(ok === '1' ? 'Approved. The agent carries on.' : 'Denied. Nothing was done.', ok === '1' ? 'ok' : 'warn');
+    const [id, ok, w] = d.approve.split('|');
+    await act(() => bridge.call('approvals.decide', { id, approve: ok === '1', for_a_while: w === 'w' }), 'Approval');
+    toast(ok !== '1' ? 'Denied. Nothing was done.' : w === 'w' ? 'Approved. The same request is allowed for 10 minutes.' : 'Approved. The agent carries on.', ok === '1' ? 'ok' : 'warn');
     approvalsShown = ''; return pollApprovals();
   }
   if (d.dbopenin) {

@@ -1348,6 +1348,43 @@ func TestAgentApprovals(t *testing.T) {
 	if _, err := app.Call("addons.flush", map[string]any{"id": "valkey"}); err == nil || strings.Contains(err.Error(), "approval") {
 		t.Fatalf("app call: %v", err)
 	}
+
+	// Approve for 10 minutes: the request card names the agent; the same request then runs without asking,
+	// while another agent still asks
+	claude := agent.WithAgent("Claude Code")
+	go func() { _, err := claude.Call("addons.flush", map[string]any{"id": "valkey"}); done <- err }()
+	list = pending()
+	if len(list) != 1 || list[0].Agent != "Claude Code" || !list[0].Grantable || list[0].Scope != "id:valkey" {
+		t.Fatalf("request card: %+v", list)
+	}
+	if _, err := app.Call("approvals.decide", map[string]any{"id": list[0].ID, "approve": true, "for_a_while": true}); err != nil {
+		t.Fatal(err)
+	}
+	<-done
+	start := time.Now()
+	if _, err := claude.Call("addons.flush", map[string]any{"id": "valkey"}); err == nil || strings.Contains(err.Error(), "approval") || time.Since(start) > 5*time.Second {
+		t.Fatalf("second request should run right away: %v", err)
+	}
+	go func() {
+		_, err := agent.WithAgent("Cursor").Call("addons.flush", map[string]any{"id": "valkey"})
+		done <- err
+	}()
+	if list = pending(); len(list) != 1 || list[0].Agent != "Cursor" {
+		t.Fatalf("another agent should ask: %+v", list)
+	}
+	app.Call("approvals.decide", map[string]any{"id": list[0].ID, "approve": false})
+	<-done
+	// deleting never gets a 10-minute approval
+	go func() { _, err := claude.Call("db.drop", map[string]any{"name": "nothing_here"}); done <- err }()
+	list = pending()
+	if len(list) != 1 || list[0].Grantable {
+		t.Fatalf("db.drop card: %+v", list)
+	}
+	if _, err := app.Call("approvals.decide", map[string]any{"id": list[0].ID, "approve": true, "for_a_while": true}); err == nil {
+		t.Fatal("db.drop accepted a 10-minute approval")
+	}
+	app.Call("approvals.decide", map[string]any{"id": list[0].ID, "approve": false})
+	<-done
 }
 
 func TestRootPassword(t *testing.T) {

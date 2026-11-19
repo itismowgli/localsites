@@ -12,7 +12,7 @@ func TestApprovals(t *testing.T) {
 	run := func(decide func(id string)) error {
 		done := make(chan struct{})
 		res := make(chan error, 1)
-		go func() { res <- a.wait("share.start", "mcp", []byte(`{"folder":"shop","password":"s3cret"}`), done) }()
+		go func() { res <- a.wait("share.start", "mcp", "", []byte(`{"folder":"shop","password":"s3cret"}`), done) }()
 		var list []Approval
 		for i := 0; i < 100 && len(list) == 0; i++ {
 			time.Sleep(10 * time.Millisecond)
@@ -31,10 +31,10 @@ func TestApprovals(t *testing.T) {
 		}
 		return <-res
 	}
-	if err := run(func(id string) { a.decide(id, true) }); err != nil {
+	if err := run(func(id string) { a.decide(id, true, false) }); err != nil {
 		t.Fatalf("approved: %v", err)
 	}
-	if err := run(func(id string) { a.decide(id, false) }); err == nil || !strings.Contains(err.Error(), "denied") {
+	if err := run(func(id string) { a.decide(id, false, false) }); err == nil || !strings.Contains(err.Error(), "denied") {
 		t.Fatalf("denied: %v", err)
 	}
 	if err := run(nil); err == nil {
@@ -43,7 +43,7 @@ func TestApprovals(t *testing.T) {
 	if len(a.list()) != 0 {
 		t.Fatal("finished requests must leave the queue")
 	}
-	if a.decide("nope", true) == nil {
+	if a.decide("nope", true, false) == nil {
 		t.Fatal("unknown id accepted")
 	}
 	if !isDestructive("stop") || !isDestructive("share.start") || isDestructive("sites.list") {
@@ -57,7 +57,7 @@ func TestApprovalsSignalChanges(t *testing.T) {
 	mu := make(chan struct{}, 10)
 	a := approvals{onChange: func() { mu <- struct{}{} }}
 	done := make(chan struct{})
-	go func() { _ = a.wait("quit", "mcp", nil, done) }()
+	go func() { _ = a.wait("quit", "mcp", "", nil, done) }()
 	<-mu
 	close(done)
 	select {

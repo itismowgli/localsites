@@ -85,8 +85,19 @@ func (s *Server) handle(req request) (any, *rpcError) {
 	case "initialize":
 		var p struct {
 			ProtocolVersion string `json:"protocolVersion"`
+			ClientInfo      struct {
+				Name  string `json:"name"`
+				Title string `json:"title"`
+			} `json:"clientInfo"`
 		}
 		_ = json.Unmarshal(req.Params, &p)
+		name := p.ClientInfo.Title
+		if name == "" {
+			name = p.ClientInfo.Name
+		}
+		if c, ok := s.API.(interface{ WithAgent(string) *api.Client }); ok && name != "" {
+			s.API = c.WithAgent(name) // approval requests show which agent app asked
+		}
 		version := supportedVersions[0]
 		for _, v := range supportedVersions {
 			if v == p.ProtocolVersion {
