@@ -1,9 +1,13 @@
 package api
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/localsites/localsites/internal/engine"
+	"github.com/localsites/localsites/internal/paths"
 )
 
 func TestCallerTrust(t *testing.T) {
@@ -96,6 +100,22 @@ func TestApproveForAWhile(t *testing.T) {
 	if !ask("db.drop", "mcp", "Claude Code", `{"name":"shop"}`) || !ask("db.drop", "mcp", "Claude Code", `{"name":"shop"}`) {
 		t.Error("deleting a database must ask every time")
 	}
+	// the app lists the grants and can end one early
+	gs := a.activeGrants()
+	if len(gs) == 0 || gs[0].Method != "db.import" || gs[0].Agent != "Claude Code" || gs[0].Scope != "name:shop" {
+		t.Fatalf("grants = %+v", gs)
+	}
+	for _, g := range gs {
+		if err := a.revoke(g.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a.revoke(gs[0].ID) == nil {
+		t.Error("ending an approval twice should say it already ended")
+	}
+	if !ask("db.import", "mcp", "Claude Code", `{"name":"shop"}`) {
+		t.Error("a revoked approval still counted")
+	}
 	// expired grants are forgotten
 	a.mu.Lock()
 	for i := range a.grants {
@@ -113,5 +133,37 @@ func TestAgentName(t *testing.T) {
 	}
 	if got := agentName(strings.Repeat("x", 100)); len(got) != 40 {
 		t.Errorf("not shortened: %d", len(got))
+	}
+}
+
+// Only the person can end an approval early: an agent's request to end one is refused and the grant stays.
+func TestRevokeIsPersonOnly(t *testing.T) {
+	s := &Server{E: &engine.Engine{P: paths.Paths{Logs: t.TempDir()}}, token: "tok"}
+	s.pending.grants = []grant{{id: "g1", client: "mcp", agent: "Claude Code", method: "db.import", scope: "name:shop", until: time.Now().Add(time.Minute)}}
+	call := func(client, method, body string) (int, string) {
+		r := httptest.NewRequest("POST", "/call/"+method, strings.NewReader(body))
+		r.SetPathValue("method", method)
+		r.Header.Set("Authorization", "Bearer tok")
+		r.Header.Set("X-LocalSites-Client", client)
+		w := httptest.NewRecorder()
+		s.handle(w, r)
+		return w.Code, w.Body.String()
+	}
+	if code, out := call("mcp", "approvals.revoke", `{"id":"g1"}`); code == 200 || !strings.Contains(out, "only the person") {
+		t.Fatalf("an agent ended an approval: %d %s", code, out)
+	}
+	if len(s.pending.activeGrants()) != 1 {
+		t.Fatal("the grant was removed by an agent")
+	}
+	if _, out := call("mcp", "approvals.grants", `{}`); !strings.Contains(out, `"method":"db.import"`) {
+		t.Errorf("grants = %s", out)
+	}
+	if !canProveApp() { // without signatures the app is who it says it is (development builds, Linux)
+		if code, out := call("app", "approvals.revoke", `{"id":"g1"}`); code != 200 {
+			t.Fatalf("the app couldn't end an approval: %d %s", code, out)
+		}
+		if len(s.pending.activeGrants()) != 0 {
+			t.Error("the grant is still there")
+		}
 	}
 }

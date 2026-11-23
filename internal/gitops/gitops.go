@@ -59,6 +59,11 @@ type Commit struct {
 	When    string   `json:"when,omitempty"`
 	Refs    []string `json:"refs,omitempty"`
 	Parents []string `json:"parents"`
+	Date    string   `json:"date,omitempty"` // committer date, ISO 8601
+	Body    string   `json:"body,omitempty"` // the message after its first line
+	Files   int      `json:"files"`          // files changed, lines added and removed (against the first parent)
+	Added   int      `json:"added"`
+	Removed int      `json:"removed"`
 }
 
 var ErrNotRepo = errors.New("not a git repository")
@@ -238,8 +243,9 @@ func Log(dir string, limit int) ([]Commit, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 80
 	}
-	out, err := run(dir, 15*time.Second, "log", "--all", "--date-order", fmt.Sprintf("-n%d", limit),
-		"--format=%H"+sep+"%h"+sep+"%s"+sep+"%an"+sep+"%cr"+sep+"%D"+sep+"%P")
+	// one record per commit (\x1e), fields split by sep; --shortstat adds its line after the body
+	out, err := run(dir, 15*time.Second, "log", "--all", "--date-order", fmt.Sprintf("-n%d", limit), "--shortstat",
+		"--format=%x1e%H"+sep+"%h"+sep+"%s"+sep+"%an"+sep+"%cr"+sep+"%D"+sep+"%P"+sep+"%cI"+sep+"%b")
 	if err != nil {
 		if strings.Contains(err.Error(), "does not have any commits") {
 			return []Commit{}, nil
@@ -247,21 +253,35 @@ func Log(dir string, limit int) ([]Commit, error) {
 		return nil, err
 	}
 	list := []Commit{}
-	for _, line := range strings.Split(strings.TrimRight(out, "\n"), "\n") {
-		f := strings.Split(line, sep)
-		if len(f) < 7 {
+	for _, rec := range strings.Split(out, "\x1e") {
+		f := strings.SplitN(rec, sep, 9)
+		if len(f) < 9 {
 			continue
 		}
-		c := Commit{Hash: f[0], Short: f[1], Subject: f[2], Author: f[3], When: f[4], Parents: strings.Fields(f[6])}
+		c := Commit{Hash: f[0], Short: f[1], Subject: f[2], Author: f[3], When: f[4], Parents: strings.Fields(f[6]), Date: f[7]}
 		for _, r := range strings.Split(f[5], ", ") {
 			if r = strings.TrimSpace(strings.TrimPrefix(r, "HEAD -> ")); r != "" && r != "HEAD" {
 				c.Refs = append(c.Refs, r)
 			}
 		}
+		body := strings.TrimRight(f[8], "\n ")
+		if m := shortstat.FindStringSubmatchIndex(body); m != nil {
+			c.Files, _ = strconv.Atoi(body[m[2]:m[3]])
+			if m[4] >= 0 {
+				c.Added, _ = strconv.Atoi(body[m[4]:m[5]])
+			}
+			if m[6] >= 0 {
+				c.Removed, _ = strconv.Atoi(body[m[6]:m[7]])
+			}
+			body = body[:m[0]]
+		}
+		c.Body = strings.TrimSpace(body)
 		list = append(list, c)
 	}
 	return list, nil
 }
+
+var shortstat = regexp.MustCompile(`\s*(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?\s*$`)
 
 // Fetch updates remote branches (never changes your files).
 func Fetch(dir string) error {

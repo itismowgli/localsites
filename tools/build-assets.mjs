@@ -29,6 +29,8 @@ const ICONS = {
   container: 'container', calendar: 'calendar', history2: 'history', hash: 'hash', textCursor: 'text-cursor-input', download2: 'file-down',
   mail: 'mail', memory: 'memory-stick', mailCheck: 'mail-check', eraser: 'eraser', gear: 'settings-2', plugZap: 'plug-zap',
   bell: 'bell', bellOff: 'bell-off', moonStar: 'moon-star', eyeOff: 'eye-off',
+  timer: 'timer', ticket: 'ticket', shieldAlert: 'shield-alert', pause: 'pause', rewind: 'rewind', wifiOff: 'wifi-off',
+  receipt: 'receipt', listChecks: 'list-checks', paintbrush: 'paintbrush', rotateCcw: 'rotate-ccw', ban: 'ban', stack: 'square-stack', chevronsUD: 'chevrons-up-down', redo: 'redo-2', arrowUD: 'arrow-up-down',
 };
 
 const out = {};

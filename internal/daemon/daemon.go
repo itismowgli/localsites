@@ -51,6 +51,7 @@ func Run() error {
 		for {
 			time.Sleep(time.Minute)
 			e.ProblemStore().Collect(e.P.Home) // crash traces and macOS crash reports (one directory listing)
+			e.SampleUptime(time.Now())         // was each switched-on project being served (Overview's uptime bars)
 			if e.StopIdleMySQL() {
 				log.Print("Stopped LocalSites MySQL (idle; it starts again when needed)")
 			}

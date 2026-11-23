@@ -223,13 +223,25 @@ test('data browser: tables, rows, sort, filter, structure, SQL and read-only', a
   await page.locator('[data-sortcol="qty"]').click();
   await page.locator('[data-sortcol="qty"]').click(); // descending
   await expect(page.locator('table.grid tbody tr').first()).toContainText('nut');
-  await page.locator('[data-cmd="dfiltermenu"]').click();
-  await page.locator('#menu [data-dfcol="name"]').click();
-  await page.locator('#dFVal').fill('was');
-  await page.locator('[data-cmd="dfilter"]').click();
+  // Rule Builder: name contains "was", then OR qty at least 10 in a group
+  await page.locator('[data-rbtoggle]').click();
+  const rb = page.locator('#rb');
+  await rb.locator('[data-rbcol]').first().selectOption('name');
+  await rb.locator('input[data-rbval]').first().fill('was');
   await expect(page.locator('table.grid tbody tr')).toHaveCount(1);
-  await expect(page.locator('.dbar .fchip')).toContainText('name');
   await expect(page.locator('.dbar').first()).toContainText('of 1');
+  await expect(rb.locator('.rb-code')).toContainText('"name" LIKE ?');
+  await rb.locator('[data-rbaddg]').click();
+  await rb.locator('[data-rbcomb]').click(); // and -> or
+  const inner = rb.locator('.rb-group .rb-rule').first();
+  await inner.locator('[data-rbcol]').selectOption('qty');
+  await inner.locator('[data-rbop]').selectOption('>=');
+  await inner.locator('input[data-rbval]').fill('10');
+  await expect(page.locator('table.grid tbody tr')).toHaveCount(2); // washer, nut
+  await rb.locator('[data-rbtab="text"]').click();
+  await expect(rb.locator('.rb-text')).toContainText('qty at least 10');
+  await page.locator('[data-rbundo="-1"]').click();
+  await expect(page.locator('table.grid tbody tr')).toHaveCount(1);
 
   await page.locator('[data-dtab="structure"]').click();
   await expect(page.locator('#view table.t')).toContainText('qty');
@@ -365,7 +377,7 @@ test('git panel shows branch, changes, branches and history', async ({ page }) =
   await expect(page.locator('#detail .gtitle')).toContainText('main');
   await expect(page.locator('#detail .gfiles')).toContainText('new.txt');
   await expect(page.locator('#detail .gtree')).toContainText('feature');
-  await expect(page.locator('#detail .ghist')).toContainText('first commit');
+  await expect(page.locator('#detail .bg')).toContainText('first commit');
   // Switching is refused while there are uncommitted changes
   await page.locator('#detail [data-gbranch="feature/login"]').click();
   await expect(page.locator('#menu [data-gswitch]')).toBeDisabled();
@@ -561,10 +573,11 @@ test('share: project panel offers sharing right away (tunnl.gg needs only ssh)',
 test('share: a live share tells visitors to leave the username empty', async ({ page }) => {
   await call(page, 'sites.update', { folder: 'hello', enabled: true });
   await page.route('**/__call/status', async (route) => {
-    const r = await route.fetch(); const j = await r.json();
+    let j;
+    try { j = await (await route.fetch()).json(); } catch (_) { return route.abort().catch(() => {}); } // the page moved on mid-request
     j.shares = [{ id: 'hello-1', folder: 'hello', domain: 'hello.test', provider: 'tunnl', url: 'https://quick-cedar-0a82c761.tunnl.gg', password: true,
       started: new Date().toISOString(), expires: new Date(Date.now() + 3600e3).toISOString(), requests: 0, blocked: 0 }];
-    await route.fulfill({ json: j });
+    await route.fulfill({ json: j }).catch(() => {});
   });
   await page.goto('/#projects/hello');
   const live = page.locator('#detail .share-live');
@@ -894,8 +907,9 @@ test('first Open asks which editor to use and remembers the choice', async ({ pa
     return r.fulfill({ contentType: 'application/json', body: 'null' }); });
   await page.goto('/#projects/hello'); await page.reload();
 
-  const btn = page.locator('#detail [data-openwith="editor"]');
-  await expect(btn).toHaveText('Code editor'); // nothing chosen yet
+  // hello is switched off, so the split button's main action is the editor
+  const btn = page.locator('#detail .split-main[data-openwith="editor"]');
+  await expect(btn).toHaveText('Open in Code editor'); // nothing chosen yet
   await btn.click();
   const dlg = page.locator('#keysDialog');
   await expect(dlg).toContainText('Which code editor do you want to use?');
@@ -903,7 +917,7 @@ test('first Open asks which editor to use and remembers the choice', async ({ pa
   await dlg.locator('[data-dlg="zed"]').click();
   await expect.poll(() => opened.length).toBe(1);
   expect(opened[0]).toEqual({ folder: 'hello', app: 'zed', remember: true });
-  await expect(btn).toHaveText('Zed');
+  await expect(btn).toHaveText('Open in Zed');
 
   // Now it opens straight away, no question
   await btn.click();
@@ -915,7 +929,7 @@ test('first Open asks which editor to use and remembers the choice', async ({ pa
   await page.locator('#detail [data-openmore]').click();
   await page.locator('#menu [data-mkdefault="editor:cursor"]').click({ force: true });
   await expect.poll(() => saved.at(-1)).toEqual({ kind: 'editor', app: 'cursor' });
-  await expect(btn).toHaveText('Cursor');
+  await expect(btn).toHaveText('Open in Cursor');
 
   // Settings: Ask every time brings the chooser back, with Remember off
   await page.goto('/#settings');
@@ -928,8 +942,10 @@ test('first Open asks which editor to use and remembers the choice', async ({ pa
   await expect(page.locator('#appRemember')).not.toBeChecked();
   await page.locator('#keysDialog [data-dlg="cancel"]').click();
 
-  // The terminal is chosen separately and still unchosen
-  await expect(page.locator('#detail [data-openwith="terminal"]')).toHaveText('Terminal');
+  // The terminal is chosen separately and still unchosen; picking it from the menu makes it the main button
+  await page.locator('#detail [data-openmore]').click();
+  await expect(page.locator('#menu [data-openwith="terminal"]')).toHaveText('Terminal');
+  await page.keyboard.press('Escape');
   for (const u of ['apps.list', 'apps.default', 'open']) await page.unroute('**/__call/' + u);
 });
 

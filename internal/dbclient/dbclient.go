@@ -625,6 +625,132 @@ type RowsRequest struct {
 	OrderBy string   `json:"order_by"`
 	Desc    bool     `json:"desc"`
 	Filters []Filter `json:"filters"`
+	Where   *Node    `json:"where,omitempty"` // a rule tree (the Rule Builder), joined to Filters with AND
+}
+
+// Node is a rule or a group of nodes in a filter tree. Column names must exist in the table; every value is
+// a bound parameter.
+type Node struct {
+	Kind       string   `json:"kind"`                 // rule | group
+	Combinator string   `json:"combinator,omitempty"` // group: and | or
+	Not        bool     `json:"not,omitempty"`        // group: none of these
+	Children   []Node   `json:"children,omitempty"`
+	Column     string   `json:"column,omitempty"`
+	Op         string   `json:"op,omitempty"`     // = != < > <= >= contains notcontains starts ends in notin between null notnull empty notempty
+	Value      string   `json:"value,omitempty"`  // one value
+	Values     []string `json:"values,omitempty"` // in, notin, between (two)
+}
+
+const (
+	maxTreeDepth = 4
+	maxTreeRules = 60
+)
+
+// treeSQL turns a filter tree into a WHERE expression, adding its values to args. ph returns the next
+// placeholder after a value is appended. Incomplete rules (no value yet) are skipped.
+func treeSQL(n Node, driver string, cols map[string]bool, args *[]any, ph func() string, depth int, rules *int) (string, error) {
+	if depth > maxTreeDepth {
+		return "", errors.New("the filter is nested too deeply")
+	}
+	if n.Kind == "group" {
+		var parts []string
+		for _, ch := range n.Children {
+			s, err := treeSQL(ch, driver, cols, args, ph, depth+1, rules)
+			if err != nil {
+				return "", err
+			}
+			if s != "" {
+				parts = append(parts, s)
+			}
+		}
+		if len(parts) == 0 {
+			return "", nil
+		}
+		j := " AND "
+		if n.Combinator == "or" {
+			j = " OR "
+		}
+		s := "(" + strings.Join(parts, j) + ")"
+		if n.Not {
+			s = "NOT " + s
+		}
+		return s, nil
+	}
+	if n.Kind != "rule" {
+		return "", fmt.Errorf("unknown filter part %q", n.Kind)
+	}
+	if *rules++; *rules > maxTreeRules {
+		return "", errors.New("the filter has too many rules")
+	}
+	if !cols[n.Column] {
+		return "", fmt.Errorf("unknown column %q", n.Column)
+	}
+	q := quoteIdent(driver, n.Column)
+	text := q
+	if driver == "postgres" {
+		text += "::text"
+	}
+	bind := func(v any) string { *args = append(*args, v); return ph() }
+	like := func(neg bool, pattern string) string {
+		op := " LIKE "
+		if neg {
+			op = " NOT LIKE "
+		}
+		return text + op + bind(pattern)
+	}
+	switch n.Op {
+	case "=", "!=", "<", ">", "<=", ">=":
+		if n.Value == "" && n.Op != "=" && n.Op != "!=" {
+			return "", nil
+		}
+		op := n.Op
+		if op == "!=" {
+			op = "<>"
+		}
+		return q + " " + op + " " + bind(n.Value), nil
+	case "contains", "notcontains":
+		if n.Value == "" {
+			return "", nil
+		}
+		return like(n.Op == "notcontains", "%"+likeEscape(n.Value)+"%"), nil
+	case "starts":
+		if n.Value == "" {
+			return "", nil
+		}
+		return like(false, likeEscape(n.Value)+"%"), nil
+	case "ends":
+		if n.Value == "" {
+			return "", nil
+		}
+		return like(false, "%"+likeEscape(n.Value)), nil
+	case "in", "notin":
+		var ph2 []string
+		for _, v := range n.Values {
+			ph2 = append(ph2, bind(v))
+		}
+		if len(ph2) == 0 {
+			return "", nil
+		}
+		op := " IN ("
+		if n.Op == "notin" {
+			op = " NOT IN ("
+		}
+		return q + op + strings.Join(ph2, ", ") + ")", nil
+	case "between":
+		if len(n.Values) != 2 || n.Values[0] == "" || n.Values[1] == "" {
+			return "", nil
+		}
+		return q + " BETWEEN " + bind(n.Values[0]) + " AND " + bind(n.Values[1]), nil
+	case "null":
+		return q + " IS NULL", nil
+	case "notnull":
+		return q + " IS NOT NULL", nil
+	case "empty":
+		return "(" + q + " IS NULL OR " + text + " = '')", nil
+	case "notempty":
+		return "(" + q + " IS NOT NULL AND " + text + " <> '')", nil
+	}
+	return "", fmt.Errorf("unknown filter %q", n.Op)
 }
 
 // Result is a grid of values. Cells are strings; nil is SQL NULL. Long values are cut.
@@ -697,6 +823,16 @@ func (m *Manager) Rows(id string, r RowsRequest) (Result, error) {
 			where = append(where, q+" IS NOT NULL")
 		default:
 			return Result{}, fmt.Errorf("unknown filter %q", f.Op)
+		}
+	}
+	if r.Where != nil {
+		rules := 0
+		t, err := treeSQL(*r.Where, c.Driver, cols, &args, ph, 0, &rules)
+		if err != nil {
+			return Result{}, err
+		}
+		if t != "" {
+			where = append(where, t)
 		}
 	}
 	w := ""

@@ -256,6 +256,9 @@ var Methods = []Method{
 	{Name: "agents.connect", Description: "Add LocalSites to an agent app's MCP settings (backs up the file first; only the localsites entry changes)", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "agents.disconnect", Description: "Remove LocalSites from an agent app's MCP settings", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "approvals.list", Description: "Requests from AI agents waiting for the user's approval in the app"},
+	{Name: "uptime", Description: "For each switched-on project, the minutes it was served and down, hour by hour, for the last 24 hours"},
+	{Name: "approvals.grants", Description: "Active 10-minute approvals: which caller may repeat which action on which project, and until when"},
+	{Name: "approvals.revoke", Description: "End a 10-minute approval early (the app only)", Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "approvals.decide", Description: "Approve or deny a waiting request (the app only; agents can't)", Params: []Param{{Name: "id", Type: "string", Required: true}, {Name: "approve", Type: "boolean", Required: true}, {Name: "for_a_while", Type: "boolean", Description: "Also approve the same request from the same caller on the same project for 10 minutes (everyday actions only)"}}},
 	{Name: "apps.list", Description: "Editors, terminals, git apps, database apps and browsers installed on this computer (for open), and the default editor and terminal the person chose"},
 	{Name: "apps.default", Description: "Choose the default code editor or terminal for the Open buttons (app \"\" forgets the choice, \"ask\" asks every time). Only when the person asked for it", Mutates: true, Params: []Param{
@@ -363,6 +366,19 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		res = map[string]uint64{"version": s.E.Changes.Wait(r.Context().Done(), w.Since, 25*time.Second)}
 	case method == "approvals.list":
 		res = s.pending.list()
+	case method == "approvals.grants":
+		res = s.pending.activeGrants()
+	case method == "approvals.revoke":
+		if !trusted {
+			err = errors.New("only the person using LocalSites can end approvals, in the app")
+			break
+		}
+		var d struct {
+			ID string `json:"id"`
+		}
+		_ = json.Unmarshal(body, &d)
+		err = s.pending.revoke(d.ID)
+		res = map[string]any{"ok": err == nil}
 	case method == "approvals.decide":
 		if !trusted {
 			err = errors.New("only the person using LocalSites can approve requests, in the app")
@@ -394,7 +410,7 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	if m, ok := FindMethod(method); ok && m.Mutates {
 		s.E.Changes.Bump() // tell waiting clients (the app, the menu bar) to refresh
 	}
-	s.record(client, method, body, err, time.Since(start))
+	s.record(client, agentName(r.Header.Get("X-LocalSites-Agent")), method, body, err, time.Since(start))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		out := map[string]any{"error": err.Error()}
@@ -465,6 +481,8 @@ func (s *Server) call(method string, body []byte) (any, error) {
 			go func() { time.Sleep(200 * time.Millisecond); close(s.Quit) }()
 		}
 		return map[string]string{"status": "stopping"}, nil
+	case "uptime":
+		return s.E.Uptime(), nil
 	case "status":
 		return e.Status(), nil
 	case "sites.list":

@@ -149,7 +149,8 @@ func (s *Server) handle(req request) (any, *rpcError) {
 func toolName(method string) string { return strings.ReplaceAll(method, ".", "_") }
 
 func (s *Server) exposed(m api.Method) bool {
-	if m.Name == "methods" || m.Name == "approvals.decide" { // only the person decides approvals
+	// only the person decides approvals; uptime is for the app's Overview
+	if m.Name == "methods" || m.Name == "approvals.decide" || m.Name == "approvals.revoke" || m.Name == "approvals.grants" || m.Name == "uptime" {
 		return false
 	}
 	return !m.Sensitive || s.AllowSecrets

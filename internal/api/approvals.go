@@ -26,11 +26,14 @@ type Approval struct {
 	Agent  string `json:"agent,omitempty"` // the agent app's own name (it can say anything)
 	Scope  string `json:"scope,omitempty"` // the project or database it's about
 	// Grantable: the person may approve the same request from the same caller for a while.
-	Grantable bool      `json:"grantable"`
-	Summary   string    `json:"summary"` // the request's parameters, for the person to read
-	Created   time.Time `json:"created"`
-	Expires   time.Time `json:"expires"`
-	answer    chan bool
+	Grantable bool   `json:"grantable"`
+	Summary   string `json:"summary"` // the request's parameters, for the person to read
+	// What the action does and whether it can lose work, from the method list, so the card can say so.
+	Description string    `json:"description,omitempty"`
+	Destructive bool      `json:"destructive"`
+	Created     time.Time `json:"created"`
+	Expires     time.Time `json:"expires"`
+	answer      chan bool
 }
 
 type approvals struct {
@@ -45,8 +48,53 @@ type approvals struct {
 // grant: "approve this for 10 minutes": the same action, from the same kind of caller and agent, on the
 // same project or database.
 type grant struct {
-	client, agent, method, scope string
-	until                        time.Time
+	id, client, agent, method, scope string
+	until                            time.Time
+}
+
+// Grant is an active "approve for 10 minutes", as the app shows it.
+type Grant struct {
+	ID     string    `json:"id"`
+	Client string    `json:"client"`
+	Agent  string    `json:"agent,omitempty"`
+	Method string    `json:"method"`
+	Scope  string    `json:"scope,omitempty"`
+	Until  time.Time `json:"until"`
+}
+
+// activeGrants lists the grants that haven't run out, soonest to end first.
+func (a *approvals) activeGrants() []Grant {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	out := []Grant{}
+	for _, g := range a.grants {
+		if time.Now().Before(g.until) {
+			out = append(out, Grant{g.id, g.client, g.agent, g.method, g.scope, g.until})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Until.Before(out[j].Until) })
+	return out
+}
+
+// revoke ends a grant early: the next request of that kind asks again.
+func (a *approvals) revoke(id string) error {
+	a.mu.Lock()
+	keep := a.grants[:0]
+	found := false
+	for _, g := range a.grants {
+		if g.id == id {
+			found = true
+			continue
+		}
+		keep = append(keep, g)
+	}
+	a.grants = keep
+	a.mu.Unlock()
+	if !found {
+		return errors.New("that approval has already ended")
+	}
+	a.changed()
+	return nil
 }
 
 // grantMinutes is how long "approve for a while" lasts.
@@ -136,8 +184,9 @@ func (a *approvals) wait(method, client, agent string, body []byte, done <-chan 
 	}
 	maskSecrets(params) // never show secrets in the prompt
 	sum, _ := json.Marshal(params)
+	m, _ := FindMethod(method)
 	p := &Approval{ID: hex.EncodeToString(b), Method: method, Client: client, Agent: agent, Scope: scope, Grantable: grantable[method],
-		Summary: string(sum), Created: time.Now(), Expires: time.Now().Add(approvalWait), answer: make(chan bool, 1)}
+		Summary: string(sum), Description: m.Description, Destructive: m.Destructive, Created: time.Now(), Expires: time.Now().Add(approvalWait), answer: make(chan bool, 1)}
 	a.mu.Lock()
 	if a.pending == nil {
 		a.pending = map[string]*Approval{}
@@ -186,7 +235,7 @@ func (a *approvals) decide(id string, approve, forAWhile bool) error {
 	}
 	delete(a.pending, id) // a second answer to the same request finds nothing
 	if ok && approve && forAWhile {
-		a.grants = append(a.grants, grant{p.Client, p.Agent, p.Method, p.Scope, time.Now().Add(grantMinutes * time.Minute)})
+		a.grants = append(a.grants, grant{p.ID, p.Client, p.Agent, p.Method, p.Scope, time.Now().Add(grantMinutes * time.Minute)})
 	}
 	a.mu.Unlock()
 	if !ok {

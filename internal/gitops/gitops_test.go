@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func git(t *testing.T, dir string, args ...string) {
@@ -57,6 +58,11 @@ func TestStatusBranchesLogSwitchPull(t *testing.T) {
 	log, err := Log(work, 20)
 	if err != nil || len(log) < 2 || len(log[0].Parents) == 0 || log[0].Hash == "" {
 		t.Fatalf("log: %v %+v", err, log)
+	}
+	for _, c := range log {
+		if _, err := time.Parse(time.RFC3339, c.Date); err != nil || c.Subject == "" || c.Files == 0 {
+			t.Fatalf("commit details missing: %+v", c)
+		}
 	}
 	if err := Checkout(work, "feature"); err != nil {
 		t.Fatal(err)

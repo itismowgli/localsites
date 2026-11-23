@@ -12,7 +12,8 @@ import (
 // Activity is one recorded API call.
 type Activity struct {
 	Time     time.Time `json:"time"`
-	Client   string    `json:"client"` // app | cli | mcp | devui | unknown
+	Client   string    `json:"client"`          // app | cli | mcp | devui | unknown
+	Agent    string    `json:"agent,omitempty"` // the agent app's own name, for calls over MCP
 	Method   string    `json:"method"`
 	Summary  string    `json:"summary"`
 	Error    string    `json:"error,omitempty"`
@@ -30,7 +31,7 @@ const activityMax = 300
 var clientRe = regexp.MustCompile(`^[a-z][a-z0-9-]{0,15}$`)
 
 // record keeps every change and every call made by an agent (reads from the app are too noisy).
-func (s *Server) record(client, method string, body []byte, err error, took time.Duration) {
+func (s *Server) record(client, agent, method string, body []byte, err error, took time.Duration) {
 	m, known := FindMethod(method)
 	if !clientRe.MatchString(client) {
 		client = "unknown"
@@ -39,6 +40,9 @@ func (s *Server) record(client, method string, body []byte, err error, took time
 		return
 	}
 	a := Activity{Time: time.Now(), Client: client, Method: method, Summary: summarize(m, body), Duration: took.Milliseconds()}
+	if client == "mcp" {
+		a.Agent = agent
+	}
 	if err != nil {
 		a.Error = err.Error()
 	}

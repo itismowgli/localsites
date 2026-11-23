@@ -66,6 +66,7 @@ type Engine struct {
 	mysqlUsed   atomic.Int64      // last time something used LocalSites MySQL (unix nanoseconds)
 	doctorFails atomic.Int64      // failed checks in the last Doctor run, for the Dock badge
 	setup       setupState        // installing and repairing Homebrew software (see setup.go)
+	uptime      uptimeStore       // whether projects were served, hour by hour (see uptime.go)
 }
 
 // New loads config, CA and picks the front door.

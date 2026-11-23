@@ -173,13 +173,81 @@ function openWeb(url) {
 }
 
 /* ------------------------------------------------------------------ toasts */
+// A deck: the newest toast on top, older ones tucked behind it. Hovering fans them out and pauses their
+// timers; each one closes with its x or a swipe to the right.
+const TOAST_MAX = 6;
 function toast(text, kind = 'ok') {
   const t = document.createElement('div');
   t.className = 'toast';
-  t.innerHTML = `<span class="dot ${kind === 'err' ? 'err' : kind === 'warn' ? 'warn' : 'on'}"></span><pre>${esc(text)}</pre>`;
+  t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  t.innerHTML = `<span class="dot ${kind === 'err' ? 'err' : kind === 'warn' ? 'warn' : 'on'}"></span><pre>${esc(text)}</pre><button class="toast-x" title="Dismiss">${icon.x}</button>`;
+  t._left = kind === 'err' ? 9000 : 4200;
   $('#toasts').append(t);
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 180); }, kind === 'err' ? 9000 : 4200);
+  const all = [...$('#toasts').querySelectorAll('.toast:not(.out)')];
+  for (const old of all.slice(0, Math.max(0, all.length - TOAST_MAX))) dropToast(old);
+  armToast(t); layoutToasts();
 }
+function armToast(t) {
+  if (!t._left || t.id === 'updAsk') return; // the update question waits for an answer
+  clearTimeout(t._timer); t._from = Date.now();
+  t._timer = setTimeout(() => dropToast(t), t._left);
+}
+function dropToast(t, dx = 0) {
+  if (t.classList.contains('out')) return;
+  clearTimeout(t._timer); t.classList.add('out');
+  if (dx) t.style.setProperty('--dx', dx + 'px');
+  setTimeout(() => { t.remove(); layoutToasts(); }, 180);
+}
+// Collapsed: each older toast sits 8px higher and a little smaller. Open: stacked with gaps, newest at the bottom.
+function layoutToasts() {
+  const box = $('#toasts'), list = [...box.querySelectorAll('.toast:not(.out)')].reverse(), open = box.matches(':hover') || box.contains(document.activeElement);
+  let y = 0;
+  list.forEach((t, i) => {
+    t.style.zIndex = String(100 - i);
+    if (open) { t.style.transform = `translateY(${-y}px)`; t.style.opacity = '1'; y += t.offsetHeight + 8; }
+    else { t.style.transform = `translateY(${-i * 8}px) scale(${1 - i * 0.04})`; t.style.opacity = i > 2 ? '0' : '1'; }
+    t.classList.toggle('behind', !open && i > 0);
+  });
+  box.style.height = (!list.length ? 0 : open ? Math.max(0, y - 8) : list[0].offsetHeight + Math.min(2, list.length - 1) * 8) + 'px';
+}
+{
+  const box = $('#toasts');
+  box.addEventListener('mouseenter', () => { for (const t of box.querySelectorAll('.toast')) { clearTimeout(t._timer); if (t._from) t._left = Math.max(1200, t._left - (Date.now() - t._from)); } layoutToasts(); });
+  box.addEventListener('mouseleave', () => { for (const t of box.querySelectorAll('.toast:not(.out)')) armToast(t); layoutToasts(); });
+  box.addEventListener('click', (e) => { const x = e.target.closest('.toast-x'); if (x) dropToast(x.closest('.toast')); });
+  let drag = null;
+  box.addEventListener('pointerdown', (e) => { const t = e.target.closest('.toast'); if (!t || e.target.closest('button, a, input')) return; drag = { t, x: e.clientX }; t.setPointerCapture(e.pointerId); t.classList.add('dragging'); });
+  box.addEventListener('pointermove', (e) => { if (!drag) return; const dx = Math.max(0, e.clientX - drag.x); drag.t.style.translate = dx + 'px 0'; drag.t.style.opacity = String(Math.max(0.2, 1 - dx / 240)); });
+  const end = (e) => { if (!drag) return; const { t, x } = drag, dx = e.clientX - x; drag = null; t.classList.remove('dragging');
+    if (dx > 80) dropToast(t, dx); else { t.style.translate = ''; t.style.opacity = ''; } };
+  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+}
+/* ------------------------------------------------------------------ timers */
+// One clock for every countdown on the page: [data-remain=ISO] counts down, [data-elapsed=ms since epoch]
+// counts up, [data-bar-from][data-bar-to] is a bar that empties as the time runs out.
+function fmtLeft(ms) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return s + 's';
+  const m = Math.round(s / 60);
+  return m < 60 ? m + ' min' : `${Math.floor(m / 60)} h ${m % 60} min`;
+}
+function fmtClock(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, ss = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+function tickTimes() {
+  const now = Date.now();
+  const put = (el, t) => { if (el.textContent !== t) el.textContent = t; }; // unchanged text: no DOM change, so no new tick
+  for (const el of document.querySelectorAll('[data-remain]')) put(el, fmtLeft(new Date(el.dataset.remain) - now));
+  for (const el of document.querySelectorAll('[data-elapsed]')) put(el, fmtClock(now - Number(el.dataset.elapsed)));
+  for (const el of document.querySelectorAll('[data-bar-to]')) {
+    const a = new Date(el.dataset.barFrom).getTime(), b = new Date(el.dataset.barTo).getTime();
+    el.style.transform = `scaleX(${b > a ? Math.max(0, Math.min(1, (b - now) / (b - a))) : 0})`;
+  }
+}
+setInterval(() => { if (!document.hidden) tickTimes(); }, 1000);
+new MutationObserver(() => { clearTimeout(tickTimes.q); tickTimes.q = setTimeout(tickTimes, 0); }).observe(document.body, { childList: true, subtree: true });
+
 function logToast(res) {
   const lines = res?.log || [];
   if (lines.length) toast(lines.join('\n'), lines.some(l => /fail|error|could not|not ready/i.test(l)) ? 'err' : 'ok');
@@ -191,7 +259,9 @@ addEventListener('beforeunload', () => { unloading = true; });
 async function act(fn, label) {
   try { return await fn(); } catch (e) {
     if (unloading) return;
-    reportError(label || 'action', e); toast((label ? label + ': ' : '') + (e.message || e), 'err');
+    reportError(label || 'action', e);
+    if (S.offline && !label) return; // the banner already says the service isn't answering
+    toast((label ? label + ': ' : '') + (e.message || e), 'err');
   }
 }
 
@@ -213,21 +283,39 @@ const askText = (title, placeholder, okLabel = 'Create') => dialog(`<h3>${esc(ti
   <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn primary" data-dlg="ok">${esc(okLabel)}</button></div>`);
 const confirmBox = (title, text, okLabel) => dialog(`<h3>${esc(title)}</h3><p class="note">${esc(text)}</p>
   <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn primary" data-dlg="ok">${esc(okLabel)}</button></div>`);
+// Shortcut Sheet: every shortcut, grouped, with a search box (opens with ? or Cmd+/)
+function shortcutGroups() {
+  return [
+    ['General', [['Command launcher', [MOD + 'K']], ['Keyboard shortcuts', [MOD + '/', '?']], ['Close a panel, menu or dialog', ['Esc']]]],
+    ['Go to', Object.values(VIEWS).map(v => [v.title, ['G', v.key.toUpperCase()]])],
+    ['Window', [['New tab', [MOD + 'T']], ['Close tab', [MOD + 'W']], ['Switch to tab 1 to 9', [MOD + '1…9']], ['Back', [MOD + '[']], ['Forward', [MOD + ']']], ['Show or hide the sidebar', [MOD + '\\']]]],
+    ['Projects', [['Search projects', ['/']], ['Filter by type, folder, branch…', ['F']], ['Next / previous project', ['J', 'K']], ['Switch the selected project on or off', ['E']], ['Open it in the browser', ['O']]]],
+    ['Data', [['Run the SQL', [MOD + '↵']], ['Accept a suggestion', ['Tab']]]],
+  ];
+}
+function keysHTML(q = '') {
+  q = q.trim().toLowerCase();
+  const groups = shortcutGroups().map(([g, list]) => [g, list.filter(([l, keys]) => !q || (g + ' ' + l + ' ' + keys.join(' ')).toLowerCase().includes(q))]).filter(([, l]) => l.length);
+  return groups.length ? groups.map(([g, list]) => `<div class="keys-g"><div class="keys-h">${esc(g)}</div>${list.map(([l, keys]) =>
+    `<div class="keys-r"><span>${esc(l)}</span><span>${keys.map(k => k === 'then' ? '<span class="note">then</span>' : `<kbd>${esc(k)}</kbd>`).join(' ')}</span></div>`).join('')}</div>`).join('')
+    : `<div class="menu-empty">No shortcut matches “${esc(q)}”.</div>`;
+}
 function showKeys() {
-  const k = (label, keys) => `<span>${label}</span><span>${keys.map(x => `<kbd>${x}</kbd>`).join(' ')}</span>`;
-  return dialog(`<h3>Keyboard shortcuts</h3><div class="keys">
-    ${k('Command palette', [MOD + 'K'])}${k('New tab / close tab', [MOD + 'T', MOD + 'W'])}${k('Back / forward', [MOD + '[', MOD + ']'])}
-    ${k('Toggle sidebar', [MOD + '\\'])}${k('Go to view', ['G', 'then O P D T A S L H I'])}${k('Run SQL', [MOD + '↵'])}${k('Filter projects', ['/'])}
-    ${k('Filter projects by…', ['F'])}${k('Move in list', ['J', 'K'])}${k('Switch project on/off', ['E'])}${k('Open in browser', ['O'])}${k('Close panel / dialog', ['Esc'])}${k('This help', [MOD + '/', '?'])}
-  </div><div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-dlg="ok">Done</button></div>`);
+  const p = dialog(`<div class="keys-top"><h3>Keyboard shortcuts</h3><label class="qbox">${icon.search}<input class="input sm" id="keysQ" placeholder="Search shortcuts" spellcheck="false" autocomplete="off" aria-label="Search shortcuts"></label></div>
+    <div class="keys-sheet" id="keysList">${keysHTML()}</div>
+    <div class="form-row" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-dlg="ok">Done</button></div>`);
+  const qi = $('#keysQ'); qi.onkeydown = null;
+  qi.oninput = () => { $('#keysList').innerHTML = keysHTML(qi.value); };
+  return p;
 }
 
 /* -------------------------------------------------------------------- data */
 async function loadStatus() { S.status = await bridge.call('status'); }
 async function loadSites() { S.sites = await bridge.call('sites.list') || []; }
 async function loadSetup() {
-  const was = S.setup?.running;
+  const was = S.setup?.running, prev = S.setup;
   try { S.setup = await bridge.call('setup.status'); } catch { S.setup = null; }
+  trackSetup(prev, S.setup);
   if (was && S.setup && !S.setup.running) { // a fix just finished: say how it went and check again
     const bad = Object.entries(S.setup.results || {}).filter(([, v]) => v !== 'ok' && v !== 'opened');
     toast(bad.length ? `Setup finished, but ${bad.map(([k]) => k).join(', ')} didn’t work; see Overview` : 'Everything is installed and repaired', bad.length ? 'warn' : 'ok');
@@ -247,6 +335,7 @@ async function loadSettingsSafe() {
 }
 function applyTheme() {
   if (S.theme === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = S.theme;
+  if (typeof applyLook === 'function' && S.look) applyLook(); // the accent's text colour depends on the mode
   syncWindowColour();
 }
 // The native window shows its own colour while it resizes; keep it equal to the page background
@@ -305,6 +394,7 @@ function onEnter(view) {
   if (view === 'doctor' && !S.doctor && !S.doctorBusy) command('doctor');
   if (view === 'overview' && !S.doctor && !S.doctorBusy) command('doctor', { quiet: true });
   if (view === 'overview') act(async () => { await loadProblems(); if (cur().view === 'overview') renderView(); });
+  if (view === 'overview') { loadUptime(); if (!S.agents) act(async () => { S.agents = await bridge.call('agents.list') || []; if (cur().view === 'overview') renderView(); }); }
   if (view === 'agent') setTimeout(() => $('#agentInput')?.focus(), 30);
 }
 function goHistory(dir) {
@@ -447,7 +537,6 @@ function renderHead() {
     if (!opts.some(([k, f]) => k === S.log.kind && f === S.log.folder) && S.log.kind.startsWith('addon')) opts.push([S.log.kind, S.log.folder, S.log.folder]);
     for (const s of S.sites.filter(s => s.enabled)) opts.push(['site-error', s.folder, `${s.folder} · errors`], ['site-php', s.folder, `${s.folder} · PHP`], ['site-access', s.folder, `${s.folder} · visits`]);
     right = `<select class="input" id="logSrc" aria-label="Log">${opts.map(([k, f, l]) => `<option value="${k}|${esc(f)}" ${S.log.kind === k && S.log.folder === f ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
-      <button class="btn live ${S.logAuto ? 'on' : ''}" data-cmd="logauto" aria-pressed="${S.logAuto}" title="${S.logAuto ? 'New lines appear as they are written' : 'Paused'}"><span class="pulse"></span>${S.logAuto ? 'Live' : 'Paused'}</button>
       <button class="btn icon-only" data-cmd="reloadlog" title="Reload">${icon.refresh}</button>`;
   } else if (t.view === 'doctor') {
     const fails = (S.doctor || []).filter(c => c.status === 'fail').length;
@@ -468,6 +557,7 @@ function renderStatus() {
   const shares = st?.shares || [];
   const sharing = shares.length ? `<button class="item sharing" data-proj="${esc(shares[0].folder)}" title="${esc(shares.map(x => `${x.folder}: ${x.url}`).join('\n'))}"><span class="dot on"></span>Sharing ${shares.length > 1 ? shares.length + ' sites' : esc(shares[0].folder)}</button>` : '';
   setHTML($('#statusbar'), `${left}${sharing}<span class="spacer"></span>
+    ${(S.grants || []).length ? `<button class="item pass-item" data-cmd="passmenu" title="Agent actions allowed without asking">${icon.ticket}${S.grants.length === 1 ? '1 pass' : S.grants.length + ' passes'} · <span data-remain="${esc(S.grants[0].until)}">${fmtLeft(new Date(S.grants[0].until) - Date.now())}</span></button>` : ''}
     <button class="item" data-view="agent">${icon.agent}Agent${agentCalls ? ` · ${agentCalls}` : ''}</button>
     ${bellButton()}
     <button class="item" data-cmd="activitymenu" title="Recent activity">${icon.clock}</button>`);
@@ -555,9 +645,11 @@ function activityRows(items, empty) {
 function setupCard() {
   const su = S.setup; if (!su) return '';
   const res = su.results || {}, failed = Object.entries(res).filter(([k, v]) => v !== 'ok' && v !== 'opened');
-  if (su.running) return `<section class="ov-sec setup"><div class="setup-h"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><div><h2>Getting LocalSites ready</h2>
-    <p class="note">${esc(su.step || 'Working…')}</p></div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
-    <p class="note">This can take a few minutes. You can keep using LocalSites; projects restart by themselves when it’s done.</p></section>`;
+  if (su.running) { const at = S.setupRun?.at || Date.now();
+    return `<section class="ov-sec setup"><div class="setup-h"><span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><div><h2>Getting LocalSites ready</h2>
+    <p class="note">${esc(su.step || 'Working…')}</p></div><span class="spacer"></span><span class="pl-total note" title="Time so far"><span data-elapsed="${at}">${fmtClock(Date.now() - at)}</span></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
+    ${setupPipeline(su)}
+    <p class="note">This can take a few minutes. You can keep using LocalSites; projects restart by themselves when it’s done.</p></section>`; }
   if (!su.homebrew) return `<section class="ov-sec setup"><div class="setup-h"><span class="st-ic">${icon.download2}</span><div><h2>One step before your projects run</h2>
     <p class="note">${isMac ? 'LocalSites runs Apache, MySQL and PHP from Homebrew, the free installer most Mac developers use. LocalSites downloads Homebrew’s official installer, checks Apple has verified it, and opens it: click Continue and enter your Mac password.'
       : 'LocalSites runs Apache, MySQL and PHP from Homebrew, a free package manager that keeps them separate from your system’s own packages. LocalSites installs it for you: enter your password once, then it takes a few minutes.'}</p></div></div>
@@ -566,24 +658,106 @@ function setupCard() {
     ${su.items.filter(i => i.kind === 'system').map(i => `<div class="ov-row"><span class="chip">Set up</span><span class="ov-title">${esc(i.title)}</span><span class="note ellipsis" title="${esc(i.why)}">${esc(i.why)}</span>
       <button class="btn sm" data-setupfix="${esc(i.id)}">${icon.wrench}Set up</button></div>`).join('')}</section>`;
   if (!su.items.length) return failed.length ? `<section class="ov-sec setup"><div class="setup-h"><span class="bad">${icon.alertCircle}</span><div><h2>Some fixes didn’t finish</h2>
-    ${failed.map(([k, v]) => `<p class="note">${esc(k)}: ${esc(v)}</p>`).join('')}</div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div></section>` : '';
+    ${failed.map(([k, v]) => `<p class="note">${esc(k)}: ${esc(v)}</p>`).join('')}</div><span class="spacer"></span>${UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' })}</div>
+    <div class="form-row">${failed.map(([k]) => `<button class="btn sm" data-setupfix="${esc(k)}">${icon.rotateCcw}Retry ${esc(k)}</button>`).join('')}</div></section>` : '';
   const need = su.items.filter(i => i.required).length, pw = su.items.some(i => i.password);
   const title = need ? `${need === 1 ? 'One thing needs' : `${need} things need`} fixing before every project can run` : 'LocalSites can fix these for you';
   return `<section class="ov-sec setup"><div class="setup-h"><span class="${need ? 'bad' : 'note'}">${icon.alertCircle}</span><div><h2>${esc(title)}</h2>
     <p class="note">${su.items.every(i => i.kind === 'system') ? 'One click sets this up' : 'One click installs or repairs everything below with Homebrew'}${pw ? (isMac ? '. macOS asks for your Mac password once' : '. It asks for your password once') : ''}.</p></div></div>
     ${su.items.map(i => `<div class="ov-row su-row"><span class="chip">${{ repair: 'Repair', system: 'Set up' }[i.kind] || 'Install'}</span><span class="su-t"><span class="ov-title">${esc(i.title)}</span><span class="note">${esc(i.why)}</span></span>
-      ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span>` : ''}</div>`).join('')}
+      ${res[i.id] && res[i.id] !== 'ok' ? `<span class="bad note" title="${esc(res[i.id])}">failed last time</span><button class="btn sm" data-setupfix="${esc(i.id)}">${icon.rotateCcw}Retry</button>` : ''}</div>`).join('')}
     <details class="setup-cmds"><summary class="note">Commands it runs</summary><pre class="mini">${esc(su.items.flatMap(i => i.steps).join('\n'))}</pre></details>
     <div class="form-row">${UI.btn(need ? 'Fix everything' : 'Fix these', { ic: 'wrench', kind: 'primary', attrs: 'data-cmd="setuprun"' })}${failed.length ? UI.btn('Log', { ic: 'logs', kind: 'ghost', attrs: 'data-cmd="setuplog"' }) : ''}</div></section>`;
 }
+/* --- Launch List: what's left to set up, with a ring that fills as it gets done --- */
+function launchSteps() {
+  const su = S.setup, b = (label, attrs) => `<button class="btn sm" ${attrs}>${esc(label)}</button>`;
+  return [
+    ['Your sites', [
+      { title: 'Apache, MySQL and PHP installed', text: 'What serves your projects, from Homebrew.', done: !!(su && su.homebrew && !su.items.some(i => i.required)),
+        action: su && !su.homebrew ? b('Install Homebrew', 'data-cmd="setuphomebrew"') : b('Fix', 'data-cmd="setuprun"') },
+      { title: 'Your projects folder added', text: 'Every folder inside becomes a project.', done: S.sites.length > 0, action: b('Add a folder', 'data-cmd="addfolder"') },
+      { title: 'A project switched on', text: 'It gets its own https://name.test address.', done: S.sites.some(s => s.enabled), action: b('Choose one', 'data-view="projects"') }]],
+    ['Extras', [
+      { title: 'A database of your own', text: 'Each one gets its own login.', done: !!(S.dbs || []).length || S.sites.some(s => s.database), action: b('New database', 'data-cmd="newdb"') },
+      { title: 'An AI agent connected', text: 'Claude, Cursor and others use LocalSites over MCP.', done: (S.agents || []).some(a => a.connected), action: b('Connect', 'data-cmd="agentsetup"') }]],
+  ];
+}
+function ring(done, total) {
+  const r = 9, c = 2 * Math.PI * r, f = total ? done / total : 0;
+  return `<svg class="ring-p" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="${r}" class="rp-bg"/><circle cx="12" cy="12" r="${r}" class="rp-fg" stroke-dasharray="${(c * f).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 12 12)"/></svg>`;
+}
+function launchList() {
+  if (store.get('hide.launch', false) || !S.status) return '';
+  const groups = launchSteps(), all = groups.flatMap(([, l]) => l), done = all.filter(x => x.done).length;
+  if (done === all.length) return '';
+  return `<section class="launch" aria-label="Set up LocalSites"><div class="launch-h">${ring(done, all.length)}<div><h2>Set up LocalSites</h2><p class="note">${done} of ${all.length} done</p></div>
+      <span class="spacer"></span><button class="icon-btn" data-launchhide="1" title="Hide this list">${icon.x}</button></div>
+    ${groups.map(([g, list]) => `<div class="launch-g"><div class="label2">${esc(g)}</div>${list.map(x => `<div class="launch-i ${x.done ? 'done' : ''}">
+      <span class="li-c">${x.done ? icon.check : ''}</span><span class="li-t"><span class="li-title">${esc(x.title)}</span><span class="note">${esc(x.text)}</span></span>${x.done ? '' : x.action}</div>`).join('')}</div>`).join('')}</section>`;
+}
+
+/* --- Deploy Pipeline: a running fix, one stage per thing it installs, with timers --- */
+// The list of stages is kept from when the fix started: finished items drop out of setup.status.
+function trackSetup(prev, su) {
+  if (!su?.running) { S.setupRun = null; return; }
+  const R = S.setupRun ||= { at: Date.now(), items: [], started: {}, ended: {} };
+  for (const i of [...(prev?.items || []), ...su.items]) if (!R.items.some(x => x.id === i.id)) R.items.push({ id: i.id, title: i.title });
+  const now = Date.now(), res = su.results || {};
+  for (const i of R.items) {
+    if ((su.step || '').startsWith(i.title + ':') && !R.started[i.id]) R.started[i.id] = now;
+    if (res[i.id] && !R.ended[i.id]) { R.ended[i.id] = now; R.started[i.id] ||= now; }
+  }
+  if (su.step === 'Starting projects' && !R.started.apply) R.started.apply = now;
+}
+function setupPipeline(su) {
+  const R = S.setupRun || { at: Date.now(), items: su.items.map(i => ({ id: i.id, title: i.title })), started: {}, ended: {} };
+  const res = su.results || {}, step = su.step || '';
+  const took = (id) => R.started[id] && R.ended[id] ? fmtClock(R.ended[id] - R.started[id]) : '';
+  return pipelineHTML([...R.items.map(i => {
+    const r = res[i.id], running = step.startsWith(i.title + ':');
+    return { title: i.title, state: r === 'ok' ? 'done' : r ? 'fail' : running ? 'run' : 'wait', since: R.started[i.id], took: r === 'ok' ? took(i.id) : '',
+      sub: running ? step.slice(i.title.length + 1).trim() : r && r !== 'ok' ? r : '' };
+  }), { title: 'Start projects again', state: step === 'Starting projects' ? 'run' : 'wait', since: R.started.apply }]);
+}
+
+/* --- Uptime Bars: was each switched-on project served, hour by hour, for the last day --- */
+async function loadUptime() {
+  try { S.uptime = await bridge.call('uptime'); } catch (_) { S.uptime = null; return; } // an older service
+  if (cur().view === 'overview') renderView();
+}
+function uptimeRow(s, hours) {
+  const now = new Date(Math.floor(Date.now() / 3600000) * 3600000); // the service's hours start on the UTC hour (half-hour time zones too)
+  let up = 0, down = 0;
+  const bars = Array.from({ length: 24 }, (_, i) => {
+    const t = new Date(now.getTime() - (23 - i) * 3600000), h = hours.find(x => new Date(x.hour).getTime() === t.getTime());
+    const at = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (!h) return `<i class="ub none" title="${at}: switched off or no data"></i>`;
+    up += h.up; down += h.down;
+    const cls = !h.down ? 'ok' : !h.up ? 'down' : 'part';
+    return `<i class="ub ${cls}" title="${at}: ${h.down ? `down ${h.down} min, served ${h.up} min` : `served the whole time it was on (${h.up} min)`}"></i>`;
+  }).join('');
+  const pct = up + down ? (100 * up / (up + down)) : 100;
+  return { down, html: `<div class="ov-row up-row link" data-proj="${esc(s.folder)}"><span class="ov-title">${esc(s.name)}</span><span class="spacer"></span><span class="ubars" aria-label="Last 24 hours">${bars}</span>
+    <span class="up-pct ${down ? 'warnc' : ''}">${pct >= 99.95 ? '100' : pct.toFixed(1)}%</span></div>` };
+}
+function uptimeSection(running) {
+  if (!S.uptime) return '';
+  const rows = running.map(s => ({ s, hours: S.uptime[s.folder] || [] })).filter(x => x.hours.length).map(x => ({ ...uptimeRow(x.s, x.hours), s: x.s }));
+  if (!rows.length) return '';
+  const hit = rows.filter(r => r.down);
+  const sum = hit.length ? `${hit.map(r => `${esc(r.s.name)} was down ${r.down} min`).join(', ')} in the last day.` : 'Every switched-on project answered the whole time.';
+  return ovSection('Uptime', '', `<p class="note ov-why">${sum} Checked once a minute; switched-off time doesn’t count.</p>${rows.map(r => r.html).join('')}`);
+}
+
 function ovSection(title, count, body, link) {
   return `<section class="ov-sec"><div class="ov-sec-h"><h2>${esc(title)}</h2>${count !== '' ? `<span class="n">${count}</span>` : ''}<span class="spacer"></span>${link || ''}</div>${body}</section>`;
 }
 // Things outside a project that need the person. Together with the items above them in "Needs attention"
 // they make up the number on the Dock icon (the service counts the same things for the badge).
 function needsYou() {
-  const out = [], ap = (S.approvals || []).length, pr = probNew(), u = S.upd;
-  if (ap) out.push({ ic: 'agent', title: ap === 1 ? 'An agent request is waiting for you' : `${ap} agent requests are waiting for you`, text: 'An AI agent or a script wants to do something that needs your OK. Approve or deny it in the request card.', action: '' });
+  const out = [], pr = probNew(), u = S.upd;
+  for (const a of S.approvals || []) out.push({ ic: a.destructive ? 'shieldAlert' : 'agent', title: describe({ method: a.method, summary: a.summary }), text: `${whoAsks(a)} is waiting · ${toolName(a.method)}`, action: `<span class="ov-acts">${approvalActions(a, true)}</span>` });
   if (pr) { const last = (S.prob?.problems || []).find(p => !p.sent && p.kind !== 'ui');
     out.push({ ic: 'alertCircle', title: pr === 1 ? 'A problem to look at' : `${pr} problems to look at`, text: last?.title || 'Something went wrong, such as a crash or a failed install.', action: `<button class="btn sm" data-cmd="openproblems">Review</button>` }); }
   if (u?.latest && !u.skipped && ['available', 'ready'].includes(u.phase))
@@ -644,15 +818,13 @@ function viewOverview() {
       ${d ? `<button class="pchip" data-view="doctor">${fails.length ? icon.alertCircle : icon.status}${fails.length ? plural(fails.length, 'problem') : 'All good'}</button>` : ''}
       ${(st?.roots || []).map(r => `<button class="pchip" data-scope="root" data-val="${esc(r.label)}">${icon.folder}${esc(r.label)} <span class="note">${S.sites.filter(s => s.root === r.label).length}</span></button>`).join('')}</div>
     ${setupCard()}
+    ${launchList()}
     ${attention.length ? ovSection('Needs attention', attention.length, `<p class="note ov-why">${esc(badgeWhy(attention.length, {
         access: (st?.waiting_for_access || []).length, checks: fails.filter(c => c.name !== 'Folder access').length,
         sites: S.sites.filter(s => s.enabled && s.problems?.length).length }))}</p>` + attention.map(a => `<div class="ov-row"><span class="bad">${icon[a.ic]}</span><span class="ov-title">${esc(a.title)}</span><span class="note ellipsis">${esc(a.text || '')}</span><span class="spacer"></span>${a.action}</div>`).join('')) : ''}
-    ${ovSection('Running', running.length, running.length ? runRows : `<div class="ov-empty">Nothing is running. <a data-view="projects">Switch a project on</a> to give it a <code>.test</code> address.</div>` + startCards('Get started', [
-      { ic: 'power', title: 'Switch on a project', text: 'Give it an https://name.test address.', attrs: 'data-view="projects"' },
-      { ic: 'folderPlus', title: 'Add a projects folder', text: 'LocalSites detects Laravel, Next.js and PHP.', attrs: 'data-cmd="addfolder"' },
-      { ic: 'table', title: 'Browse a database', text: 'Read-only until you choose to edit.', attrs: 'data-view="data"' },
-      { ic: 'agent', title: 'Connect an AI agent', text: 'Let Claude or Cursor manage sites.', attrs: 'data-cmd="agentsetup"' }]),
+    ${ovSection('Running', running.length, running.length ? runRows : `<div class="ov-empty">Nothing is running. <a data-view="projects">Switch a project on</a> to give it a <code>.test</code> address.</div>`,
       `<button class="btn ghost sm" data-view="projects">All projects</button>`)}
+    ${uptimeSection(running)}
     ${ovSection('Recent activity', '', activityRows(S.activity, 'Changes from the app, the command line and AI agents show up here.'))}
   </div>${side}</div>`;
 }
@@ -757,6 +929,35 @@ function startCards(title, cards, dismiss = '') {
   return `<div class="starts">${title ? `<div class="starts-h">${esc(title)}${dismiss ? `<button class="icon-btn" data-hidecards="${dismiss}" title="Hide examples">${icon.x}</button>` : ''}</div>` : ''}<div class="starts-grid">${cards.map(c =>
     `<button class="start" ${c.attrs}><span class="st-ic">${icon[c.ic] || c.ic}</span><span class="st-t">${esc(c.title)}</span><span class="st-d">${esc(c.text)}</span></button>`).join('')}</div></div>`;
 }
+/* --- No Results: what was searched, a likely spelling, and which filter is hiding things --- */
+function editDistance(a, b) {
+  const d = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { let prev = d[0]; d[0] = i;
+    for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; } }
+  return d[b.length];
+}
+function noResults() {
+  const q = S.filter.trim(), ql = q.toLowerCase();
+  // close spellings of project names, from every project (any tab, any filter)
+  const dist = (x) => Math.min(editDistance(ql, x.name.toLowerCase()), ...x.name.toLowerCase().split(/[-_.]/).map(w => editDistance(ql, w)));
+  const near = q ? S.sites.map(x => ({ name: x.name, d: dist(x) })).filter(o => o.d > 0 && o.d <= Math.max(1, Math.floor(ql.length / 3)))
+    .sort((a, b) => a.d - b.d).slice(0, 3).map(o => o.name) : [];
+  // the same search in every tab, without the filters
+  const hit = (x) => !ql || [x.name, x.folder, x.domain, x.php, x.group, x.git?.account, x.git?.branch, typeOf(x).label].some(v => (v || '').toLowerCase().includes(ql));
+  const inAll = S.sites.filter(hit).length, filtered = activePF().length || S.ptab !== 'all';
+  const hints = [];
+  if (S.ptab !== 'all' && inAll) hints.push(`<button class="nr-hint" data-ptab="all">${icon.search}<span>${inAll === 1 ? '1 match' : inAll + ' matches'} in All projects</span></button>`);
+  for (const [k, vals] of activePF()) {
+    const p = PF[k], names = vals.map(v => (p.vals().find(x => x[0] === v) || [v, v || 'none'])[1]).join(', ');
+    hints.push(`<button class="nr-hint" data-fclear="${k}">${icon.x}<span>Remove <b>${esc(p.label)} is ${esc(names)}</b></span></button>`);
+  }
+  return `<div class="empty-state nr"><div class="es-icon">${icon.search2}</div><h3>No matching projects</h3>
+    <p>${q ? `Nothing matches <b>“${esc(q)}”</b>${filtered ? ' with these filters' : ''}.` : 'No projects match these filters.'}</p>
+    ${near.length ? `<p class="nr-near">Did you mean ${near.map(n => `<button class="linkish" data-suggest="${esc(n)}">${esc(n)}</button>`).join(', ')}?</p>` : ''}
+    ${hints.length ? `<div class="nr-hints">${hints.join('')}</div>` : ''}
+    <div class="es-actions"><button class="btn" data-cmd="clearfilter">Clear search and filters</button></div>
+    <div class="es-hint">Search looks at names, addresses, PHP versions, branches and git accounts.</div></div>`;
+}
 function viewProjects() {
   if (!S.status) return Array.from({ length: 6 }, (_, i) => `<div class="skel-row"><span class="skeleton" style="width:14px;height:14px;border-radius:50%"></span><span class="skeleton" style="width:${120 + (i * 37) % 90}px"></span><span class="skeleton" style="width:140px;margin-left:auto"></span></div>`).join('');
   const counts = Object.fromEntries(PTABS.map(([id]) => [id, S.sites.filter(s => inTab(s, id)).length]));
@@ -773,8 +974,7 @@ function viewProjects() {
       { ic: 'import', title: 'Move from MAMP PRO', text: 'Bring over PHP versions and databases.', attrs: 'data-view="import"' },
       { ic: 'compose', title: 'Start a new project', text: 'An empty folder with its own .test address.', attrs: 'data-cmd="newproject"' }]);
   const groups = groupedSites();
-  if (!groups.size) return bar + emptyState({ fig: 'loupe', ic: 'search2', title: 'No matching projects', text: S.filter ? `Nothing matches “${esc(S.filter)}” with these filters.` : 'No projects match these filters.',
-    actions: `<button class="btn" data-cmd="clearfilter">Clear filters</button>` });
+  if (!groups.size) return bar + noResults();
   let h = bar + (S.status?.waiting_for_access || []).map(p => `<div class="callout warn" style="margin:12px 20px 0">${icon.lock}<div><b>macOS hasn't let LocalSites read ${esc(p)} yet.</b> Projects there appear as soon as you click <b>Allow</b> in the macOS prompt (or turn LocalSites on in System Settings → Privacy &amp; Security → Files and Folders). Projects already running keep running.</div></div>`).join('');
   for (const [k, list] of groups) {
     const closed = S.closed['g:' + k], on = list.filter(s => s.enabled || s.served_by).length;
@@ -825,7 +1025,7 @@ function setupFor(c) {
 function checksTable(checks, withArea = true) {
   let area = '', h = '';
   for (const c of checks) {
-    if (withArea && c.area !== area) { area = c.area; h += `<tr><td colspan="3" class="note" style="height:32px;padding-top:12px"><b>${esc(area)}</b></td></tr>`; }
+    if (withArea && c.area !== area) { area = c.area; h += `<tr id="${areaId(area)}"><td colspan="3" class="note" style="height:32px;padding-top:12px"><b>${esc(area)}</b></td></tr>`; }
     const copyable = /^(sudo|brew|valet|localsites) /.test(c.fix || '');
     const su = setupFor(c);
     const fix = su ? `<div class="note" style="margin:2px 0 6px"><button class="btn sm primary" data-setupfix="${esc(su.id)}">${icon.wrench}${{ repair: 'Repair', system: 'Set up' }[su.kind] || 'Install'} ${esc(su.title)}</button>${su.password ? ' <span class="note">asks for your Mac password once</span>' : ''}</div>`
@@ -917,12 +1117,7 @@ function detailsPane(s) {
         ${php ? `<button class="btn sm" data-iniedit="${esc(s.folder)}">${icon.sliders}php.ini${iniCount ? `<span class="badge">${iniCount}</span>` : ''}</button>` : ''}</div></div>` : ''}
       ${imported}${s.managed_by ? `<p class="note">Settings from <code>${esc(s.managed_by)}</code> override these.</p>` : ''}
       ${s.runtime !== 'none' ? sharePane(s) : ''}
-      <div class="st">Open<span class="spacer"></span><button class="btn ghost sm" data-openmore="${esc(s.folder)}">More apps${icon.caret}</button></div>
-      <div class="grid2">
-        <button class="btn" data-openurl="${esc(s.folder)}" ${s.enabled || valet ? '' : 'disabled'}>${icon.globe}Browser</button>
-        <button class="btn" data-app="${FILES_APP.id}" data-folder="${esc(s.folder)}">${icon.folder}${FILES_APP.name}</button>
-        <button class="btn" data-openwith="terminal" data-folder="${esc(s.folder)}">${icon.terminal}${esc(prefLabel('terminal'))}</button>
-        <button class="btn" data-openwith="editor" data-folder="${esc(s.folder)}">${icon.code}${esc(prefLabel('editor'))}</button></div>
+      <div class="st">Open</div>${openSplit(s)}
       ${s.git ? `<div class="st">Git<span class="spacer"></span><button class="btn ghost sm" data-dpane="git">${icon.branch}Open git</button></div>
         <div class="kv"><span>Branch</span><span class="form-row" style="gap:8px">${s.git.branch ? branchChip(s.git.branch, `data-dpane="git"`) : '<span class="note">No branch yet</span>'}${S.git[s.folder]?.st?.files?.length ? `<span class="note">${plural(S.git[s.folder].st.files.length, 'change')}</span>` : ''}</span></div>
         ${s.git.account ? `<div class="kv"><span>Account</span><span class="form-row" style="gap:6px">${hostIcon(s.git.host)}${esc(s.git.account)}${s.git.host && !/\./.test(s.git.host) ? ` <span class="note">(SSH alias ${esc(s.git.host)})</span>` : ''}</span></div>` : ''}
@@ -1000,16 +1195,37 @@ async function openWith(kind, folder) {
     if (remember) { S.appDefaults = { ...S.appDefaults, [kind]: chosen.id }; toast(`${chosen.name} is now your ${KIND_NAME[kind]}`); render(); }
   }, 'Open');
 }
+// Split Button: the way you last opened a project is the big button; the arrow lists the others, and
+// picking one makes it the big button next time.
+function openTargets(s) {
+  const live = s.enabled || s.served_by === 'valet', f = esc(s.folder);
+  return {
+    browser: { ic: icon.globe, label: 'Browser', attrs: `data-openurl="${f}"`, off: !live && 'Switch the project on first' },
+    files: { ic: icon.folder, label: FILES_APP.name, attrs: `data-app="${FILES_APP.id}" data-folder="${f}"` },
+    terminal: { ic: icon.terminal, label: prefLabel('terminal'), attrs: `data-openwith="terminal" data-folder="${f}"` },
+    editor: { ic: icon.code, label: prefLabel('editor'), attrs: `data-openwith="editor" data-folder="${f}"` },
+    ...(s.database ? { database: { ic: icon.table, label: 'Data browser', attrs: `data-dbopen="${esc(s.database)}"`, hint: s.database } } : {}),
+  };
+}
+function openPrimary(s) {
+  const T = openTargets(s), want = store.get('openPrimary', '');
+  return T[want] && !T[want].off ? want : !T.browser.off ? 'browser' : 'editor';
+}
+function openSplit(s) {
+  const k = openPrimary(s), t = openTargets(s)[k];
+  return `<div class="split" role="group" aria-label="Open"><button class="btn split-main" ${t.attrs} title="Open in ${esc(t.label)}">${t.ic}<span>Open in ${esc(t.label)}</span></button><button class="btn split-caret" data-openmore="${esc(s.folder)}" title="Other ways to open it" aria-haspopup="menu">${icon.caret}</button></div>`;
+}
 const APP_KINDS = [['editor', 'Editors'], ['terminal', 'Terminals'], ['git', 'Git apps'], ['browser', 'Browsers']];
 function showOpenMenu(anchor, folder) {
-  const s = site(folder), live = s.enabled || s.served_by === 'valet';
+  const s = site(folder), live = s.enabled || s.served_by === 'valet', T = openTargets(s), main = openPrimary(s);
+  const top = `<div class="label2">Open in</div>` + Object.entries(T).map(([k, t]) => `<button data-openuse="${k}" ${t.attrs} ${t.off ? `disabled title="${esc(t.off)}"` : ''}>${t.ic}<span>${esc(t.label)}${t.hint ? ` <span class="note">${esc(t.hint)}</span>` : ''}</span>${k === main ? `<span class="kb">${icon.check}</span>` : ''}</button>`).join('') + '<hr>';
   const groups = APP_KINDS.map(([k, label]) => { const list = appsOf(k); if (!list.length) return '';
     return `<div class="label2">${label}</div>` + list.map(a => {
       const def = (k === 'editor' || k === 'terminal') && prefApp(k)?.id === a.id;
       const mk = (k === 'editor' || k === 'terminal') && !def ? `<span class="kb mkdef" data-mkdefault="${k}:${esc(a.id)}" title="Use ${esc(a.name)} for the Open buttons">Make default</span>` : '';
       return `<button data-app="${a.id}" data-folder="${esc(folder)}" ${k === 'browser' && !live ? 'disabled title="Switch the project on first"' : ''}><span>${esc(a.name)}</span>${def ? '<span class="kb">default</span>' : mk}</button>`;
     }).join(''); }).join('');
-  menuAt(anchor, groups || `<div class="menu-empty">No supported apps found on this ${OS_NAME}.</div>`);
+  menuAt(anchor, top + (groups || `<div class="menu-empty">No other apps found on this ${OS_NAME}.</div>`));
 }
 
 /* --- AI agents: connect and approve --- */
@@ -1023,30 +1239,105 @@ function agentCard(c) {
   return UI.card({ ic: (AGENT_IC[c.id] || (() => icon.agent))(), title: c.name, status: c.manual ? UI.status('off', 'Manual') : UI.status(c.connected ? 'on' : 'off', c.connected ? 'Connected' : 'Not connected'),
     sub: c.config ? `<code title="${esc(c.config)}">${esc(c.config.replace(/^\/Users\/[^/]+/, '~')).replace(/\//g, '/<wbr>')}</code>` : c.id === 'claude-code' ? 'Uses <code>claude mcp add</code>' : '', foot, on: c.connected, attrs: `data-agent="${c.id}"` });
 }
+/* --- Go / No-go: an agent's risky request, shown as exactly what will run --- */
+const whoAsks = (a) => a.client === 'mcp' ? (a.agent || 'An AI agent') : { cli: 'A command in the terminal', 'unproven-app': 'A program calling itself LocalSites' }[a.client] || 'A script or command (no terminal)';
+const toolName = (m) => m.replace(/\./g, '_'); // the name agents know it by (MCP tool names)
+const scopeLabel = (sc = '') => { const i = sc.indexOf(':'); return i < 0 ? sc : sc.slice(i + 1); };
+// How much is at stake, from the method list (not guessed from the name)
+function riskChips(a) {
+  const backed = /backed up first|backup is made first|exported first/i.test(a.description || '');
+  const out = [a.destructive ? (backed ? UI.status('warn', 'Backed up first') : UI.status('err', 'Can’t be undone')) : UI.status('busy', 'Needs your OK')];
+  if (!a.grantable) out.push(UI.tag('Asks every time'));
+  return out.join('');
+}
+// The request's parameters as readable lines (the service already masked secrets)
+function paramLines(summary) {
+  let p = {}; try { p = JSON.parse(summary || '{}'); } catch (_) { /* summary may be empty */ }
+  return Object.entries(p).map(([k, v]) => `<div class="ap-kv"><span>${esc(k)}</span><code>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</code></div>`).join('');
+}
+// A request that can't be undone needs the button held for a moment, so a stray click or Enter can't approve it.
+const needsHold = (a) => a.destructive && !a.grantable;
+function approvalActions(a, compact = false) {
+  const grant = a.grantable && !compact ? UI.btn('Approve for 10 min', { attrs: `data-approve="${a.id}|1|w"`, title: `Also allow ${a.method.replace('.', ' ')} by ${whoAsks(a)} on this ${a.scope?.startsWith('folder:') ? 'project' : 'item'} for 10 minutes without asking` }) : '';
+  const ok = needsHold(a) ? `<button class="btn primary ${compact ? 'sm' : ''} hold" data-hold="${a.id}" title="Hold to approve"><span class="hold-fill" aria-hidden="true"></span><span class="hold-t">Hold to approve</span></button>`
+    : UI.btn('Approve', { kind: 'primary', sm: compact, attrs: `data-approve="${a.id}|1"` });
+  return `${UI.btn('Deny', { sm: compact, attrs: `data-approve="${a.id}|0"` })}${grant}${ok}`;
+}
+function approvalCard(a) {
+  const what = describe({ method: a.method, summary: a.summary });
+  return `<div class="approval ${a.destructive ? 'risky' : ''}" role="alertdialog" aria-label="Approve ${esc(a.method)}" data-ap="${a.id}">
+    <div class="ap-h">${a.destructive ? icon.shieldAlert : icon.agent}<span class="ap-who">${esc(whoAsks(a))} wants to</span><span class="spacer"></span><span class="ap-left" title="Time left to answer">${icon.timer}<span data-remain="${esc(a.expires)}">${fmtLeft(new Date(a.expires) - Date.now())}</span></span></div>
+    <div class="ap-what">${esc(what === a.method ? a.method.replace('.', ' ') : what)}</div>
+    <div class="ap-risk">${riskChips(a)}</div>
+    <div class="ap-cmd"><div class="ap-cmd-h"><code>${esc(toolName(a.method))}</code><span class="spacer"></span><span>the exact request</span></div>${paramLines(a.summary) || '<div class="ap-kv"><span>No parameters</span></div>'}</div>
+    ${a.description ? `<p class="note ap-desc">${esc(a.description)}.</p>` : ''}
+    <div class="ap-acts">${approvalActions(a)}</div>
+    <div class="ap-bar" aria-hidden="true"><i data-bar-from="${esc(a.created)}" data-bar-to="${esc(a.expires)}"></i></div></div>`;
+}
 let approvalsShown = '';
 function renderApprovals(list) {
-  const box = $('#approvals');
   const key = JSON.stringify(list.map(a => a.id));
-  if (key !== approvalsShown) { S.approvals = list; if (cur().view === 'overview') setTimeout(renderView); }
-  if (key === approvalsShown) { box.querySelectorAll('[data-left]').forEach(el => { el.textContent = Math.max(0, Math.round((new Date(el.dataset.left) - Date.now()) / 1000)) + 's'; }); return; }
-  approvalsShown = key;
-  box.innerHTML = list.map(a => {
-    let p = {}; try { p = JSON.parse(a.summary || '{}'); } catch (_) { /* summary may be empty */ }
-    const what = describe({ method: a.method, summary: a.summary }) || a.method;
-    const who = a.client === 'mcp' ? (a.agent || 'An AI agent') : { cli: 'A command in the terminal', 'unproven-app': 'A program calling itself LocalSites' }[a.client] || 'A script or command (no terminal)';
-    return `<div class="approval" role="alertdialog" aria-label="Approve ${esc(a.method)}"><div class="ap-h">${icon.agent}<b>${esc(who)} wants to:</b><span class="spacer"></span><span class="note" data-left="${esc(a.expires)}"></span></div>
-      <div class="ap-what">${esc(what === a.method ? a.method.replace('.', ' ') : what)}</div>
-      ${Object.keys(p).length ? `<pre class="mini">${esc(JSON.stringify(p, null, 2))}</pre>` : ''}
-      <div class="form-row" style="justify-content:flex-end">${UI.btn('Deny', { attrs: `data-approve="${a.id}|0"` })}${a.grantable ? UI.btn('Approve for 10 min', { attrs: `data-approve="${a.id}|1|w"`, title: `Also allow ${a.method.replace('.', ' ')} by ${who} on this ${a.scope?.startsWith('folder:') ? 'project' : 'item'} for 10 minutes without asking` }) : ''}${UI.btn('Approve', { kind: 'primary', attrs: `data-approve="${a.id}|1"` })}</div></div>`;
-  }).join('');
-  renderApprovals(list);
+  if (key === approvalsShown) return;
+  approvalsShown = key; S.approvals = list;
+  if (cur().view === 'overview' || cur().view === 'agent') setTimeout(renderView);
+  $('#approvals').innerHTML = list.map(approvalCard).join('');
+  if ($('#menu').classList.contains('open') && $('#menu').classList.contains('notices')) $('#menu').innerHTML = noticeMenuHTML();
 }
 async function pollApprovals() {
-  const list = await bridge.call('approvals.list').catch(() => []) || [];
-  renderApprovals(list);
-  clearTimeout(pollApprovals.t);
-  // new requests arrive through events.wait; while one waits, tick every second for its countdown
-  if (list.length) pollApprovals.t = setTimeout(pollApprovals, 1000);
+  const [list, grants] = await Promise.all([bridge.call('approvals.list').catch(() => []), bridge.call('approvals.grants').catch(() => null)]);
+  renderApprovals(list || []);
+  setGrants(grants);
+}
+// Hold to approve: the fill runs while the press lasts; letting go early cancels it.
+const HOLD_MS = 900;
+let holding = null;
+function holdStart(btn) {
+  if (holding || btn.disabled) return;
+  btn.classList.add('holding');
+  holding = { btn, t: setTimeout(() => { const id = btn.dataset.hold; holdEnd(); btn.disabled = true; decideApproval(id, true, false); }, HOLD_MS) };
+}
+function holdEnd() { if (!holding) return; clearTimeout(holding.t); holding.btn.classList.remove('holding'); holding = null; }
+document.addEventListener('pointerdown', (e) => { const b = e.target.closest('[data-hold]'); if (b && e.button === 0) { e.preventDefault(); holdStart(b); } });
+document.addEventListener('pointerup', holdEnd, true);
+document.addEventListener('pointercancel', holdEnd, true);
+document.addEventListener('pointerout', (e) => { if (holding && e.target === holding.btn && !holding.btn.contains(e.relatedTarget)) holdEnd(); }, true);
+document.addEventListener('keydown', (e) => { const b = e.target.closest?.('[data-hold]'); if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); if (!e.repeat) holdStart(b); } }, true);
+document.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') holdEnd(); }, true);
+async function decideApproval(id, ok, forAWhile) {
+  await act(() => bridge.call('approvals.decide', { id, approve: ok, for_a_while: forAWhile }), 'Approval');
+  toast(!ok ? 'Denied. Nothing was done.' : forAWhile ? 'Approved. The same request is allowed for 10 minutes.' : 'Approved. The agent carries on.', ok ? 'ok' : 'warn');
+  approvalsShown = ''; return pollApprovals();
+}
+
+/* --- Access Pass: an "approve for 10 minutes", shown as a pass you can end early --- */
+let grantsTimer = 0;
+function setGrants(list) {
+  if (!Array.isArray(list)) return; // an older service
+  const now = Date.now(), live = list.filter(g => new Date(g.until) > now);
+  const changed = JSON.stringify(live.map(g => g.id)) !== JSON.stringify((S.grants || []).map(g => g.id));
+  S.grants = live;
+  clearTimeout(grantsTimer); // look again right after the next one runs out
+  if (live.length) grantsTimer = setTimeout(pollApprovals, Math.max(1000, Math.min(...live.map(g => new Date(g.until) - now)) + 500));
+  if (!changed) return;
+  renderStatus();
+  if (cur().view === 'agent') renderView();
+  const m = $('#menu');
+  if (m.classList.contains('open') && m.classList.contains('passes')) m.innerHTML = passMenuHTML();
+}
+function passCard(g) {
+  const action = describe({ method: g.method, summary: '{}' });
+  const what = action === g.method ? g.method.replace('.', ' ') : action.trim();
+  const from = new Date(new Date(g.until) - 10 * 60000).toISOString();
+  return `<div class="pass" data-pass="${esc(g.id)}"><div class="pass-l">${icon.ticket}</div>
+    <div class="pass-m"><div class="pass-t"><b>${esc(g.agent || whoAsks(g))}</b> may <code>${esc(toolName(g.method))}</code>${g.scope ? ` on <b>${esc(scopeLabel(g.scope))}</b>` : ''}</div>
+      <div class="note">${esc(what)} without asking · until ${new Date(g.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, <span data-remain="${esc(g.until)}">${fmtLeft(new Date(g.until) - Date.now())}</span> left</div>
+      <div class="pass-bar" aria-hidden="true"><i data-bar-from="${from}" data-bar-to="${esc(g.until)}"></i></div></div>
+    <div class="pass-r"><button class="btn sm" data-revoke="${esc(g.id)}" title="The next request of this kind asks again">End now</button></div></div>`;
+}
+function passMenuHTML() {
+  const list = S.grants || [];
+  return `<div class="notice-h"><b>Allowed for a while</b><span class="spacer"></span><span class="note">${list.length} ${list.length === 1 ? 'pass' : 'passes'}</span></div>
+    ${list.length ? `<div class="passes">${list.map(passCard).join('')}</div>` : '<div class="menu-empty">Nothing is allowed without asking right now. “Approve for 10 min” on a request adds a pass here.</div>'}`;
 }
 
 /* --- sharing a site on the internet --- */
@@ -1155,65 +1446,144 @@ function gitPane(s) {
     : '<p class="note" style="margin:0">Working tree clean. Nothing to commit.</p>'}`;
   const branches = `<div class="st">Branches<span class="n">${local.length}</span></div><div class="gtree">${branchTree(local, s.folder, dirty) || '<p class="note">No local branches</p>'}</div>
     ${remote.length ? `<details class="gdir remote"><summary>${icon.chevronR}${icon.globe}<span>Remote branches</span><span class="n">${remote.length}</span></summary><div class="gkids">${branchTree(remote, s.folder, dirty)}</div></details>` : ''}`;
-  const hist = commitGraph(g.log || []);
-  return head + changes + branches + `<div class="st">History</div><div class="ghist">${hist || '<p class="note">No commits yet</p>'}</div>`;
+  return head + changes + branches + (branchGraph(s.folder, g.log || [], st, st.web_url) || '<div class="st">History</div><p class="note">No commits yet</p>');
 }
-// Commit graph: lanes are assigned from parent hashes (newest first), each row draws its own slice as SVG
-const LANE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `var(--lane-${n})`); // tokens: told apart, toned for each theme
-function commitGraph(log) {
-  if (!log.length) return '';
-  const H = 44, GAP = 12, X0 = 8, MAXL = 8;
-  const x = (k) => X0 + Math.min(k, MAXL) * GAP;
-  const col = (k) => LANE_COLORS[k % LANE_COLORS.length];
-  let lanes = [];
-  const rows = [];
-  let widest = 1;
-  for (const c of log) {
-    let idx = lanes.indexOf(c.hash);
-    const before = lanes.slice();
-    if (idx < 0) { idx = lanes.indexOf(null); if (idx < 0) idx = lanes.length; lanes[idx] = c.hash; }
-    const hadTop = before[idx] === c.hash;
-    const converge = [];
-    lanes.forEach((h, k) => { if (h === c.hash && k !== idx) { converge.push(k); lanes[k] = null; } });
-    const ps = c.parents || [];
-    const out = [];
-    if (ps[0]) {
-      const j = lanes.indexOf(ps[0]);
-      if (j >= 0 && j !== idx) { lanes[idx] = null; out.push(j); } // parent already has a lane: join it
-      else { lanes[idx] = ps[0]; out.push(idx); }
-    } else lanes[idx] = null;
-    for (const p of ps.slice(1)) {
-      let k = lanes.indexOf(p);
-      if (k < 0) { k = lanes.indexOf(null); if (k < 0) k = lanes.length; lanes[k] = p; }
-      out.push(k);
+/* --- Branch Graph. Each branch gets its
+   own coloured lane, merges sweep in on curves, refs and tags sit on their commits, and hovering a row slides a
+   detail card along with you. Colours are the --lane tokens. --- */
+const BG = { ROW: 48, LANE: 16, PAD: 14, R: 4, MAXL: 8 }; // two lines per commit: message and hash, then refs, author and date
+const bgTone = (i) => `var(--lane-${[6, 1, 2, 4, 5, 3][i % 6]})`; // sky, violet, emerald, amber, rose, orange
+function bgLayout(commits) {
+  const row = new Map(commits.map((c, i) => [c.sha, i]));
+  const lanes = [], laneOf = [], pending = [];
+  const free = (skip = -1) => { const i = lanes.findIndex((l, k) => l === null && k !== skip); return i === -1 ? lanes.length : i; };
+  commits.forEach((c, i) => {
+    let lane = lanes.indexOf(c.sha);
+    if (lane === -1) lane = free();
+    lanes.forEach((l, k) => { if (l === c.sha && k !== lane) lanes[k] = null; });
+    laneOf[i] = lane;
+    lanes[lane] = c.parents[0] ?? null;
+    if (c.parents[0]) pending.push({ from: i, parent: c.parents[0], route: lane });
+    for (const p of c.parents.slice(1)) {
+      let j = lanes.indexOf(p);
+      if (j === -1) { j = free(lane); lanes[j] = p; }
+      pending.push({ from: i, parent: p, route: j });
     }
     while (lanes.length && lanes[lanes.length - 1] === null) lanes.pop();
-    const after = lanes.slice();
-    let svg = '';
-    const line = (x1, y1, x2, y2, k) => svg += x1 === x2 ? `<path d="M${x1} ${y1}V${y2}" stroke="${col(k)}"/>`
-      : `<path d="M${x1} ${y1}C${x1} ${(y1 + y2) / 2} ${x2} ${(y1 + y2) / 2} ${x2} ${y2}" stroke="${col(k)}"/>`;
-    // lanes passing through this row
-    before.forEach((h, k) => {
-      if (!h || h === c.hash) return;
-      const k2 = after[k] === h ? k : after.indexOf(h);
-      if (k2 >= 0) line(x(k), 0, x(k2), H, k2);
-    });
-    if (hadTop) line(x(idx), 0, x(idx), H / 2, idx);
-    for (const k of converge) line(x(k), 0, x(idx), H / 2, k);
-    for (const k of out) line(x(idx), H / 2, x(k), H, k);
-    widest = Math.max(widest, before.length, after.length, idx + 1);
-    rows.push({ c, svg, idx });
-  }
-  const W = x(Math.min(widest, MAXL + 1) - 1) + X0;
-  return rows.map(({ c, svg, idx }) => {
-    const merge = (c.parents || []).length > 1;
-    const dot = merge ? `<circle cx="${x(idx)}" cy="${H / 2}" r="3" fill="var(--panel)" stroke="${col(idx)}" stroke-width="1.5"/>`
-      : `<circle cx="${x(idx)}" cy="${H / 2}" r="3.5" fill="${col(idx)}" stroke="var(--panel)" stroke-width="1.5"/>`;
-    const refs = (c.refs || []).map(r => `<span class="ref ${r.startsWith('tag: ') ? 'tag' : r.includes('/') ? 'rem' : ''}">${esc(r.replace('tag: ', ''))}</span>`).join('');
-    return `<div class="gc ${merge ? 'merge' : ''}" title="${esc(c.subject)}\n${esc(c.hash)}"><svg class="gsvg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" fill="none" stroke-width="1" stroke-linecap="round" aria-hidden="true">${svg}${dot}</svg>
-      <div class="gmsg"><div class="gline"><span class="gsub">${esc(c.subject)}</span></div><div class="gline">${refs}<span class="note">${esc(c.short)} · ${esc(c.author)} · ${esc(c.when)}</span></div></div></div>`;
-  }).join('');
+  });
+  const edges = pending.map((e) => { const to = row.get(e.parent);
+    return to === undefined ? { from: e.from, to: commits.length, fromLane: laneOf[e.from], toLane: e.route, route: e.route }
+      : { from: e.from, to, fromLane: laneOf[e.from], toLane: laneOf[to], route: e.route }; });
+  const width = Math.min(BG.MAXL, Math.max(0, ...laneOf, ...edges.map(e => e.route)) + 1);
+  return { laneOf, edges, width };
 }
+const bgX = (lane) => BG.PAD + Math.min(lane, BG.MAXL - 1) * BG.LANE;
+const bgY = (r) => r * BG.ROW + BG.ROW / 2;
+const bgCurve = (x1, y1, x2, y2) => { const m = (y2 - y1) / 2; return `C ${x1} ${y1 + m} ${x2} ${y2 - m} ${x2} ${y2}`; };
+function bgEdgePath(e) {
+  const x1 = bgX(e.fromLane), y1 = bgY(e.from), xr = bgX(e.route), x2 = bgX(e.toLane), y2 = bgY(e.to);
+  if (e.to - e.from === 1) return `M ${x1} ${y1} ${x1 === x2 ? `L ${x2} ${y2}` : bgCurve(x1, y1, x2, y2)}`;
+  let d = `M ${x1} ${y1} `, cy = y1;
+  if (xr !== x1) { d += `${bgCurve(x1, y1, xr, y1 + BG.ROW)} `; cy = y1 + BG.ROW; }
+  if (xr !== x2) { if (y2 - BG.ROW > cy) d += `L ${xr} ${y2 - BG.ROW} `; d += bgCurve(xr, y2 - BG.ROW, x2, y2); }
+  else d += `L ${x2} ${y2}`;
+  return d;
+}
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const bgShort = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : `${MONTHS[d.getMonth()]} ${d.getDate()}`; };
+const bgLong = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const bgInitials = (n) => n.split(/\s+/).map(p => p[0] || '').join('').slice(0, 2).toUpperCase();
+const bgAuthorTone = (n) => bgTone([...n].reduce((a, ch) => a + ch.charCodeAt(0), 0));
+const bgAvatar = (name, size = 'sm') => `<span class="bg-av ${size}" style="--t:${bgAuthorTone(name)}" aria-hidden="true">${esc(bgInitials(name))}</span>`;
+// A local branch and its remote copy on the same commit show as one ref, marked as in sync
+function bgRefs(list, st) {
+  const tags = list.filter(r => r.startsWith('tag: ')).map(r => ({ name: r.slice(5), type: 'tag' }));
+  const br = list.filter(r => !r.startsWith('tag: ') && !/\/HEAD$/.test(r));
+  const remoteName = (r) => { const i = r.indexOf('/'); return i > 0 ? r.slice(i + 1) : null; }; // origin/main -> main
+  const out = br.filter(r => !br.includes(remoteName(r))) // origin/main next to main: folded into main
+    .map(r => ({ name: r, type: 'branch', current: r === st?.branch, synced: br.some(x => remoteName(x) === r) }));
+  return [...out, ...tags];
+}
+// Our log (git.log) in the component's shape
+function bgCommits(log, st) {
+  return log.map(c => ({ sha: c.hash, message: c.subject, body: c.body || '', author: c.author, date: c.date || '', parents: c.parents || [],
+    refs: bgRefs(c.refs || [], st),
+    stats: c.files ? { files: c.files, additions: c.added || 0, deletions: c.removed || 0 } : null }));
+}
+const bgState = { folder: '', commits: [], laneOf: [], graphW: 0, hover: null, shown: null, warm: false, delay: 0, cool: 0, focus: 0, drawn: new Set() };
+function branchGraph(folder, log, st, web) {
+  const commits = bgCommits(log, st);
+  if (!commits.length) return '';
+  const { laneOf, edges, width } = bgLayout(commits), graphW = BG.PAD * 2 + (width - 1) * BG.LANE;
+  Object.assign(bgState, { folder, commits, laneOf, graphW, web });
+  const anim = !bgState.drawn.has(folder) && !matchMedia('(prefers-reduced-motion: reduce)').matches; // draw in once per project
+  bgState.drawn.add(folder);
+  const branches = new Set(commits.flatMap(c => c.refs.filter(r => r.type === 'branch').map(r => r.name.replace(/^[^/]+\//, '')))).size;
+  const merges = commits.filter(c => c.parents.length > 1).length;
+  const paths = edges.map(e => `<path d="${bgEdgePath(e)}" stroke="${bgTone(e.route)}" stroke-width="2" stroke-linecap="round" pathLength="1" ${anim ? `class="bg-draw" style="animation-delay:${(e.from * 0.035).toFixed(3)}s"` : ''}/>`).join('');
+  const dots = commits.map((c, i) => { const merge = c.parents.length > 1, t = bgTone(laneOf[i]);
+    return `<g transform="translate(${bgX(laneOf[i])} ${bgY(i)})" data-bgdot="${i}" style="--t:${t}"><circle class="bg-ring" r="9" fill="none" stroke-width="3"/>
+      <circle class="bg-node ${anim ? 'bg-pop' : ''}" ${anim ? `style="animation-delay:${(i * 0.035).toFixed(3)}s"` : ''} r="${merge ? BG.R + 0.5 : BG.R}" fill="${merge ? 'var(--card)' : t}" stroke="${t}" stroke-width="${merge ? 2.5 : 0}"/></g>`; }).join('');
+  const rows = commits.map((c, i) => { const t = bgTone(laneOf[i]);
+    // the current branch first; at most two refs, the rest as +N
+    const sorted = [...c.refs].sort((a, b) => (b.current - a.current) || (a.type === 'tag') - (b.type === 'tag'));
+    const refs = sorted.slice(0, 2).map(r => `<span class="bg-ref ${r.type}${r.current ? ' cur' : ''}" style="--t:${t}" title="${esc(r.name)}">${r.type === 'tag' ? icon.tag : icon.branch}<span>${esc(r.name)}</span>${r.synced ? `<span class="bg-sync" title="Same commit on the remote">${icon.fetch}</span>` : ''}</span>`).join('')
+      + (sorted.length > 2 ? `<span class="bg-more" title="${esc(sorted.slice(2).map(r => r.name).join(', '))}">+${sorted.length - 2}</span>` : '');
+    return `<div class="bg-row" role="listitem" data-bgrow="${i}" tabindex="${i === 0 ? 0 : -1}" style="padding-inline-start:${graphW + 4}px" aria-label="${esc(`${c.message}, ${c.author}, ${bgShort(c.date)}, ${c.sha.slice(0, 7)}`)}">
+      <span class="bg-l1"><span class="bg-msg ${c.parents.length > 1 ? 'merge' : ''}">${esc(c.message)}</span><code class="bg-sha">${esc(c.sha.slice(0, 7))}</code></span>
+      <span class="bg-l2">${refs}${bgAvatar(c.author)}${refs ? '' : `<span class="bg-who">${esc(c.author)}</span>`}<span class="bg-date">${esc(bgShort(c.date))}</span></span></div>`; }).join('');
+  return `<div class="bg" data-bgfolder="${esc(folder)}"><div class="bg-h"><h3>History</h3><span>${icon.branch}${plural(branches, 'branch').replace('branchs', 'branches')}</span><span>${icon.merge}${plural(merges, 'merge')}</span></div>
+    <div class="bg-body"><svg class="bg-svg" aria-hidden="true" fill="none" width="${graphW}" height="${commits.length * BG.ROW}">${paths}${dots}</svg>
+      <div role="list" aria-label="Commits">${rows}</div><div class="bg-card" aria-hidden="true"></div></div></div>`;
+}
+// Hover: the first card waits a moment, then follows the pointer from row to row straight away
+function bgSetHover(i) {
+  const S2 = bgState; clearTimeout(S2.delay);
+  document.querySelectorAll('.bg-row.hov').forEach(r => r.classList.remove('hov'));
+  document.querySelectorAll('.bg [data-bgdot].on').forEach(g => g.classList.remove('on'));
+  S2.hover = i;
+  if (i === null) { S2.cool = setTimeout(() => { S2.shown = null; S2.warm = false; bgShowCard(); }, 120); return; }
+  clearTimeout(S2.cool);
+  document.querySelector(`.bg-row[data-bgrow="${i}"]`)?.classList.add('hov');
+  document.querySelector(`.bg [data-bgdot="${i}"]`)?.classList.add('on');
+  if (S2.warm) { S2.shown = i; bgShowCard(); }
+  else S2.delay = setTimeout(() => { S2.shown = i; S2.warm = true; bgShowCard(); }, 380);
+}
+function bgShowCard() {
+  const el = document.querySelector('.bg .bg-card'), S2 = bgState, i = S2.shown;
+  if (!el) return;
+  if (i === null || !S2.commits[i]) { el.classList.remove('open'); return; }
+  const c = S2.commits[i], below = i < S2.commits.length - 3;
+  el.innerHTML = `<div class="bg-card-in ${below ? '' : 'up'}"><div class="bg-card-top">${bgAvatar(c.author, 'md')}<div><p class="bg-card-msg">${esc(c.message)}</p><p class="bg-card-meta">${esc(c.author)} · ${esc(bgLong(c.date))}</p></div></div>
+    ${c.body ? `<p class="bg-card-body">${esc(c.body)}</p>` : ''}
+    <div class="bg-card-foot"><span class="bg-dot" style="background:${bgTone(S2.laneOf[i])}"></span><span class="bg-card-sha">${esc(c.sha.slice(0, 10))}</span>
+      ${c.parents.length > 1 ? `<span class="bg-card-merge">merges ${c.parents.map(p => p.slice(0, 7)).join(' + ')}</span>`
+        : c.stats ? `<span class="bg-card-stats"><span class="add">+${c.stats.additions}</span><span class="del">−${c.stats.deletions}</span><span class="files">· ${plural(c.stats.files, 'file')}</span></span>` : ''}</div></div>`;
+  el.style.left = (S2.graphW + 2) + 'px';
+  el.style.maxWidth = `calc(100% - ${S2.graphW + 14}px)`;
+  el.style.transform = `translateY(${below ? bgY(i) + BG.ROW / 2 + 6 : bgY(i) - BG.ROW / 2 - 6}px)`;
+  el.classList.add('open');
+}
+document.addEventListener('mouseover', (e) => { const r = e.target.closest?.('.bg-row'); if (r && +r.dataset.bgrow !== bgState.hover) bgSetHover(+r.dataset.bgrow); });
+document.addEventListener('mouseout', (e) => { const b = e.target.closest?.('.bg-body'); if (b && !b.contains(e.relatedTarget)) bgSetHover(null); });
+document.addEventListener('focusin', (e) => { const r = e.target.closest?.('.bg-row'); if (r) bgSetHover(+r.dataset.bgrow); });
+document.addEventListener('focusout', (e) => { if (e.target.closest?.('.bg-row') && !e.relatedTarget?.closest?.('.bg-row')) bgSetHover(null); });
+document.addEventListener('keydown', (e) => {
+  const r = e.target.closest?.('.bg-row'); if (!r) return;
+  const i = +r.dataset.bgrow, n = bgState.commits.length;
+  const next = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+  if (next >= 0 && next < n) { e.preventDefault(); e.stopPropagation(); r.tabIndex = -1; const t = document.querySelector(`.bg-row[data-bgrow="${next}"]`); t.tabIndex = 0; t.focus(); }
+  else if (e.key === 'Enter') { e.preventDefault(); bgSelect(i); }
+  else if (e.key === 'Escape') bgSetHover(null);
+}, true);
+// Clicking a commit opens it on GitHub or GitLab, or copies its hash
+function bgSelect(i) {
+  const c = bgState.commits[i]; if (!c) return;
+  if (/github\.com|gitlab\.com/.test(bgState.web || '')) return openWeb(`${bgState.web.replace(/\/$/, '')}/commit/${c.sha}`);
+  act(() => bridge.copy(c.sha)).then(() => toast(`Copied ${c.sha.slice(0, 10)}`));
+}
+document.addEventListener('click', (e) => { const r = e.target.closest?.('.bg-row'); if (r) bgSelect(+r.dataset.bgrow); });
+
 const CI = { success: ['on', 'passed'], failure: ['err', 'failed'], cancelled: ['off', 'cancelled'], skipped: ['off', 'skipped'], timed_out: ['err', 'timed out'], action_required: ['warn', 'needs action'] };
 function hostingRow(h) {
   if (!h) return '';
@@ -1411,7 +1781,7 @@ async function dataLoadTables() {
 async function dataOpenTable(name) {
   const d = D();
   if (!await guardEdits()) return;
-  Object.assign(d, { table: name, page: 0, order: '', desc: false, filters: [], result: null, structure: null, ed: newEdits() });
+  Object.assign(d, { table: name, page: 0, order: '', desc: false, filters: [], result: null, structure: null, ed: newEdits(), rb: null }); rbApplied = '';
   if (d.tab === 'sql') d.tab = 'rows';
   renderView();
   d.structure = await act(() => dcall('data.structure', { schema: d.schema, table: name }));
@@ -1423,7 +1793,8 @@ async function dataLoadRows() {
   const d = D();
   if (!d.table) return;
   d.busy = true; renderView();
-  try { d.result = await dcall('data.rows', { schema: d.schema, table: d.table, limit: d.size, offset: d.page * d.size, order_by: d.order, desc: d.desc, filters: d.filters }); d.err = ''; }
+  const where = d.rb ? rbWire(d.rb.root) : null;
+  try { d.result = await dcall('data.rows', { schema: d.schema, table: d.table, limit: d.size, offset: d.page * d.size, order_by: d.order, desc: d.desc, filters: d.filters, ...(where ? { where } : {}) }); d.err = ''; }
   catch (e) { d.result = { error: e.message }; }
   d.busy = false; d.ed = newEdits(); renderView();
 }
@@ -1535,36 +1906,292 @@ async function reviewAndSave() {
   await dataLoadRows();
   D().tables = await act(() => dcall('data.tables', { schema: D().schema })) || D().tables; renderView();
 }
-const OPS = [['contains', 'contains'], ['=', 'is'], ['!=', 'is not'], ['<', 'less than'], ['>', 'greater than'], ['starts', 'starts with'], ['null', 'is NULL'], ['notnull', 'is not NULL']];
-const opLabel = (op) => (OPS.find(o => o[0] === op) || [op, op])[1];
-function dataFilterChips() {
-  const d = D();
-  return d.filters.map((f, i) => `<span class="fchip"><button class="fc-k" data-dfedit="${i}">${icon.columns}${esc(f.column)}</button><span class="fc-op">${esc(opLabel(f.op))}</span>${['null', 'notnull'].includes(f.op) ? '' : `<button class="fc-v" data-dfedit="${i}">${esc(f.value === '' ? '""' : f.value)}</button>`}<button class="fc-x" data-dfdel="${i}" title="Remove filter">${icon.x}</button></span>`).join('')
-    + `<button class="btn ghost sm ${d.filters.length ? 'icon-only' : ''}" data-cmd="dfiltermenu" title="Filter rows">${icon.listFilter}${d.filters.length ? '' : '<span class="lbl">Filter</span>'}</button>`;
+/* --- Rule Builder. A nested filter that
+   reads like a sentence: Where, and, or, groups inside groups, drag or arrow-key rules into place, undo
+   anything, and watch the SQL, JSON and plain English rewrite themselves. The service runs it with every
+   value bound and every column checked (dbclient treeSQL).  --- */
+const RB_MAX_DEPTH = 2;
+let rbSeq = 0;
+const rbId = () => 'n' + (++rbSeq);
+// What kind of field a column is, from its SQL type
+function rbKind(col) {
+  const t = (col.type || '').toLowerCase();
+  if (/^enum\(/.test(t)) return 'enum';
+  if (/^(tinyint\(1\)|bool|boolean)/.test(t)) return 'boolean';
+  if (/int|decimal|numeric|float|double|real|serial|money/.test(t)) return 'number';
+  if (/date|time|year/.test(t)) return 'date';
+  return 'text';
 }
-const DFM = { q: '' };
-function dataFilterMenuHTML() {
-  const d = D(), f = d.filter;
-  if (f.column) return `<button class="menu-back" data-dfback="1">${icon.back}<span>${esc(f.column)}</span></button>
-    <div class="fform"><select class="input sm" id="dFOp" aria-label="Condition">${OPS.map(([v, l]) => `<option value="${v}" ${f.op === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <input class="input sm" id="dFVal" placeholder="Value" value="${esc(f.value)}" spellcheck="false" ${['null', 'notnull'].includes(f.op) ? 'disabled' : ''} aria-label="Value">
-      <button class="btn primary sm" data-cmd="dfilter">${f.idx >= 0 ? 'Update' : 'Apply'}</button></div>`;
-  const q = DFM.q.toLowerCase(), cols = (d.structure?.columns || []).filter(c => !q || c.name.toLowerCase().includes(q));
-  return `<input class="menu-q" id="dfmQ" placeholder="Filter by column…" value="${esc(DFM.q)}" spellcheck="false" autocomplete="off" aria-label="Column">
-    <div class="menu-list">${cols.map(c => `<button data-dfcol="${esc(c.name)}">${c.key === 'PRI' ? icon.keyIcon : icon.columns}<span>${esc(c.name)}</span><span class="kb">${esc(c.type.split('(')[0])}</span></button>`).join('') || '<div class="menu-empty">No matches</div>'}</div>`;
+const rbEnumOptions = (col) => [...(col.type || '').matchAll(/'((?:[^']|'')*)'/g)].map(m => m[1].replace(/''/g, "'"));
+const RB_OPS = {
+  text: [['contains', 'contains'], ['notcontains', 'doesn’t contain'], ['=', 'equals'], ['!=', 'doesn’t equal'], ['starts', 'starts with'], ['ends', 'ends with'], ['in', 'is any of'], ['empty', 'is empty'], ['notempty', 'is not empty']],
+  number: [['=', 'equals'], ['!=', 'doesn’t equal'], ['>', 'more than'], ['>=', 'at least'], ['<', 'less than'], ['<=', 'at most'], ['between', 'between'], ['in', 'is any of'], ['null', 'is empty'], ['notnull', 'is not empty']],
+  date: [['=', 'is on'], ['>', 'is after'], ['<', 'is before'], ['between', 'is between'], ['null', 'is empty'], ['notnull', 'is not empty']],
+  enum: [['=', 'equals'], ['!=', 'doesn’t equal'], ['in', 'is any of'], ['notin', 'is none of'], ['null', 'is empty']],
+  boolean: [['=', 'is'], ['null', 'is empty']],
+};
+const RB_ICON = { text: 'textCursor', number: 'hash', date: 'calendar', enum: 'list', boolean: 'circleDot' };
+const rbArity = (op) => ['null', 'notnull', 'empty', 'notempty'].includes(op) ? 'none' : op === 'between' ? 'two' : ['in', 'notin'].includes(op) ? 'list' : 'one';
+const RB = () => D().rb;
+function rbFields() { return (D().structure?.columns || []).map(c => ({ name: c.name, kind: rbKind(c), options: rbEnumOptions(c) })); }
+const rbField = (name) => rbFields().find(f => f.name === name);
+function rbNewRule() { const f = rbFields()[0]; return { id: rbId(), kind: 'rule', column: f?.name || '', op: RB_OPS[f?.kind || 'text'][0][0], value: '', values: [] }; }
+function rbInit() { D().rb = { root: { id: rbId(), kind: 'group', combinator: 'and', not: false, children: [] }, past: [], future: [], tab: store.get('rbTab', 'sql'), open: true }; }
+function rbFind(id, n = RB().root, parent = null, depth = 0) {
+  if (n.id === id) return { node: n, parent, depth };
+  if (n.kind === 'group') for (const ch of n.children) { const r = rbFind(id, ch, n, depth + 1); if (r) return r; }
+  return null;
 }
-function showDataFilterMenu(anchor, idx = -1) {
-  const d = D();
-  d.filter = idx >= 0 ? { ...d.filters[idx], idx } : { column: '', op: 'contains', value: '', idx: -1 };
-  DFM.q = '';
-  menuAt(anchor, dataFilterMenuHTML(), 'fmenu');
-  setTimeout(() => ($('#dFVal') || $('#dfmQ'))?.focus(), 0);
+const rbClone = (n) => n.kind === 'group' ? { ...n, id: rbId(), children: n.children.map(rbClone) } : { ...n, id: rbId(), values: [...n.values] };
+// Every change goes through here: history for undo, then the view and the rows
+function rbChange(fn, { redraw = true } = {}) {
+  const rb = RB();
+  rb.past.push(JSON.stringify(rb.root)); if (rb.past.length > 60) rb.past.shift();
+  rb.future = [];
+  fn();
+  rbAfter(redraw);
 }
-function refreshDataFilterMenu() {
-  const pos = $('#dfmQ')?.selectionStart;
-  $('#menu').innerHTML = dataFilterMenuHTML();
-  const q = $('#dfmQ'); if (q) { q.focus(); if (pos !== undefined) q.setSelectionRange(pos, pos); } else $('#dFVal')?.focus();
+function rbUndo(dir = -1) {
+  const rb = RB(), from = dir < 0 ? rb.past : rb.future, to = dir < 0 ? rb.future : rb.past;
+  if (!from.length) return;
+  to.push(JSON.stringify(rb.root)); rb.root = JSON.parse(from.pop());
+  rbAfter(true);
 }
+function rbAfter(redraw) {
+  if (redraw) rbRedraw(); else rbRedrawOut();
+  clearTimeout(rbAfter.t); rbAfter.t = setTimeout(rbApply, 350);
+}
+// The tree the service runs: only complete rules (incomplete ones are skipped, as the output says)
+function rbComplete(r) { const a = rbArity(r.op); return a === 'none' || (a === 'one' && r.value !== '') || (a === 'two' && r.values[0] && r.values[1]) || (a === 'list' && r.values.length > 0); }
+function rbWire(n) {
+  if (n.kind === 'rule') return rbComplete(n) ? { kind: 'rule', column: n.column, op: n.op, value: n.value, values: n.values.filter(v => v !== '') } : null;
+  const children = n.children.map(rbWire).filter(Boolean);
+  return children.length ? { kind: 'group', combinator: n.combinator, not: n.not, children } : null;
+}
+let rbApplied = '';
+async function rbApply() {
+  const w = JSON.stringify(rbWire(RB().root));
+  if (w === rbApplied) return;
+  if (!await guardEdits()) return;
+  rbApplied = w; D().page = 0; dataLoadRows();
+}
+/* output: SQL (with the connection's own placeholders), JSON and plain English */
+function rbDialect() { const c = D().conns?.find(x => x.id === D().conn); return c?.driver || 'mysql'; }
+function rbEncode(n, params, dialect) {
+  const qi = (c) => dialect === 'mysql' ? '`' + c.replace(/`/g, '``') + '`' : '"' + c.replace(/"/g, '""') + '"';
+  const ph = (v) => { params.push(v); return dialect === 'postgres' ? '$' + params.length : '?'; };
+  if (n.kind === 'group') {
+    const parts = n.children.map(ch => rbEncode(ch, params, dialect)).filter(Boolean);
+    if (!parts.length) return '';
+    const s = parts.length === 1 && !n.not ? parts[0] : '(' + parts.join(n.combinator === 'or' ? ' OR ' : ' AND ') + ')';
+    return n.not ? 'NOT ' + (parts.length === 1 ? '(' + parts[0] + ')' : s) : s;
+  }
+  if (!rbComplete(n)) return '';
+  const q = qi(n.column), vs = n.values.filter(v => v !== '');
+  switch (n.op) {
+    case 'contains': return `${q} LIKE ${ph('%' + n.value + '%')}`;
+    case 'notcontains': return `${q} NOT LIKE ${ph('%' + n.value + '%')}`;
+    case 'starts': return `${q} LIKE ${ph(n.value + '%')}`;
+    case 'ends': return `${q} LIKE ${ph('%' + n.value)}`;
+    case 'in': return `${q} IN (${vs.map(ph).join(', ')})`;
+    case 'notin': return `${q} NOT IN (${vs.map(ph).join(', ')})`;
+    case 'between': return `${q} BETWEEN ${ph(vs[0])} AND ${ph(vs[1])}`;
+    case 'null': return `${q} IS NULL`;
+    case 'notnull': return `${q} IS NOT NULL`;
+    case 'empty': return `(${q} IS NULL OR ${q} = '')`;
+    case 'notempty': return `(${q} IS NOT NULL AND ${q} <> '')`;
+    default: return `${q} ${n.op === '!=' ? '<>' : n.op} ${ph(n.value)}`;
+  }
+}
+// The top-level AND and OR each start a new line
+function rbPretty(sql) {
+  let depth = 0, quoted = false, out = '';
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (ch === "'") quoted = !quoted;
+    if (!quoted && ch === '(') depth++;
+    if (!quoted && ch === ')') depth--;
+    if (!quoted && depth === 0) { const rest = sql.slice(i), j = rest.startsWith(' AND ') ? 'AND' : rest.startsWith(' OR ') ? 'OR' : null; if (j) { out += `\n  ${j} `; i += j.length + 1; continue; } }
+    out += ch;
+  }
+  return out;
+}
+function rbOutput() {
+  const d = D(), params = [], dialect = rbDialect(), root = RB().root;
+  const where = rbEncode({ ...root, children: root.children }, params, dialect).replace(/^\((.*)\)$/s, (m, inner) => root.not ? m : inner);
+  const table = (dialect === 'mysql' ? '`' + d.table + '`' : '"' + d.table + '"');
+  return { sql: where ? `SELECT * FROM ${table}\nWHERE ${rbPretty(where)}` : `SELECT * FROM ${table}`, params, json: JSON.stringify(rbWire(root) || { kind: 'group', combinator: 'and', children: [] }, null, 2), text: rbEnglish(root) || 'Every row' };
+}
+// The same filter with its values written in, for the SQL tab
+function rbInlined() {
+  const o = rbOutput(), lit = (v) => /^-?\d+(\.\d+)?$/.test(v) ? v : "'" + String(v).replace(/'/g, "''") + "'";
+  let i = 0;
+  return o.sql.replace(/\$\d+|\?/g, (m) => lit(o.params[m === '?' ? i++ : +m.slice(1) - 1])) + '\nLIMIT 100';
+}
+function rbEnglish(n, top = true) {
+  if (n.kind === 'group') {
+    const parts = n.children.map(ch => rbEnglish(ch, false)).filter(Boolean);
+    if (!parts.length) return '';
+    const s = parts.join(n.combinator === 'or' ? ', or ' : ', and ');
+    return n.not ? `none of (${s})` : top || parts.length === 1 ? s : `(${s})`;
+  }
+  if (!rbComplete(n)) return '';
+  const op = (RB_OPS[rbField(n.column)?.kind || 'text'].find(o => o[0] === n.op) || [n.op, n.op])[1];
+  const vs = n.values.filter(v => v !== ''), a = rbArity(n.op);
+  return `${n.column} ${op}${a === 'none' ? '' : a === 'two' ? ` ${vs[0]} and ${vs[1]}` : a === 'list' ? ` ${vs.join(', ')}` : ` ${n.value}`}`;
+}
+const rbHiSQL = (sql) => esc(sql).replace(/(\$\d+|\?)|(&#39;(?:[^&]|&(?!#39;))*&#39;)|\b(SELECT|FROM|WHERE|AND|OR|NOT|IN|LIKE|BETWEEN|IS|NULL)\b/g,
+  (m, p, s, k) => p ? `<span class="rb-p">${p}</span>` : s ? `<span class="rb-s">${s}</span>` : `<span class="rb-k">${k}</span>`);
+const rbHiJSON = (j) => esc(j).replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)(\s*:)?|\b(-?\d+(?:\.\d+)?|true|false|null)\b/g,
+  (m, s, colon, lit) => s ? (colon ? `<span class="rb-key">${s}${colon}</span>` : `<span class="rb-s">${s}</span>`) : `<span class="rb-p">${lit}</span>`);
+/* view */
+const RB_SEL = (attrs, opts, cur, cls = '') => `<label class="rb-sel ${cls}"><select ${attrs}>${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>${icon.chevronsUD || ''}</label>`;
+function rbValueEditor(r, f) {
+  const a = rbArity(r.op), kind = f?.kind || 'text', type = kind === 'number' ? 'text" inputmode="decimal' : kind === 'date' ? 'date' : 'text';
+  const inp = (attr, v, ph, lab) => `<input class="rb-in" type="${type}" ${attr} value="${esc(v)}" placeholder="${ph}" spellcheck="false" autocomplete="off" aria-label="${esc(lab)}">`;
+  if (a === 'none') return '';
+  if (a === 'two') return `<div class="rb-two">${inp(`data-rbv="${r.id}" data-i="0"`, r.values[0] || '', kind === 'number' ? '0' : 'From', r.column + ' from')}<span>and</span>${inp(`data-rbv="${r.id}" data-i="1"`, r.values[1] || '', kind === 'number' ? '0' : 'To', r.column + ' to')}</div>`;
+  if (kind === 'boolean') return RB_SEL(`data-rbval="${r.id}" aria-label="${esc(r.column)}"`, [['', 'Choose…'], ['1', 'Yes'], ['0', 'No']], r.value);
+  if (kind === 'enum' && a === 'one') return RB_SEL(`data-rbval="${r.id}" aria-label="${esc(r.column)}"`, [['', 'Choose…'], ...f.options.map(o => [o, o])], r.value);
+  if (kind === 'enum' && a === 'list') return `<div class="rb-multi" role="group" aria-label="${esc(r.column)} values">${f.options.map(o => `<button class="${r.values.includes(o) ? 'on' : ''}" data-rbopt="${r.id}" data-v="${esc(o)}" aria-pressed="${r.values.includes(o)}">${esc(o)}</button>`).join('')}</div>`;
+  if (a === 'list') return inp(`data-rblist="${r.id}"`, r.values.join(', '), 'Comma, separated', r.column + ' values');
+  return inp(`data-rbval="${r.id}"`, r.value, kind === 'number' ? '0' : 'Value', r.column);
+}
+function rbConnector(g, i, node) {
+  const grp = node.kind === 'group' ? ' grp' : '';
+  if (i === 0) return `<span class="rb-con${grp}">Where</span>`;
+  if (i === 1) return `<button class="rb-con rb-toggle${grp}" data-rbcomb="${g.id}" aria-label="Combine with ${g.combinator === 'and' ? 'or' : 'and'} instead"><span>${g.combinator}</span>${icon.chevronsUD || ''}</button>`;
+  return `<span class="rb-con rb-word${grp}">${g.combinator}</span>`;
+}
+function rbRule(r) {
+  const fields = rbFields(), f = rbField(r.column), kind = f?.kind || 'text';
+  return `<div class="rb-rule" data-rbnode="${r.id}"><button class="rb-grip" draggable="true" data-rbgrip="${r.id}" aria-label="Move rule on ${esc(r.column)}. Drag, or use the arrow keys.">${icon.grip}</button>
+    ${RB_SEL(`data-rbcol="${r.id}" aria-label="Field"`, fields.map(x => [x.name, x.name]), r.column, 'f')}${''}
+    ${RB_SEL(`data-rbop="${r.id}" aria-label="Operator"`, RB_OPS[kind], r.op, 'o')}
+    <div class="rb-val ${rbArity(r.op) === 'none' ? 'hide' : ''}">${rbValueEditor(r, f)}</div>
+    <button class="rb-more" data-rbmenu="${r.id}" aria-label="Actions for rule on ${esc(r.column)}">${MORE}</button></div>`;
+}
+function rbGroup(g, depth) {
+  const list = `<div class="rb-list">${g.children.map((ch, i) => `<div class="rb-item">${rbConnector(g, i, ch)}<div class="rb-node">${ch.kind === 'group' ? rbGroup(ch, depth + 1) : rbRule(ch)}</div></div>`).join('')}
+    ${g.children.length ? '' : `<div class="rb-empty" data-rbzone="${g.id}">${depth === 0 ? 'No rules yet, so every row matches.' : 'Empty group. Add a rule or drop one here.'}</div>`}</div>`;
+  if (depth === 0) return `${list}<div class="rb-adds ${g.children.length ? 'ind' : ''}"><button class="btn sm" data-rbadd="${g.id}">${icon.plus}Add rule</button><button class="btn ghost sm" data-rbaddg="${g.id}">${icon.folderPlus}Add group</button></div>`;
+  const summary = g.not ? 'None of these' : g.combinator === 'and' ? 'All of these' : 'Any of these';
+  return `<div class="rb-group" data-rbnode="${g.id}"><div class="rb-gh"><button class="rb-grip" draggable="true" data-rbgrip="${g.id}" aria-label="Move group. Drag, or use the arrow keys.">${icon.grip}</button><span class="rb-sum">${summary}</span>
+      <button class="rb-more" data-rbadd="${g.id}" aria-label="Add rule to group" title="Add rule">${icon.plus}</button><button class="rb-more" data-rbmenu="${g.id}" aria-label="Group actions">${MORE}</button></div>
+    <div class="rb-gb">${list}</div></div>`;
+}
+function rbOutHTML() {
+  const rb = RB(), o = rbOutput(), incomplete = (function count(n) { return n.kind === 'rule' ? (rbComplete(n) ? 0 : 1) : n.children.reduce((a, c) => a + count(c), 0); })(rb.root);
+  const tab = rb.tab, body = tab === 'sql' ? `<pre class="rb-code">${rbHiSQL(o.sql)}</pre>${incomplete ? `<p class="note">Skipping ${plural(incomplete, 'incomplete rule')} until ${incomplete === 1 ? 'it has' : 'they have'} a value.</p>` : ''}
+      ${o.params.length ? `<div class="rb-params">${o.params.map((p, i) => `<span><b>${rbDialect() === 'postgres' ? '$' + (i + 1) : '?' + (i + 1)}</b>${esc(JSON.stringify(p))}</span>`).join('')}</div>` : ''}`
+    : tab === 'json' ? `<pre class="rb-code">${rbHiJSON(o.json)}</pre>` : `<p class="rb-text">${esc(o.text)}</p>`;
+  return `<div class="rb-oh"><div class="rb-tabs" role="tablist">${[['sql', 'SQL'], ['json', 'JSON'], ['text', 'Plain English']].map(([k, l]) => `<button role="tab" data-rbtab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}</button>`).join('')}</div>
+    <span class="spacer"></span><button class="btn ghost sm" data-rbtosql="1" title="Open this query in the SQL tab, values written in">${icon.code}Edit as SQL</button><button class="rb-more" data-rbcopy="1" aria-label="Copy">${icon.copy}</button></div>
+    <div class="rb-ob">${body}</div>`;
+}
+function rbCountText() {
+  const d = D(), r = d.result, rules = (function count(n) { return n.kind === 'rule' ? 1 : n.children.reduce((a, c) => a + count(c), 0); })(RB().root);
+  const all = d.tables.find(t => t.name === d.table)?.rows;
+  if (!rules) return all ? `${all.toLocaleString()} rows, no filter` : 'No filter';
+  return r && !r.error && r.total >= 0 ? `${r.total.toLocaleString()}${all ? ` of ${all.toLocaleString()}` : ''} rows match` : plural(rules, 'rule');
+}
+function ruleBuilder() {
+  const d = D(); if (!d.rb) rbInit();
+  const rb = RB();
+  return `<div class="rb" id="rb"><div class="rb-h"><div><h3>Filter ${esc(d.table)}</h3><p class="rb-count">${esc(rbCountText())}</p></div><span class="spacer"></span>
+      <button class="rb-more" data-rbundo="-1" ${rb.past.length ? '' : 'disabled'} title="Undo (${MOD}Z)" aria-label="Undo">${icon.undo}</button><button class="rb-more" data-rbundo="1" ${rb.future.length ? '' : 'disabled'} title="Redo (⇧${MOD}Z)" aria-label="Redo">${icon.redo || icon.fwd}</button></div>
+    <div class="rb-body">${rbGroup(rb.root, 0)}</div><div class="rb-out" id="rbOut">${rbOutHTML()}</div></div>`;
+}
+// Redraw the builder in place, keeping focus on the same control
+function rbRedraw() {
+  const el = $('#rb'); if (!el) return renderView();
+  const a = document.activeElement, key = a && el.contains(a) ? [...a.attributes].filter(x => x.name.startsWith('data-rb') || x.name === 'data-i').map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join('') : '', pos = a?.selectionStart;
+  el.outerHTML = ruleBuilder();
+  if (key) { const n = $('#rb ' + key); if (n) { n.focus(); if (pos != null && n.setSelectionRange) try { n.setSelectionRange(pos, pos); } catch (_) { /* date inputs */ } } }
+  $('#view')._html = viewData();
+}
+function rbRedrawOut() { const o = $('#rbOut'); if (o) o.innerHTML = rbOutHTML(); const c = $('#rb .rb-count'); if (c) c.textContent = rbCountText(); }
+/* events */
+function rbMove(id, delta) {
+  const f = rbFind(id); if (!f?.parent) return;
+  const sib = f.parent.children, i = sib.indexOf(f.node), j = i + delta;
+  if (j < 0 || j >= sib.length) return;
+  rbChange(() => { sib.splice(i, 1); sib.splice(j, 0, f.node); });
+  setTimeout(() => $(`#rb [data-rbgrip="${id}"]`)?.focus());
+}
+function rbMenu(anchor, id) {
+  const f = rbFind(id), g = f.node.kind === 'group';
+  menuAt(anchor, g ? `<button data-rbm="addg|${id}" ${f.depth >= RB_MAX_DEPTH ? 'disabled' : ''}>${icon.folderPlus}<span>Add nested group</span></button><button data-rbm="dup|${id}">${icon.copy}<span>Duplicate group</span></button>
+      <button data-rbm="not|${id}">${f.node.not ? icon.check : '<span style="width:15px"></span>'}<span>Match none of these</span></button><hr><button data-rbm="del|${id}" class="danger">${icon.trash}<span>Delete group</span></button>`
+    : `<button data-rbm="dup|${id}">${icon.copy}<span>Duplicate</span></button><hr><button data-rbm="del|${id}" class="danger">${icon.trash}<span>Delete rule</span></button>`);
+}
+async function rbClick(t, d) {
+  if (d.rbadd !== undefined) { const g = rbFind(d.rbadd).node; const r = rbNewRule(); rbChange(() => g.children.push(r)); return setTimeout(() => $(`#rb [data-rbcol="${r.id}"]`)?.focus()); }
+  if (d.rbaddg !== undefined) { const g = rbFind(d.rbaddg).node; return rbChange(() => g.children.push({ id: rbId(), kind: 'group', combinator: 'or', not: false, children: [rbNewRule()] })); }
+  if (d.rbcomb) { const g = rbFind(d.rbcomb).node; return rbChange(() => { g.combinator = g.combinator === 'and' ? 'or' : 'and'; }); }
+  if (d.rbmenu) return rbMenu(t, d.rbmenu);
+  if (d.rbm) {
+    $('#menu').classList.remove('open');
+    const [what, id] = d.rbm.split('|'), f = rbFind(id); if (!f) return;
+    if (what === 'del') return rbChange(() => f.parent.children.splice(f.parent.children.indexOf(f.node), 1));
+    if (what === 'dup') return rbChange(() => f.parent.children.splice(f.parent.children.indexOf(f.node) + 1, 0, rbClone(f.node)));
+    if (what === 'not') return rbChange(() => { f.node.not = !f.node.not; });
+    if (what === 'addg') return rbChange(() => f.node.children.push({ id: rbId(), kind: 'group', combinator: 'or', not: false, children: [rbNewRule()] }));
+  }
+  if (d.rbopt) { const r = rbFind(d.rbopt).node, v = d.v; return rbChange(() => { r.values = r.values.includes(v) ? r.values.filter(x => x !== v) : [...r.values, v]; }); }
+  if (d.rbundo) return rbUndo(+d.rbundo);
+  if (d.rbtab) { RB().tab = d.rbtab; store.set('rbTab', d.rbtab); return rbRedrawOut(); }
+  if (d.rbcopy) { const o = rbOutput(), tab = RB().tab; await act(() => bridge.copy(tab === 'sql' ? o.sql : tab === 'json' ? o.json : o.text)); return toast('Copied'); }
+  if (d.rbtosql) { const D2 = D(); D2.sql = rbInlined(); D2.tab = 'sql'; renderView(); return setTimeout(() => $('#dSQL')?.focus(), 20); }
+  if (d.rbtoggle) { const D2 = D(); if (!D2.rb) { rbInit(); D2.rb.open = false; D2.rb.root.children.push(rbNewRule()); } D2.rb.open = !D2.rb.open; renderView(); return setTimeout(() => $('#rb [data-rbcol]')?.focus(), 30); }
+}
+document.addEventListener('change', (e) => {
+  const t = e.target, d = t.dataset;
+  if (d.rbcol) { const r = rbFind(d.rbcol).node, from = rbField(r.column)?.kind, f = rbField(t.value);
+    return rbChange(() => { r.column = t.value; if (from !== f.kind || !RB_OPS[f.kind].some(o => o[0] === r.op)) r.op = RB_OPS[f.kind][0][0]; r.value = ''; r.values = []; }); } // another kind of column: its own first condition
+  if (d.rbop) { const r = rbFind(d.rbop).node, from = rbArity(r.op), to = rbArity(t.value); return rbChange(() => { r.op = t.value; if (from !== to) { if (to === 'list' && r.value) r.values = [r.value]; else if (to === 'one' && r.values[0]) r.value = r.values[0]; if (to === 'two') r.values = [r.value || '', '']; } }); }
+  if (d.rbval && t.tagName === 'SELECT') { const r = rbFind(d.rbval).node; return rbChange(() => { r.value = t.value; }); }
+});
+// Typing updates the query and the output as you go; the history keeps one step per field you edit
+document.addEventListener('focusin', (e) => { if (e.target.closest?.('#rb input')) e.target._rbSnap = JSON.stringify(RB().root); });
+document.addEventListener('input', (e) => {
+  const t = e.target, d = t.dataset;
+  if (t._rbSnap && t.closest('#rb')) { const rb = RB(); rb.past.push(t._rbSnap); rb.future = []; t._rbSnap = null; } // one undo step per field edit
+  if (d.rbval !== undefined && t.tagName === 'INPUT') { rbFind(d.rbval).node.value = t.value.trim(); return rbAfter(false); }
+  if (d.rbv !== undefined) { const r = rbFind(d.rbv).node; r.values[+d.i] = t.value.trim(); return rbAfter(false); }
+  if (d.rblist !== undefined) { rbFind(d.rblist).node.values = t.value.split(',').map(x => x.trim()).filter(Boolean); return rbAfter(false); }
+});
+document.addEventListener('keydown', (e) => {
+  if (!e.target.closest?.('#rb')) return;
+  const g = e.target.dataset?.rbgrip;
+  if (g && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); e.stopPropagation(); return rbMove(g, e.key === 'ArrowUp' ? -1 : 1); }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.target.closest('input, textarea')) { e.preventDefault(); e.stopPropagation(); rbUndo(e.shiftKey ? 1 : -1); }
+}, true);
+// Drag a rule or group by its grip onto another rule (before or after it) or into an empty group
+let rbDrag = null;
+document.addEventListener('dragstart', (e) => { const g = e.target.closest?.('[data-rbgrip]'); if (!g) return; rbDrag = g.dataset.rbgrip; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', rbDrag); g.closest('[data-rbnode]')?.classList.add('dragging'); });
+document.addEventListener('dragend', () => { rbDrag = null; document.querySelectorAll('#rb .dragging, #rb .drop-before, #rb .drop-after, #rb .drop-in').forEach(n => n.classList.remove('dragging', 'drop-before', 'drop-after', 'drop-in')); });
+document.addEventListener('dragover', (e) => {
+  if (!rbDrag) return;
+  const zone = e.target.closest?.('[data-rbzone]'), node = e.target.closest?.('#rb [data-rbnode]');
+  document.querySelectorAll('#rb .drop-before, #rb .drop-after, #rb .drop-in').forEach(n => n.classList.remove('drop-before', 'drop-after', 'drop-in'));
+  if (zone) { e.preventDefault(); zone.classList.add('drop-in'); return; }
+  if (!node || node.dataset.rbnode === rbDrag || node.closest(`[data-rbnode="${rbDrag}"]`)) return;
+  e.preventDefault();
+  const r = node.getBoundingClientRect(); node.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+});
+document.addEventListener('drop', (e) => {
+  if (!rbDrag) return;
+  const zone = e.target.closest?.('[data-rbzone]'), node = e.target.closest?.('#rb [data-rbnode]'), id = rbDrag, src = rbFind(id);
+  e.preventDefault(); rbDrag = null;
+  if (!src) return;
+  if (zone) { const g = rbFind(zone.dataset.rbzone).node; return rbChange(() => { src.parent.children.splice(src.parent.children.indexOf(src.node), 1); g.children.push(src.node); }); }
+  if (!node || node.dataset.rbnode === id) return;
+  const dst = rbFind(node.dataset.rbnode), before = e.clientY < node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2;
+  if (src.node.kind === 'group' && dst.depth > RB_MAX_DEPTH - 1) return toast('Groups can’t go that deep', 'warn');
+  rbChange(() => { src.parent.children.splice(src.parent.children.indexOf(src.node), 1); const sib = dst.parent.children; sib.splice(sib.indexOf(dst.node) + (before ? 0 : 1), 0, src.node); });
+});
+
 /* SQL editor: autocomplete for keywords, tables and columns */
 const SQLKW = 'SELECT FROM WHERE AND OR NOT NULL IS IN LIKE BETWEEN ORDER BY GROUP HAVING LIMIT OFFSET JOIN LEFT RIGHT INNER OUTER ON AS DISTINCT COUNT SUM AVG MIN MAX INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE ALTER DROP INDEX DESC ASC UNION ALL EXISTS CASE WHEN THEN ELSE END WITH SHOW DESCRIBE EXPLAIN'.split(' ');
 function acWords() {
@@ -1663,13 +2290,15 @@ function viewData() {
         const edit = d.mode === 'edit', n = pending(), noKey = d.structure && !pkCols().length;
         const modeSeg = `<div class="seg mode" role="group" aria-label="Mode"><button data-cmd="dview" class="${edit ? '' : 'on'}" title="Browse only: nothing can change">${icon.eye}View</button>
           <button data-cmd="dedit" class="${edit ? 'on' : ''}" ${noKey ? 'disabled title="This table has no primary key, so rows can’t be identified safely. Use SQL."' : 'title="Change, add and delete rows; nothing is saved until you review it"'}>${icon.edit}Edit</button></div>`;
-        body = `<div class="dbar">${modeSeg}<div class="fchips inline">${dataFilterChips()}</div>
+        const rules = d.rb ? (function count(n) { return n.kind === 'rule' ? 1 : n.children.reduce((a, c) => a + count(c), 0); })(d.rb.root) : 0, rbOpen = d.rb?.open;
+        body = `<div class="dbar">${modeSeg}<button class="btn ghost sm ${rbOpen || rules ? 'active' : ''}" data-rbtoggle="1" aria-expanded="${!!rbOpen}" title="Filter rows with rules (and, or, groups)">${icon.listFilter}<span class="lbl">Filter</span>${rules ? `<span class="badge">${rules}</span>` : ''}</button>
           <span class="spacer"></span>${d.busy ? '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>' : ''}<span class="note">${r && !r.error ? `${from.toLocaleString()} to ${to.toLocaleString()} of ${total.toLocaleString()}${r.ms !== undefined ? ` · ${r.ms} ms` : ''}` : ''}</span>
           <button class="tb-btn" data-cmd="dprev" title="Previous page" ${d.page > 0 ? '' : 'disabled'}>${icon.back}</button><button class="tb-btn" data-cmd="dnext" title="Next page" ${to < total ? '' : 'disabled'}>${icon.fwd}</button>
           <button class="tb-btn" data-cmd="dexport" title="Export rows">${icon.download2}</button></div>
           ${edit ? `<div class="editbar" role="status"><span class="pill">${icon.edit}Editing</span><span class="note">Click a cell to change it. Nothing is written until you review and save.</span><span class="spacer"></span>
             <button class="btn ghost sm" data-cmd="dinsert">${icon.plus}Row</button>
             ${n ? `<span class="note"><b>${plural(n, 'change')}</b></span><button class="btn ghost sm" data-cmd="ddiscard">Discard</button><button class="btn primary sm" data-cmd="dreview">${icon.save}Review & save</button>` : ''}</div>` : ''}
+          ${d.structure && d.rb?.open ? `<div class="rb-wrap">${ruleBuilder()}</div>` : ''}
           ${rowsGrid()}`;
       }
     } else if (d.tab === 'structure') {
@@ -1755,6 +2384,113 @@ function parseIntent(text) {
   }
   return out.slice(0, 7);
 }
+/* --- Run List and Tool Receipts: what each AI agent did, call by call, with Undo where it can be undone --- */
+const RUN_GAP = 10 * 60000; // calls from the same agent this close together are one run
+function agentRuns() {
+  const runs = [];
+  for (const a of S.activity.filter(x => x.client === 'mcp').slice().reverse()) { // oldest first
+    const t = new Date(a.time).getTime(), who = a.agent || 'An AI agent', r = runs[runs.length - 1];
+    if (r && r.who === who && t - r.end <= RUN_GAP) { r.calls.push(a); r.end = t; }
+    else runs.push({ who, start: t, end: t, calls: [a], key: who + '|' + a.time });
+  }
+  return runs.reverse();
+}
+const argsOf = (a) => { try { return JSON.parse(a.summary || '{}'); } catch (_) { return {}; } };
+const callKey = (a) => a.time + '|' + a.method;
+// Rewind: a change can be undone when the opposite action exists and nothing has changed it since.
+const UNDO = {
+  'sites.update': (p) => typeof p.enabled === 'boolean' && site(p.folder) && site(p.folder).enabled === p.enabled
+    ? { label: p.enabled ? `Switch ${p.folder} off` : `Switch ${p.folder} on`, run: () => updateSite(p.folder, { enabled: !p.enabled }) } : null,
+  'share.start': (p) => { const live = (S.status?.shares || []).find(x => x.folder === p.folder);
+    return live ? { label: `Stop sharing ${p.folder}`, run: () => bridge.call('share.stop', { id: live.id }) } : null; },
+  'tools.adminer': (p) => p.enabled && S.status?.adminer?.enabled ? { label: 'Switch Adminer off', run: () => setAdminer(false) } : null,
+  'agents.connect': (p) => (S.agents || []).some(c => c.id === p.id && c.connected) ? { label: 'Disconnect it again', run: () => bridge.call('agents.disconnect', { id: p.id }) } : null,
+  'data.readonly': (p) => p.read_only === false ? { label: 'Make the connection read-only again', run: () => bridge.call('data.readonly', { id: p.id, read_only: true }) } : null,
+  'sites.connect_db': (p) => ({ label: `Put ${p.folder}’s .env back`, run: () => bridge.call('sites.restore_env', { folder: p.folder }) }),
+  'sites.hide': (p) => ({ label: `Show ${p.folder} again`, run: () => bridge.call('sites.unhide', { folder: p.folder }) }),
+};
+// Changes with no undo button: what to do instead
+const LOCKED = {
+  'db.drop': 'Backed up first: restore it from Databases → Backups', 'db.empty': 'Backed up first: restore it from Databases → Backups',
+  'db.import': 'Backed up first: restore it from Databases → Backups', 'db.restore': 'What was there is in Databases → Backups',
+  'pg.drop': 'Backed up first', 'pg.empty': 'Backed up first', 'pg.import': 'Backed up first', 'data.import': 'What was there was exported first',
+  'data.save': 'Row changes can’t be undone here', 'data.query': 'A query can’t be undone here', 'storage.clean': 'Removed files can’t come back',
+  'addons.flush': 'The cache is empty; projects refill it', 'restart': '', 'stop': 'Start services again from Services',
+};
+const undone = new Set();
+let undoFns = {};
+function receiptLine(a) {
+  const p = argsOf(a), args = Object.entries(p).map(([k, v]) => `${k}=${typeof v === 'string' ? v : JSON.stringify(v)}`).join(' ');
+  const u = !a.error && !undone.has(callKey(a)) && UNDO[a.method]?.(p), lock = !a.error && a.method in LOCKED;
+  if (u) undoFns[callKey(a)] = u;
+  const right = undone.has(callKey(a)) ? '<span class="note">undone</span>'
+    : u ? `<button class="btn ghost sm" data-undo="${esc(callKey(a))}" title="${esc(u.label)}">${icon.undo}Undo</button>`
+    : lock && /^db\.(drop|empty|import|restore)$/.test(a.method) && p.name ? `<button class="btn ghost sm" data-dbbackups="${esc(p.name)}" title="${esc(LOCKED[a.method])}">${icon.backup}Backups</button>`
+    : lock ? `<span class="rc-lock" title="${esc(LOCKED[a.method] || 'Can’t be undone')}">${icon.lock}</span>` : '';
+  return `<div class="rc-line ${a.error ? 'fail' : ''}"><span class="rc-time">${new Date(a.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}</span>
+    <span class="rc-call"><code>${esc(toolName(a.method))}</code>${args ? `<span class="rc-args" title="${esc(args)}">${esc(args)}</span>` : ''}</span>
+    <span class="rc-ms">${a.ms ? a.ms + ' ms' : ''}</span><span class="rc-st">${a.error ? icon.x : icon.check}</span><span class="rc-r">${right}</span></div>
+    ${a.error ? `<div class="rc-err">${esc(a.error)}</div>` : ''}`;
+}
+/* --- Run List. Every agent session in one calm
+   list, with live clocks, counts by status and a click to see the last few steps or answer what it's waiting
+   for. A run is the calls one agent made with no gap longer than 10 minutes. --- */
+const RL_ORDER = { review: 0, failed: 1, running: 2, done: 3 };
+const RL_META = { running: ['Running', 'info'], review: ['Needs review', 'warn'], failed: ['Failed', 'err'], done: ['Done', 'ok'] };
+const RL_FILTERS = [['all', 'All'], ['running', 'Running'], ['review', 'Review'], ['failed', 'Failed'], ['done', 'Done']];
+const RL_EMPTY = { all: ['No runs yet', 'When Claude, Cursor or another agent uses LocalSites over MCP, each session shows up here with a live clock.'],
+  running: ['Nothing running', 'Every agent is idle. New runs appear here as they start.'], review: ['You’re all caught up', 'Nothing is waiting on your approval.'],
+  failed: ['No failed runs', 'Every run finished or is still going.'], done: ['Nothing finished yet', 'Finished runs land here with their last steps.'] };
+let rlFilter = 'all', rlOpen = '', rlReceipt = '';
+function rlRuns() {
+  const aps = S.approvals || [];
+  return agentRuns().map(r => {
+    const live = Date.now() - r.end < 2 * 60000, waiting = aps.filter(a => a.client === 'mcp' && (a.agent || 'An AI agent') === r.who);
+    const last = r.calls.at(-1), status = waiting.length ? 'review' : live ? 'running' : last.error ? 'failed' : 'done';
+    const folders = uniq(r.calls.map(c => argsOf(c).folder || argsOf(c).name).filter(Boolean));
+    const changes = r.calls.filter(c => !c.error && (UNDO[c.method] || c.method in LOCKED || /\.(update|create|connect|start|install|backup|takeover|drop|empty|import)$/.test(c.method)));
+    const title = changes.length ? describe(changes.at(-1)) + (changes.length > 1 ? ` and ${changes.length - 1} more` : '') : `Looked around: ${plural(r.calls.length, 'call')}`;
+    return { ...r, status, waiting, folders, title };
+  });
+}
+function rlIcon(status) {
+  if (status === 'running') return '<svg class="rl-spin" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2" opacity=".2"/><path d="M8 2a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  return { review: icon.alertCircle, failed: icon.circleX, done: icon.status }[status];
+}
+function runList() {
+  const runs = rlRuns(); undoFns = {};
+  const counts = { all: runs.length, running: 0, review: 0, failed: 0, done: 0 }; for (const r of runs) counts[r.status]++;
+  const shown = runs.filter(r => rlFilter === 'all' || r.status === rlFilter).sort((a, b) => RL_ORDER[a.status] - RL_ORDER[b.status] || b.end - a.end).slice(0, 20);
+  const rows = shown.map(r => {
+    const open = rlOpen === r.key, [label, tone] = RL_META[r.status], el = r.status === 'running';
+    const steps = r.calls.slice(-3).map((c, i, all) => { const lastStep = i === all.length - 1;
+      return `<li class="${lastStep ? 'last' : ''} ${c.error ? 'err' : ''}"><span class="rl-sd"></span><span>${esc(describe(c) === c.method ? toolName(c.method) : describe(c))}${c.error ? ` <span class="warnc">failed</span>` : ''}</span>${lastStep && el ? '<span class="rl-dots"><i></i><i></i><i></i></span>' : ''}</li>`; }).join('');
+    const acts = [
+      ...r.waiting.map(a => `<span class="rl-ap"><span class="note">${esc(describe({ method: a.method, summary: a.summary }))}</span>${approvalActions(a, true)}</span>`),
+      UI.btn(rlReceipt === r.key ? 'Hide calls' : 'Every call', { ic: 'receipt', kind: 'ghost', attrs: `data-rlreceipt="${esc(r.key)}"` }),
+    ].join('');
+    return `<li class="rl-item ${open ? 'open' : ''}"><button class="rl-row" data-rlopen="${esc(r.key)}" aria-expanded="${open}">
+        <span class="rl-ic ${r.status}">${rlIcon(r.status)}</span>
+        <span class="rl-main"><span class="rl-title">${esc(r.title)}</span><span class="rl-sub">${esc(r.who)}${r.folders.length ? ` · <span class="mono">${esc(r.folders.slice(0, 2).join(', '))}${r.folders.length > 2 ? '…' : ''}</span>` : ''}</span></span>
+        <span class="rl-side"><span class="rl-clock ${el ? 'live' : ''}" ${el ? `data-elapsed="${r.start}"` : ''}>${fmtClock((el ? Date.now() : r.end) - r.start)}</span><span class="rl-badge ${tone}">${label}</span></span>
+        <span class="rl-chev">${icon.caret}</span></button>
+      ${open ? `<div class="rl-panel"><ol class="rl-steps">${steps}</ol><div class="rl-acts">${acts}</div>
+        ${rlReceipt === r.key ? `<div class="receipt"><div class="rc-head"><span>${esc(r.who)}</span><span>${new Date(r.start).toLocaleDateString([], { day: 'numeric', month: 'short' })} · ${plural(r.calls.length, 'call')}</span></div>${r.calls.slice().reverse().map(receiptLine).join('')}</div>` : ''}</div>` : ''}</li>`;
+  }).join('');
+  const [et, eb] = RL_EMPTY[rlFilter];
+  return `<div class="rl"><div class="rl-h"><h3>AI agents</h3><p class="rl-count"><span class="rl-pulse ${counts.running ? 'on' : ''}"></span>${counts.running} running · ${counts.review} waiting on you</p></div>
+    <div class="rl-tabs" role="tablist" aria-label="Filter runs">${RL_FILTERS.map(([v, l]) => `<button role="tab" data-rlfilter="${v}" class="${rlFilter === v ? 'on' : ''}" aria-selected="${rlFilter === v}">${l}<span>${counts[v]}</span></button>`).join('')}</div>
+    <ul class="rl-list">${rows || `<li class="rl-empty"><b>${et}</b><span>${eb}</span></li>`}</ul></div>`;
+}
+async function undoCall(key) {
+  const u = undoFns[key]; if (!u) return;
+  if (!await confirmBox(`${u.label}?`, 'This undoes what the agent did. It runs as you, from the app.', 'Undo')) return;
+  const r = await act(() => u.run(), 'Undo');
+  if (r === undefined) return;
+  undone.add(key); logToast(r); toast('Undone');
+  await act(() => Promise.all([loadStatus(), loadSites(), loadActivity()])); render();
+}
+
 function viewAgent() {
   const sug = parseIntent(S.agent.text);
   S.agent.sel = Math.min(S.agent.sel, Math.max(0, sug.length - 1));
@@ -1771,8 +2507,9 @@ function viewAgent() {
       { ic: 'db', title: 'Create a database', text: 'create database shop', attrs: 'data-agentex="create database shop"' },
       { ic: 'compose', title: 'Start a new project', text: 'new project demo', attrs: 'data-agentex="new project demo"' }], 'agentEx') : ''}
     ${res ? `<div class="card" style="margin-top:14px"><div class="ch">${icon.info}<h3>${esc(res.title)}</h3></div>${res.checks ? checksTable(res.checks, res.checks.some(c => c.area !== res.checks[0].area)) : `<pre class="mini" style="border:0;max-height:300px">${esc(res.text)}</pre>`}</div>` : ''}
-    <div class="card" style="margin-top:24px"><div class="ch">${icon.agent}<h3>AI agent activity</h3><span class="spacer"></span><button class="btn ghost" data-view="settings">Connect an agent</button></div>
-      ${activityRows(S.activity.filter(a => a.client === 'mcp'), 'When Claude, Cursor or another agent uses LocalSites over MCP, every call shows up here.')}</div>
+    ${(S.grants || []).length ? `<div class="card" style="margin-top:24px"><div class="ch">${icon.ticket}<h3>Allowed for a while</h3><span class="spacer"></span><span class="note">The next request after a pass ends asks again</span></div><div class="cb passes">${S.grants.map(passCard).join('')}</div></div>` : ''}
+    <div style="margin-top:24px">${runList()}</div>
+    <p class="note" style="text-align:center;margin-top:10px"><a class="link" data-cmd="agentsetup">Connect an agent</a> · Undo and backups are in each run’s calls.</p>
     <p class="note" style="text-align:center;margin-top:14px">For a real AI assistant, connect Claude or Cursor over MCP.</p>
   </div>`;
 }
@@ -1969,26 +2706,141 @@ async function pollAddonInstall(id) {
   }
 }
 
-/* --- logs --- */
-function viewLogs() {
-  if (!S.logText) return emptyState({ ic: 'logs', title: 'This log is empty', text: 'Nothing has been written here yet. Pick another log above, or leave this open and new lines will show up.' });
-  return `<pre class="logbox" id="logbox">${esc(S.logText)}</pre>`;
-}
-async function loadLog(scroll = true) {
-  const r = await act(() => bridge.call('logs', { kind: S.log.kind, folder: S.log.folder, lines: 400 }));
-  S.logText = r?.text || '';
-  const box = $('#logbox');
-  if (box && cur().view === 'logs') {
-    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-    box.textContent = S.logText || 'Empty.';
-    if (scroll || atBottom) box.scrollTop = box.scrollHeight;
+/* --- Log Stream. Level filters with counts,
+   search that highlights as it filters, pause and follow with a "new lines" pill, and bursts of the same line
+   folded into one "12 similar" row. Fed by the logs LocalSites already keeps. --- */
+const LS_LEVELS = [['debug', 'Debug', 'DBG'], ['info', 'Info', 'INF'], ['warn', 'Warn', 'WRN'], ['error', 'Error', 'ERR']];
+const LSV = { lines: [], seq: 0, levels: new Set(['debug', 'info', 'warn', 'error']), q: '', paused: false, shown: 0, follow: true, behind: 0, open: new Set(), seen: new Set(), arrivals: [], key: '' };
+const MON = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+// One line of any log LocalSites keeps (Apache, PHP, MySQL, access logs, dev servers, Homebrew) as
+// { ts, level, service, message }. Lines without a time keep the one before them (stack traces).
+function parseLogLine(text, source, prevTs) {
+  let m, ts = null, level = '', service = source, msg = text;
+  if ((m = text.match(/^\[(?:\w{3} )?(\w{3}) (\d{1,2}) (\d\d):(\d\d):(\d\d)(?:\.(\d+))? (\d{4})\] \[(?:([\w-]+):)?(\w+)\] (?:\[pid \d+(?::tid \d+)?\] )?(?:\[client [^\]]+\] )?(.*)$/))) { // Apache
+    ts = new Date(+m[7], MON[m[1]], +m[2], +m[3], +m[4], +m[5], +(m[6] || '0').slice(0, 3).padEnd(3, '0')).getTime(); service = m[8] || 'apache'; level = m[9]; msg = m[10];
+  } else if ((m = text.match(/^\[(\d{1,2})-(\w{3})-(\d{4}) (\d\d):(\d\d):(\d\d)(?: ([\w/+-]+))?\] (.*)$/))) { // PHP
+    ts = new Date(+m[3], MON[m[2]], +m[1], +m[4], +m[5], +m[6]).getTime(); service = 'php'; msg = m[8];
+    const k = msg.match(/^PHP (Fatal error|Parse error|Warning|Notice|Deprecated|Strict Standards)/); level = k ? k[1] : '';
+  } else if ((m = text.match(/^(\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?)\s+(?:\d+\s+)?(?:\[(\w+)\]\s+)?(?:\[[A-Z]{2}-\d+\]\s+)?(?:\[(\w+)\]\s+)?(.*)$/))) { // MySQL, ISO stamps
+    ts = Date.parse(m[1].replace(' ', 'T')); level = m[2] || ''; service = m[3] ? m[3].toLowerCase() : source; msg = m[4];
+  } else if ((m = text.match(/^(\S+) \S+ \S+ \[(\d\d)\/(\w{3})\/(\d{4}):(\d\d):(\d\d):(\d\d) [^\]]+\] "([^"]*)" (\d{3}) (.*)$/))) { // access log
+    ts = new Date(+m[4], MON[m[3]], +m[2], +m[5], +m[6], +m[7]).getTime(); service = 'http'; msg = `${m[8]} ${m[9]} ${m[10]}`;
+    level = +m[9] >= 500 ? 'error' : +m[9] >= 400 ? 'warn' : 'info';
   }
+  const l = (level || msg).toLowerCase();
+  const lv = /^(error|err|fatal|crit|critical|emerg|alert|panic|fatal error|parse error)$/.test(level.toLowerCase()) || (!level && /\b(error|fatal|panic|exception|failed|denied)\b/.test(l)) ? 'error'
+    : /^(warn|warning|deprecated|strict standards)$/.test(level.toLowerCase()) || (!level && /\b(warn|warning|deprecated)\b/.test(l)) ? 'warn'
+    : /^(debug|trace\d*|note)$/.test(level.toLowerCase()) ? 'debug' : 'info';
+  return { ts: Number.isFinite(ts) ? ts : prevTs, level: lv, service: String(service).slice(0, 12), message: msg };
+}
+const lsSource = () => ({ apache: 'apache', mysql: 'mysql', setup: 'brew', addon: S.log.folder, 'addon-install': S.log.folder, 'site-error': 'apache', 'site-php': 'php', 'site-access': 'http', 'site-app': 'app', 'site-install': 'install' }[S.log.kind] || S.log.kind);
+// A new tail of the log: keep the lines we already have, append only what's new
+function lsIngest(text) {
+  const key = S.log.kind + '|' + S.log.folder, raw = text.split('\n').filter(l => l.trim());
+  if (key !== LSV.key) Object.assign(LSV, { key, lines: [], shown: 0, open: new Set(), seen: new Set(), behind: 0, follow: true, arrivals: [] });
+  const old = LSV.lines.map(l => l.raw);
+  let start = 0;
+  if (old.length) {
+    const tail = old.slice(-3).join('\n');
+    start = -1;
+    for (let p = raw.length - 1; p >= 0; p--) if (raw.slice(Math.max(0, p - 2), p + 1).join('\n') === tail) { start = p + 1; break; }
+    if (start === -1) { LSV.lines = []; start = 0; } // rotated or cut: start over
+  }
+  const fresh = raw.slice(start), first = !old.length;
+  let prev = LSV.lines.at(-1)?.ts ?? null;
+  for (const r of fresh) { const x = parseLogLine(r, lsSource(), prev); prev = x.ts; LSV.lines.push({ id: ++LSV.seq, raw: r, ...x }); if (first) LSV.seen.add(LSV.seq); }
+  if (LSV.lines.length > 500) LSV.lines = LSV.lines.slice(-500);
+  if (!first && fresh.length) { const now = Date.now(); for (let i = 0; i < fresh.length; i++) LSV.arrivals.push(now); }
+  if (!LSV.paused) LSV.shown = LSV.lines.length;
+  return fresh.length;
+}
+const lsTemplate = (m) => m.replace(/\b[0-9a-f]{6,}\b/gi, '#').replace(/\d+(\.\d+)?/g, '#');
+const lsClock = (ts) => { if (ts == null) return ''; const d = new Date(ts), p = (n, w = 2) => String(n).padStart(w, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`; };
+const lsMark = (text, q) => { if (!q) return esc(text); let out = '', at = 0; const lower = text.toLowerCase(); let hit = lower.indexOf(q);
+  while (hit !== -1) { out += esc(text.slice(at, hit)) + `<mark>${esc(text.slice(hit, hit + q.length))}</mark>`; at = hit + q.length; hit = lower.indexOf(q, at); }
+  return out + esc(text.slice(at)); };
+const lsVisible = () => LSV.paused ? LSV.lines.slice(0, LSV.shown) : LSV.lines;
+function lsFiltered() { const q = LSV.q.trim().toLowerCase(); return lsVisible().filter(l => LSV.levels.has(l.level) && (!q || l.message.toLowerCase().includes(q) || l.service.includes(q))); }
+function lsRow(l, q, nested) {
+  const lv = LS_LEVELS.find(x => x[0] === l.level), fresh = !LSV.seen.has(l.id);
+  return `<div class="ls-row lv-${l.level} ${nested ? 'nested' : ''} ${fresh ? 'fresh' : ''}"><span class="ls-ts">${lsClock(l.ts)}</span><span class="ls-lv">${lv[2]}</span><span class="ls-svc">${esc(l.service)}</span><span class="ls-msg">${lsMark(l.message, q)}</span></div>`;
+}
+function lsRowsHTML() {
+  const q = LSV.q.trim().toLowerCase(), f = lsFiltered(), out = [];
+  if (!f.length) return `<div class="ls-empty"><div><p>${q ? `No lines match “${esc(LSV.q.trim())}”` : 'Waiting for logs…'}</p><p class="note">${q ? 'Try fewer words or turn on more levels.' : 'New lines show up here as they arrive.'}</p></div></div>`;
+  for (let i = 0; i < f.length;) {
+    const k = (l) => `${l.level}|${l.service}|${lsTemplate(l.message)}`, key = k(f[i]);
+    let j = i + 1; while (j < f.length && k(f[j]) === key) j++;
+    if (j - i >= 3) {
+      const g = f.slice(i, j), last = g.at(-1), id = g[0].id, open = LSV.open.has(id), lv = LS_LEVELS.find(x => x[0] === last.level);
+      out.push(`<div class="ls-group lv-${last.level}"><button class="ls-row ls-gh" data-lsgroup="${id}" aria-expanded="${open}"><span class="ls-ts">${lsClock(last.ts)}</span><span class="ls-lv">${lv[2]}</span><span class="ls-svc">${esc(last.service)}</span>
+        <span class="ls-msg ls-gmsg"><span class="ls-gtext">${lsMark(last.message, q)}</span><span class="ls-sim ${open ? 'open' : ''}">${icon.chevronR}${g.length} similar</span></span></button>
+        ${open ? `<div class="ls-nest">${g.map(l => lsRow(l, q, true)).join('')}</div>` : ''}</div>`);
+    } else for (let x = i; x < j; x++) out.push(lsRow(f[x], q, false));
+    i = j;
+  }
+  return out.join('');
+}
+function lsToolbar() {
+  const counts = { debug: 0, info: 0, warn: 0, error: 0 }; for (const l of lsVisible()) counts[l.level]++;
+  return `<div class="ls-bar"><div class="ls-levels" role="group" aria-label="Levels">${LS_LEVELS.map(([id, label]) => { const on = LSV.levels.has(id);
+      return `<button class="ls-lvbtn ${on ? 'on' : ''}" data-lslevel="${id}" aria-pressed="${on}"><span class="ls-dot lv-${id}"></span>${label}<span class="n">${counts[id]}</span></button>`; }).join('')}</div>
+    <div class="ls-tools"><label class="ls-search">${icon.search}<input id="logQ" placeholder="Search" value="${esc(LSV.q)}" spellcheck="false" autocomplete="off" aria-label="Search logs">${LSV.q ? `<button class="ls-clear" data-lsclear="1" aria-label="Clear search">${icon.x}</button>` : ''}</label>
+      <button class="ls-pause" data-lspause="1" aria-pressed="${LSV.paused}" aria-label="${LSV.paused ? 'Resume stream' : 'Pause stream'}">${LSV.paused ? icon.play : icon.pause}<span>${LSV.paused ? 'Resume' : 'Pause'}</span></button></div></div>`;
+}
+function lsFoot() {
+  const now = Date.now(); LSV.arrivals = LSV.arrivals.filter(t => now - t < 5000);
+  const q = LSV.q.trim(), f = lsFiltered().length, v = lsVisible().length;
+  return `<span class="ls-live ${LSV.paused ? 'paused' : ''}"><span></span></span><span class="ls-state">${LSV.paused ? 'Paused · buffering' : LSV.follow ? 'Live · following' : 'Live · scrolled back'} · ${(LSV.arrivals.length / 5).toFixed(1)} lines/s</span>
+    <span class="ls-count">${q ? `${f} of ${v}` : plural(LSV.lines.length, 'line')}</span>`;
+}
+function lsPill() {
+  const n = LSV.paused ? Math.max(0, LSV.lines.length - LSV.shown) : LSV.behind;
+  return n ? `<button class="ls-pill" data-lsjump="1">${icon.down}${n} new ${n === 1 ? 'line' : 'lines'}</button>` : '';
+}
+function viewLogs() {
+  return `<div class="ls"><div class="ls-top">${lsToolbar()}</div><div class="ls-wrap"><div class="ls-list" id="logbox" role="log" aria-live="off" tabindex="0">${lsRowsHTML()}</div><div class="ls-pillbox">${lsPill()}</div></div><div class="ls-foot">${lsFoot()}</div></div>`;
+}
+// Redraw in place: the toolbar keeps its search box (and focus); the list follows new lines only while it's
+// at the bottom; lines that arrived while scrolled back are counted on the pill.
+function lsRedraw({ added = 0, bar = true } = {}) {
+  const box = $('#logbox');
+  if (!box || cur().view !== 'logs') return;
+  if (bar) { const q = $('#logQ'), focused = document.activeElement === q, pos = q?.selectionStart; $('.ls-top').innerHTML = lsToolbar(); if (focused) { const n = $('#logQ'); n.focus(); n.setSelectionRange(pos, pos); } }
+  box.innerHTML = lsRowsHTML();
+  for (const l of LSV.lines) LSV.seen.add(l.id);
+  if (LSV.follow && !LSV.paused) { box.scrollTop = box.scrollHeight; LSV.behind = 0; } else if (added && !LSV.paused) LSV.behind += added;
+  $('.ls-pillbox').innerHTML = lsPill(); $('.ls-foot').innerHTML = lsFoot();
+  $('#view')._html = viewLogs(); // matches the page: a background refresh leaves it alone
+}
+function lsJump() {
+  LSV.paused = false; LSV.follow = true; LSV.behind = 0; LSV.shown = LSV.lines.length;
+  lsRedraw();
+  const box = $('#logbox'); if (box) box.scrollTo({ top: box.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+document.addEventListener('scroll', (e) => {
+  if (e.target.id !== 'logbox') return;
+  const el = e.target, at = el.scrollHeight - el.scrollTop - el.clientHeight < 12;
+  if (at !== LSV.follow) { LSV.follow = at; if (at) LSV.behind = 0; $('.ls-pillbox').innerHTML = lsPill(); $('.ls-foot').innerHTML = lsFoot(); }
+}, true);
+setInterval(() => { if (cur().view === 'logs' && !document.hidden) { const f = $('.ls-foot'); if (f) f.innerHTML = lsFoot(); } }, 1000);
+async function loadLog() {
+  const r = await act(() => bridge.call('logs', { kind: S.log.kind, folder: S.log.folder, lines: 400 }));
+  if (!r) return;
+  const switched = LSV.key !== S.log.kind + '|' + S.log.folder, added = lsIngest(r.text || '');
+  if (cur().view !== 'logs') return;
+  if (switched || !$('#logbox')) { renderView(); const b = $('#logbox'); if (b) b.scrollTop = b.scrollHeight; return; }
+  if (added) lsRedraw({ added });
 }
 
 /* --- doctor --- */
 function viewDoctor() {
   if (!S.doctor) return emptyState({ ic: '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>', title: 'Running checks…', text: 'Runtimes, services, domains, certificates and every running project.' });
-  return `<div class="pad"><div class="card">${checksTable(S.doctor)}</div>
+  return `<div class="pad"><div class="card doc-run"><div class="ch">${icon.doctor}<h3>${S.doctorBusy ? 'Checking again…' : (S.doctor || []).some(c => c.status === 'fail') ? 'Some checks failed' : 'Everything passed'}</h3><span class="spacer"></span>
+      <span class="note">${S.doctorBusy ? '' : S.doctorTook ? `took ${(S.doctorTook / 1000).toFixed(1)} s · ` : ''}${S.doctorWhen && !S.doctorBusy ? 'checked ' + ago(S.doctorWhen) : ''}</span>
+</div>
+      <div class="cb">${doctorPipeline()}</div></div>
+    <div class="card">${checksTable(S.doctor)}</div>
     <p class="note" style="margin-top:12px">Same checks from the terminal: <code>localsites doctor</code>. AI agents can run them with the <code>doctor</code> and <code>sites_check</code> tools.</p></div>`;
 }
 
@@ -2046,6 +2898,76 @@ function connectTable() {
     return `<tr><td><b>${esc(s.folder)}</b></td><td><code>${esc(s.env.database)}</code></td><td>${s.db_server === 'mamp' ? 'MAMP MySQL' : 'MySQL 8.4'}</td><td style="text-align:right;white-space:nowrap">${action}</td></tr>`;
   }).join('')}</tbody></table>
   <p class="note" style="padding:0 16px 12px;margin:8px 0 0">Connect backs up <code>.env</code>, writes the database’s own login into it and switches the project to LocalSites MySQL. Undo puts everything back. Your MAMP databases are never changed.</p>`;
+}
+
+/* --- Env Editor: a project's variables (or php.ini overrides) as rows, values hidden until asked --- */
+// Lines from a .env file: NAME=value, "export NAME=value", quotes and # comments
+function parseEnv(text) {
+  const out = [];
+  for (let line of text.split('\n')) {
+    line = line.trim().replace(/^export\s+/, '');
+    if (!line || line.startsWith('#')) continue;
+    const i = line.indexOf('=');
+    if (i < 1) { out.push({ bad: line }); continue; }
+    let v = line.slice(i + 1).trim();
+    const q = v[0];
+    if ((q === '"' || q === "'") && v.lastIndexOf(q) > 0) v = v.slice(1, v.lastIndexOf(q));
+    else v = v.replace(/\s+#.*$/, '');
+    out.push({ k: line.slice(0, i).trim(), v });
+  }
+  return out;
+}
+function kvEditor(s, env) {
+  let rows = Object.entries((env ? s.env_vars : s.php_ini) || {}).map(([k, v]) => ({ k, v })), show = !env;
+  if (!rows.length) rows.push({ k: '', v: '' });
+  const nameOK = env ? /^[A-Za-z_][A-Za-z0-9_]*$/ : /^[a-z0-9_.]+$/i;
+  const dup = (i) => rows[i].k && rows.findIndex(r => r.k === rows[i].k) !== i;
+  const rowsHTML = () => rows.map((r, i) => `<div class="kv-row"><input class="input mono sm ${(r.k && !nameOK.test(r.k)) || dup(i) ? 'invalid' : ''}" data-kvk="${i}" value="${esc(r.k)}" placeholder="${env ? 'NAME' : 'memory_limit'}" spellcheck="false" autocomplete="off" aria-label="Name">
+      <span class="kv-eq">=</span><input class="input mono sm" data-kvv="${i}" type="${show ? 'text' : 'password'}" value="${esc(r.v)}" placeholder="${env ? 'value' : '512M'}" spellcheck="false" autocomplete="off" aria-label="Value">
+      <button class="icon-btn" data-kvdel="${i}" title="Remove">${icon.trash}</button></div>`).join('');
+  const p = dialog(`<h3>${env ? 'Environment variables' : 'php.ini overrides'} · ${esc(s.name)}</h3>
+    <p class="note">${env ? 'Set for the dev server when it starts. Your <code>.env</code> file is not changed.' : 'For this project only, on top of Settings → PHP.'}</p>
+    <div class="kv-tools">${UI.btn('Add', { ic: 'plus', attrs: 'data-kvadd="1"' })}${UI.btn(env ? 'Paste .env' : 'Paste lines', { ic: 'copy', kind: 'ghost', attrs: 'data-kvpaste="1"' })}<span class="spacer"></span>
+      ${env ? `<label class="form-row note" style="gap:6px"><input type="checkbox" id="kvShow"> Show values</label>` : ''}</div>
+    <div class="kv-paste" id="kvPaste" hidden><textarea class="input mono" id="kvPasteText" rows="5" spellcheck="false" placeholder="${env ? 'API_URL=http://127.0.0.1:8000\nexport DEBUG=true' : 'memory_limit=512M\nmax_execution_time=120'}"></textarea>
+      <div class="form-row" style="justify-content:flex-end">${UI.btn('Add these', { kind: 'primary', attrs: 'data-kvimport="1"' })}</div></div>
+    <div class="kv-head"><span>Name</span><span></span><span>Value</span><span></span></div>
+    <div class="kv-rows" id="kvRows">${rowsHTML()}</div>
+    <p class="note warn" id="kvErr" role="alert"></p>
+    <div class="form-row" style="justify-content:flex-end;margin-top:8px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn primary" id="kvSave">Save</button></div>`);
+  const box = $('#keysDialog'), draw = (focus) => { box.querySelector('#kvRows').innerHTML = rowsHTML(); if (focus) box.querySelector(focus)?.focus(); };
+  const first = box.querySelector('input'); if (first) first.onkeydown = null; // Enter in a field must not close the editor
+  box.querySelector('[data-kvk="0"]')?.focus();
+  box.oninput = (e) => { const t = e.target;
+    if (t.dataset.kvk !== undefined) { rows[+t.dataset.kvk].k = t.value.trim(); const pos = t.selectionStart; draw(`[data-kvk="${t.dataset.kvk}"]`); box.querySelector(`[data-kvk="${t.dataset.kvk}"]`).setSelectionRange(pos, pos); }
+    if (t.dataset.kvv !== undefined) rows[+t.dataset.kvv].v = t.value; };
+  box.onchange = (e) => { if (e.target.id === 'kvShow') { show = e.target.checked; draw(); } };
+  box.onclick = (e) => { const t = e.target.closest('[data-kvadd],[data-kvdel],[data-kvpaste],[data-kvimport]'); if (!t) return;
+    if (t.dataset.kvadd) { rows.push({ k: '', v: '' }); draw(`[data-kvk="${rows.length - 1}"]`); }
+    if (t.dataset.kvdel !== undefined) { rows.splice(+t.dataset.kvdel, 1); if (!rows.length) rows.push({ k: '', v: '' }); draw(); }
+    if (t.dataset.kvpaste) { const pz = box.querySelector('#kvPaste'); pz.hidden = !pz.hidden; if (!pz.hidden) box.querySelector('#kvPasteText').focus(); }
+    if (t.dataset.kvimport) {
+      const got = parseEnv(box.querySelector('#kvPasteText').value), bad = got.filter(x => x.bad);
+      let added = 0, updated = 0;
+      rows = rows.filter(r => r.k || r.v);
+      for (const { k, v } of got.filter(x => !x.bad)) { const r = rows.find(x => x.k === k); if (r) { r.v = v; updated++; } else { rows.push({ k, v }); added++; } }
+      if (!rows.length) rows.push({ k: '', v: '' });
+      box.querySelector('#kvPasteText').value = ''; box.querySelector('#kvPaste').hidden = true; draw();
+      box.querySelector('#kvErr').textContent = [added || updated ? `Added ${added}, updated ${updated}.` : '', bad.length ? `Skipped ${plural(bad.length, 'line')} without NAME=value: ${bad[0].bad}` : ''].filter(Boolean).join(' ');
+    } };
+  box.querySelector('#kvSave').onclick = async () => {
+    const list = rows.filter(r => r.k || r.v), err = box.querySelector('#kvErr');
+    const bad = list.find(r => !nameOK.test(r.k)), twice = list.find((r, i) => list.findIndex(x => x.k === r.k) !== i);
+    if (bad) { err.textContent = bad.k ? `“${bad.k}” isn’t a valid name${env ? ': letters, digits and _, not starting with a digit' : ''}.` : 'A value has no name.'; return; }
+    if (twice) { err.textContent = `${twice.k} is there twice.`; return; }
+    try {
+      const r = await bridge.call('sites.update', { folder: s.folder, [env ? 'env_vars' : 'php_ini']: Object.fromEntries(list.map(x => [x.k, x.v])) });
+      box.querySelector('[data-dlg="cancel"]').click();
+      S.sites = r.sites; logToast(r); render();
+    } catch (e) { err.textContent = e.message; }
+  };
+  p.then(() => { box.oninput = box.onchange = box.onclick = null; });
+  return p;
 }
 
 /* --- settings --- */
@@ -2125,17 +3047,17 @@ function updCard(u) {
   const page = u.release_url ? UI.btn('Release page', { ic: 'external', kind: 'ghost', attrs: `data-openweb="${esc(u.release_url)}"` }) : '';
   const canInstall = u.supported && u.signed;
   if (u.phase === 'checking') return `<div class="upd">${head('refresh', 'Checking for updates…', 'Reading the list of releases.', UI.status('busy', 'Checking'))}</div>`;
-  if (u.phase === 'installing') return `<div class="upd">${head('rocket', 'Installing…', 'LocalSites quits, swaps the app and opens again. Projects pause for a few seconds.', UI.status('busy', 'Installing'))}</div>`;
+  if (u.phase === 'installing') return `<div class="upd">${head('rocket', 'Installing…', 'LocalSites quits, swaps the app and opens again. Projects pause for a few seconds.', UI.status('busy', 'Installing'))}${m ? updPipeline(u) : ''}</div>`;
   if (m && u.phase === 'downloading') {
     const pct = u.size ? Math.min(100, Math.round(100 * (u.done || 0) / u.size)) : 0;
     return `<div class="upd">${head('download2', `Downloading LocalSites ${ver}`, `${mb(u.done || 0)} of ${mb(u.size || 0)}`, UI.status('busy', pct + '%'))}
-      <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Download progress"><span style="width:${pct}%"></span></div>
+      <div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Download progress"><span style="width:${pct}%"></span></div>${updPipeline(u)}
       <div class="upd-f"><span class="note">When it's downloaded:</span><div class="seg" role="group" aria-label="When it's downloaded">${[['updnow', 'Restart and install', S.updAfter], ['updquit', 'Install when I quit', !S.updAfter && u.on_quit]].map(([c, l, on]) => `<button data-cmd="${c}" class="${on ? 'on' : ''}">${l}</button>`).join('')}</div></div>
       <p class="note">${S.updAfter ? 'LocalSites restarts as soon as the update is downloaded and checked.' : u.on_quit ? 'You can keep working. It installs the next time you quit LocalSites.' : 'You can keep working. Nothing changes until you install it.'}</p></div>`;
   }
   if (m && u.phase === 'ready') {
     const later = u.on_quit;
-    return `<div class="upd ready">${head('rocket', `LocalSites ${ver} is ready to install`, m.title ? esc(m.title) : '', `<span class="upd-facts">${facts}</span>${later ? UI.status('on', 'Installs when you quit') : ''}`)}${notes(m)}
+    return `<div class="upd ready">${head('rocket', `LocalSites ${ver} is ready to install`, m.title ? esc(m.title) : '', `<span class="upd-facts">${facts}</span>${later ? UI.status('on', 'Installs when you quit') : ''}`)}${updPipeline(u)}${notes(m)}
       <div class="upd-f">${UI.btn('Restart now', { kind: 'primary', ic: 'refresh', attrs: 'data-cmd="updinstall"' })}${later ? '' : UI.btn('Install when I quit', { attrs: 'data-cmd="updlater"' })}<span class="spacer"></span>${UI.btn('Skip this version', { kind: 'ghost', attrs: 'data-cmd="updskip"' })}</div>
       <p class="note">Projects pause for a few seconds while LocalSites restarts. Settings are backed up first.${later ? ' If you don’t restart now, it installs the next time you quit LocalSites.' : ''}</p></div>`;
   }
@@ -2232,6 +3154,173 @@ function problemsPage() {
     ${!S.prob ? '<span class="skeleton" style="width:40%"></span>' : list.length ? list.map(row).join('') + `<div class="form-row" style="justify-content:flex-end;margin-top:12px">${UI.btn('Clear all', { kind: 'ghost', attrs: 'data-probdismiss=""' })}</div>`
       : `<div class="prob-empty">${icon.check}<div><div class="label">No problems</div><div class="note">When something goes wrong, it appears here with the details needed to fix it.</div></div></div>`}`;
 }
+/* --- Theme Studio. Pick an accent hue,
+   drag the corner radius, watch a sample card restyle as you go, then copy the CSS variables. Saved on this
+   computer only; fonts stay the same. --- */
+const ACCENT_PRESETS = [['Default', null], ['Violet', 300], ['Rose', 12], ['Amber', 62], ['Emerald', 158], ['Sky', 230]];
+const LOOK_DEFAULT = { palette: 'default', hue: null, radius: 6 };
+S.look = (() => { const v = { ...LOOK_DEFAULT, ...store.get('look', {}) }; if (typeof v.radius !== 'number') v.radius = 6; if (typeof v.hue !== 'number') v.hue = null; return v; })();
+const isDarkNow = () => S.theme === 'dark' || (S.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+// One lightness and chroma per mode keeps every hue readable with its button text
+const accentOf = (hue, dark) => `oklch(${dark ? 0.7 : 0.56} ${dark ? 0.15 : 0.18} ${Math.round(hue)})`;
+function lum([r, g, b]) { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); }
+const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+// Paint a colour onto a 1px canvas to read it back as sRGB (works for oklch in every engine)
+function srgb(value) {
+  const c = (srgb.c ||= document.createElement('canvas')); c.width = c.height = 1;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.clearRect(0, 0, 1, 1); x.fillStyle = '#000'; x.fillStyle = value; x.fillRect(0, 0, 1, 1);
+  return [...x.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+}
+const hexOf = (rgb) => '#' + rgb.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+function applyLook() {
+  const root = document.documentElement, L = S.look, st = root.style;
+  if (L.palette === 'mono') root.dataset.palette = 'mono'; else delete root.dataset.palette;
+  for (const v of ['--brand', '--primary', '--ring', '--primary-foreground', '--radius', '--radius-xl']) st.removeProperty(v);
+  if (L.hue !== null) {
+    const a = accentOf(L.hue, isDarkNow()), rgb = srgb(a);
+    st.setProperty('--brand', a); st.setProperty('--primary', a); st.setProperty('--ring', a);
+    // the text on it: whichever of the near-white and near-black ink reads better on this exact colour
+    st.setProperty('--primary-foreground', contrast(rgb, srgb(cssVar('--paper-ffffff'))) >= contrast(rgb, srgb(cssVar('--ink-0b0b0c'))) ? 'var(--paper-ffffff)' : 'var(--ink-0b0b0c)');
+  }
+  if (L.radius !== LOOK_DEFAULT.radius) { st.setProperty('--radius', L.radius + 'px'); st.setProperty('--radius-xl', Math.round(L.radius * 4 / 3) + 'px'); }
+}
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyLook); } catch (_) { /* old engines */ }
+function setLook(patch, redraw = true) { S.look = { ...S.look, ...patch }; store.set('look', S.look); applyLook(); syncWindowColour(); if (redraw) renderView(); else tsLive(); }
+const lookChanged = () => S.look.palette !== LOOK_DEFAULT.palette || S.look.hue !== LOOK_DEFAULT.hue || S.look.radius !== LOOK_DEFAULT.radius;
+const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+// WCAG 2 contrast of the colours actually on screen (custom properties are read resolved, then painted to sRGB)
+function lookChecks() {
+  const get = (v) => srgb(cssVar(v));
+  const btn = contrast(get('--primary'), get('--primary-foreground')), link = contrast(get('--brand'), get('--background'));
+  const tag = (n, min) => `<span class="${n >= min ? 'ok' : 'warnc'}">${n.toFixed(1)}:1</span>`;
+  return `Button text ${tag(btn, 4.5)} · links ${tag(link, 3)}${btn < 4.5 || link < 3 ? ' · may be hard to read' : ''}`;
+}
+function lookCSS() {
+  const L = S.look, lines = [], dark = [];
+  if (L.hue !== null) {
+    const fg = (dark) => { const rgb = srgb(accentOf(L.hue, dark)), w = srgb(cssVar('--paper-ffffff')), k = srgb(cssVar('--ink-0b0b0c')); return hexOf(contrast(rgb, w) >= contrast(rgb, k) ? w : k); };
+    lines.push(`  --primary: ${accentOf(L.hue, false)};`, `  --primary-foreground: ${fg(false)};`);
+    dark.push(`  --primary: ${accentOf(L.hue, true)};`, `  --primary-foreground: ${fg(true)};`);
+  }
+  if (L.radius !== LOOK_DEFAULT.radius) lines.push(`  --radius: ${L.radius}px;`, `  --radius-xl: ${Math.round(L.radius * 4 / 3)}px;`);
+  return `:root${L.palette === 'mono' ? '[data-palette="mono"]' : ''} {\n${lines.join('\n') || '  /* the default theme */'}\n}${dark.length ? `\n\n[data-theme="dark"] {\n${dark.join('\n')}\n}` : ''}`;
+}
+const tsCssHTML = () => esc(lookCSS()).split('\n').map(l => { const m = l.match(/^(\s*)(--[\w-]+)(:\s*)(.+)(;)$/); return `<span class="ts-l">${m ? `${m[1]}<span class="ts-var">${m[2]}</span>${m[3]}<span class="ts-val">${m[4]}</span>${m[5]}` : l || ' '}</span>`; }).join('');
+let tsView = 'preview';
+function themeStudio() {
+  const L = S.look, preset = ACCENT_PRESETS.find(([, h]) => h === L.hue || (h !== null && L.hue !== null && Math.abs(h - L.hue) < 2));
+  const dark = isDarkNow(), seg = (attr, cur, opts) => `<div class="ts-seg" role="radiogroup">${opts.map(([v, l]) => `<button role="radio" data-${attr}="${v}" class="${cur === v ? 'on' : ''}" aria-checked="${cur === v}">${l}</button>`).join('')}</div>`;
+  const swatches = ACCENT_PRESETS.map(([name, h]) => { const on = preset?.[0] === name;
+    return `<button class="ts-sw ${on ? 'on' : ''}" role="radio" aria-checked="${on}" aria-label="${name}" data-tshue="${h === null ? 'none' : h}" style="--sw:${h === null ? 'var(--indigo-5e6ad2)' : accentOf(h, dark)}">${on ? icon.check : ''}</button>`; }).join('');
+  const grad = Array.from({ length: 13 }, (_, i) => accentOf(i * 30, dark)).join(', ');
+  return `<h3 style="margin-top:28px">Theme</h3><p class="note">Saved on this computer only. Fonts stay the same.</p>
+  <div class="ts">
+    <div class="ts-ctl">
+      <div class="ts-f"><div class="ts-fh"><span>Colours</span></div>${seg('themepal', L.palette, [['default', 'Default'], ['mono', 'Mono']])}</div>
+      <div class="ts-f"><div class="ts-fh"><span>Accent</span><span class="ts-v" id="tsHueV">${preset ? preset[0] : Math.round(L.hue) + '°'}</span></div>
+        <div class="ts-sws" role="radiogroup" aria-label="Accent presets">${swatches}</div>
+        <input type="range" class="ts-hue" id="tsHue" min="0" max="360" value="${L.hue ?? 268}" aria-label="Accent hue" style="--grad:linear-gradient(to right, ${grad});--thumb:${L.hue === null ? 'var(--indigo-5e6ad2)' : accentOf(L.hue, dark)}"></div>
+      <div class="ts-f"><div class="ts-fh"><span>Corners</span><span class="ts-v" id="tsRadV">${L.radius}px</span></div>
+        <input type="range" class="ts-rad" id="tsRad" min="0" max="14" value="${L.radius}" aria-label="Corner radius" style="--pct:${(L.radius / 14) * 100}%"></div>
+      <p class="note ts-check" id="tsCheck">${lookChecks()}</p>
+    </div>
+    <div class="ts-out">
+      <div class="ts-oh">${seg('tsview', tsView, [['preview', 'Preview'], ['css', 'CSS']])}<span class="spacer"></span>
+        <button class="ts-act" data-themereset="1" ${lookChanged() ? '' : 'disabled'}>${icon.rotateCcw}Reset</button><button class="ts-act" data-themecopy="1">${icon.copy}Copy CSS</button></div>
+      <div class="ts-stage">${tsView === 'css' ? `<pre class="ts-css"><code>${tsCssHTML()}</code></pre>` : `<div class="ts-card">
+        <div class="ts-card-h"><span class="ts-ic">${TYPES.laravel.icon()}</span><div><p class="ts-t">shop</p><p class="note">Laravel · PHP 8.4</p></div><span class="ts-pill">Running</span></div>
+        <label class="ts-field"><span>Address</span><span class="ts-inp"><span class="note">https://</span>shop.test</span></label>
+        <div class="ts-row"><div><p class="ts-t2">Xdebug</p><p class="note">Port 9003</p></div><label class="switch"><input type="checkbox" checked tabindex="-1" aria-label="Preview switch"><span></span></label></div>
+        <div><div class="ts-row note"><span>Disk used</span><span>68%</span></div><div class="ts-bar"><i></i></div></div>
+        <div class="ts-btns"><button class="btn" tabindex="-1">Logs</button><button class="btn primary" tabindex="-1">${icon.globe}Open</button></div></div>`}</div>
+    </div>
+  </div>`;
+}
+// While a slider moves, restyle in place; a full redraw happens when it's let go
+function tsLive() {
+  const L = S.look, dark = isDarkNow(), hv = $('#tsHueV'), rv = $('#tsRadV'), hue = $('#tsHue'), rad = $('#tsRad'), ck = $('#tsCheck');
+  if (hv) hv.textContent = (ACCENT_PRESETS.find(([, h]) => h === L.hue) || [L.hue === null ? 'Default' : Math.round(L.hue) + '°'])[0];
+  if (hue) hue.style.setProperty('--thumb', L.hue === null ? 'var(--indigo-5e6ad2)' : accentOf(L.hue, dark));
+  if (rv) rv.textContent = L.radius + 'px';
+  if (rad) rad.style.setProperty('--pct', (L.radius / 14) * 100 + '%');
+  if (ck) ck.innerHTML = lookChecks();
+  document.querySelectorAll('.ts-sw').forEach(b => { const on = b.dataset.tshue === String(L.hue ?? 'none'); b.classList.toggle('on', on); b.setAttribute('aria-checked', on); b.innerHTML = on ? icon.check : ''; });
+}
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'tsHue') setLook({ hue: +e.target.value }, false);
+  if (e.target.id === 'tsRad') setLook({ radius: +e.target.value }, false);
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'tsHue' || e.target.id === 'tsRad') renderView(); });
+
+/* --- AI agents: one list of agent apps, searchable, each a row with its config file and one action --- */
+let agentQ = '';
+// ~/Library/Application Support/Claude/claude_desktop_config.json → ~/…/Claude/claude_desktop_config.json
+function shortPath(p = '') {
+  const h = p.replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~'), parts = h.split('/');
+  return parts.length > 4 ? [parts[0], '…', ...parts.slice(-2)].join('/') : h;
+}
+function agentRow(c) {
+  const ic = (AGENT_IC[c.id] || (() => icon.agent))();
+  const where = c.config ? `<span class="ag-path" title="${esc(c.config)}"><code>${esc(shortPath(c.config))}</code>${UI.iconBtn('copy', 'Copy the full path', `data-copy="${esc(c.config)}"`)}</span>`
+    : c.id === 'claude-code' ? '<span class="ag-path"><code>claude mcp add</code></span>' : c.manual ? '<span class="ag-path"><code>Paste the settings into the app</code></span>' : '';
+  const [st, word] = !c.found ? ['off', 'Not installed'] : c.manual ? ['off', 'Set up by hand'] : c.problem ? ['warn', 'Needs a look'] : c.connected ? ['on', 'Connected'] : ['off', 'Not connected'];
+  const state = `<span class="ag-st ${st}"><span class="dot ${st === 'on' ? 'on' : st === 'warn' ? 'warn' : 'off'}"></span>${word}</span>`;
+  const action = !c.found ? '' : c.manual ? UI.btn('Copy settings', { ic: 'copy', attrs: `data-copy="${esc(c.manual)}"` })
+    : c.connected ? UI.btn('Disconnect', { kind: 'ghost', attrs: `data-agentoff="${c.id}"` })
+    : UI.btn('Connect', { ic: 'plugZap', kind: 'primary', attrs: `data-agenton="${c.id}"`, title: c.config ? `Adds LocalSites to ${c.config} (a backup is saved next to it)` : '' });
+  return `<div class="ag-row ${c.connected ? 'on' : ''} ${c.found ? '' : 'missing'}" ${c.found ? `data-agent="${c.id}"` : ''}><span class="ag-ic">${ic}</span>
+    <div class="ag-m"><div class="ag-name">${esc(c.name)}${state}</div>${where}${c.problem ? `<div class="note warnc">${esc(c.problem)}</div>` : ''}</div>
+    <div class="ag-a">${action}</div></div>`;
+}
+function agentsPage() {
+  const list = S.agents || [], q = agentQ.trim().toLowerCase();
+  const shown = list.filter(c => !q || c.name.toLowerCase().includes(q) || (c.config || '').toLowerCase().includes(q));
+  const found = shown.filter(c => c.found).sort((a, b) => (b.connected - a.connected) || a.name.localeCompare(b.name)), missing = shown.filter(c => !c.found);
+  const on = list.filter(c => c.connected).length;
+  return `<h2>AI agents (MCP)</h2><p class="lead">Let Claude, Cursor and other agents list projects, switch PHP versions, read logs and run health checks.
+      Risky actions (stopping services, sharing a site, saving data edits) wait for you to click Approve here. Tools that reveal passwords stay off unless you add <code>--allow-secrets</code>.</p>
+    ${S.agents ? `<div class="ag-top"><label class="qbox">${icon.search}<input class="input sm" id="agentQ" placeholder="Find an agent app" value="${esc(agentQ)}" spellcheck="false" autocomplete="off" aria-label="Find an agent app"></label>
+        <span class="spacer"></span><span class="note">${on ? `${on} connected` : 'None connected yet'} · ${plural(list.filter(c => c.found).length, 'app')} found on this ${OS_NAME}</span></div>
+      <div class="ag-list">${found.map(agentRow).join('') || (q ? '' : `<div class="ag-none">${icon.agent}<span>No agent apps found on this ${OS_NAME}. Any MCP client works with the settings below.</span></div>`)}${missing.length ? `<div class="ag-sep">Not installed</div>${missing.map(agentRow).join('')}` : ''}
+        ${!shown.length ? `<div class="ag-none">${icon.search2}<span>No agent app matches “${esc(agentQ)}”. Any MCP client works with the settings below.</span></div>` : ''}</div>`
+      : '<span class="skeleton" style="width:40%"></span>'}
+    ${(S.grants || []).length ? `<h3 style="margin-top:24px">Allowed for a while</h3><div class="passes">${S.grants.map(passCard).join('')}</div>` : ''}
+    ${snippet('Any other MCP client (JSON)', JSON.stringify({ mcpServers: { localsites: { command: S.exe, args: ['mcp'] } } }, null, 2))}`;
+}
+
+/* --- Pipelines: one stage per step, each with its state and time (setup, update install, Doctor) --- */
+// stage: { title, sub, state: done | run | fail | wait, since (ms, while running), took (text), extra (html) }
+function pipelineHTML(stages) {
+  const ic = { done: icon.check, fail: icon.x, run: '<span class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>', wait: '<span class="pl-wait"></span>' };
+  return `<ol class="pipeline">${stages.map(x => `<li class="pl ${x.state}"><span class="pl-ic">${ic[x.state]}</span><span class="pl-t"><span class="pl-title">${x.titleHTML || esc(x.title)}</span>${x.sub ? `<span class="note">${esc(x.sub)}</span>` : ''}${x.extra || ''}</span>
+    <span class="pl-time">${x.state === 'run' && x.since ? `<span data-elapsed="${x.since}">${fmtClock(Date.now() - x.since)}</span>` : esc(x.took || (x.state === 'fail' ? 'failed' : ''))}</span></li>`).join('')}</ol>`;
+}
+// Update install: download, check its signature, swap the app and restart
+function updPipeline(u) {
+  const T = S.updT ||= {};
+  if (u.phase === 'downloading') T.dl ||= Date.now();
+  if (u.phase === 'ready' && T.dl && !T.dlEnd) T.dlEnd = Date.now();
+  if (u.phase === 'installing') T.inst ||= Date.now();
+  const pct = u.size ? Math.min(100, Math.round(100 * (u.done || 0) / u.size)) : 0;
+  const got = ['ready', 'installing'].includes(u.phase);
+  return pipelineHTML([
+    { title: 'Download', sub: got ? mb(u.size || 0) : `${mb(u.done || 0)} of ${mb(u.size || 0)} · ${pct}%`, state: got ? 'done' : 'run', since: T.dl, took: T.dl && T.dlEnd ? fmtClock(T.dlEnd - T.dl) : '' },
+    { title: 'Check the signature', sub: got ? 'Signed with the LocalSites release key' : 'Before anything is installed', state: got ? 'done' : 'wait' },
+    { title: 'Restart with the new version', sub: u.phase === 'installing' ? 'LocalSites quits, swaps the app and opens again' : 'Settings are backed up first; projects pause for a few seconds', state: u.phase === 'installing' ? 'run' : 'wait', since: T.inst },
+  ]);
+}
+// Doctor: one stage per area, with how many checks passed
+const areaId = (a) => 'area-' + String(a).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+function doctorPipeline() {
+  const D = S.doctor || [], areas = uniq(D.map(c => c.area));
+  if (S.doctorBusy) return pipelineHTML((areas.length ? areas : ['Runtimes', 'Services', 'Domains', 'Certificates', 'Projects']).map((a, i) => ({ title: a, sub: i ? 'Waiting' : 'Checking…', state: i ? 'wait' : 'run', since: i ? 0 : S.doctorAt })));
+  return pipelineHTML(areas.map(a => {
+    const list = D.filter(c => c.area === a), bad = list.filter(c => c.status === 'fail').length, warn = list.filter(c => c.status === 'warn').length;
+    return { titleHTML: `<a class="link" data-goarea="${areaId(a)}">${esc(a)}</a>`, sub: bad ? `${bad} of ${list.length} failed` : warn ? `${list.length - warn} passed, ${plural(warn, 'warning')}` : `${plural(list.length, 'check')} passed`,
+      state: bad ? 'fail' : 'done', took: bad ? 'failed' : '' };
+  }));
+}
+
 function viewSettings() {
   if (S.settingsErr) return `<div class="empty"><h3>Settings could not be loaded</h3><p>${esc(S.settingsErr)}</p><button class="btn" data-cmd="setreload">${icon.refresh}Try again</button></div>`;
   if (!S.settings) { loadSettingsSafe(); return '<div class="pad"><span class="skeleton" style="width:40%"></span></div>'; }
@@ -2247,6 +3336,7 @@ function viewSettings() {
           list.length ? `<select class="input" data-prefapp="${k}">${!ok ? `<option value="" selected disabled>${saved ? 'Not installed anymore: choose' : 'Not chosen yet'}</option>` : ''}${list.map(a => `<option value="${a.id}" ${saved === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}<option value="ask" ${saved === 'ask' ? 'selected' : ''}>Ask every time</option></select>` : ''); }).join('')}
       ${settingRow('Appearance', 'Saved on this computer only.', `<div class="seg" role="group" aria-label="Appearance">${[['system', 'System', 'monitor'], ['dark', 'Dark', 'moon'], ['light', 'Light', 'sun']]
         .map(([v, l, ic]) => `<button data-theme-set="${v}" class="${S.theme === v ? 'on' : ''}">${icon[ic]}${l}</button>`).join('')}</div>`)}
+      ${themeStudio()}
       ${saveBar()}`;
   } else if (sec === 'folders') {
     const roots = setVal('roots') || [];
@@ -2298,11 +3388,7 @@ function viewSettings() {
   } else if (sec === 'agents') {
     if (!S.agents) { loadAgents(); }
     const list = S.agents || [];
-    page = `<h2>AI agents (MCP)</h2><p class="lead">Let Claude, Cursor and other agents list projects, switch PHP versions, read logs and run health checks.
-      Risky actions (stopping services, sharing a site, saving data edits) wait for you to click Approve here. Tools that reveal passwords stay off unless you add <code>--allow-secrets</code>.</p>
-      ${S.agents ? `<div class="c-grid" style="margin-bottom:20px">${list.filter(c => c.found).map(agentCard).join('') || '<p class="note">No agent apps found on this Mac.</p>'}</div>` : '<span class="skeleton" style="width:40%"></span>'}
-      ${list.some(c => !c.found) ? `<p class="note">Not found on this Mac: ${list.filter(c => !c.found).map(c => esc(c.name)).join(', ')}.</p>` : ''}
-      ${snippet('Any other MCP client (JSON)', JSON.stringify({ mcpServers: { localsites: { command: S.exe, args: ['mcp'] } } }, null, 2))}`;
+    page = agentsPage();
   } else if (sec === 'storage') {
     if (!S.storage) { act(async () => { S.storage = await bridge.call('storage.list'); renderView(); }); }
     const list = S.storage || [], total = list.reduce((a, x) => a + x.bytes, 0);
@@ -2333,8 +3419,8 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['notice', 'noticeall', 'quiet', 'noticeoff', 'addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
-  'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'dfcol', 'dfback', 'dfedit', 'dfdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
+const CLICKABLE = ['openuse', 'rbadd', 'rbaddg', 'rbcomb', 'rbmenu', 'rbm', 'rbopt', 'rbundo', 'rbtab', 'rbcopy', 'rbtosql', 'rbtoggle', 'rlopen', 'rlfilter', 'rlreceipt', 'lslevel', 'lsclear', 'lspause', 'lsjump', 'lsgroup', 'goarea', 'dbbackups', 'notice', 'revoke', 'ntab', 'undo', 'splitopen', 'splitmenu', 'tshue', 'tsview', 'themepal', 'themereset', 'themecopy', 'launchhide', 'retry', 'suggest', 'nrdrop', 'noticeall', 'quiet', 'noticeoff', 'addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+  'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
 // Slide-over sidebar: a press outside it only closes it. The press, and the click that follows, never reach
@@ -2384,6 +3470,8 @@ document.addEventListener('click', async (e) => {
   if (t.id === 'tbNewTab') return navigate('overview', null, { newTab: true });
   if (t.id === 'tbActivity') return showActivityMenu(t);
   if (t.id === 'wsBtn') return showWorkspaceMenu(t);
+  if (Object.keys(d).some(k => /^rb[a-z]/.test(k) && k !== 'rbnode' && k !== 'rbzone')) return rbClick(t, d);
+  if (d.openuse) { store.set('openPrimary', d.openuse); setTimeout(renderDetail); } // Open menu: remember it, then open it below
   // sidebar trees
   if (d.twist !== undefined) { e.stopPropagation(); return toggleNode(d.twist); }
   if (d.scope) { S.pf = { [d.scope]: [d.val] }; S.ptab = 'all'; saveUI(); return navigate('projects'); }
@@ -2429,10 +3517,6 @@ document.addEventListener('click', async (e) => {
   if (d.cell && S.data.mode === 'edit' && !t.classList.contains('editing')) return editCell(t);
   if (d.rowdel !== undefined) { const i = +d.rowdel, del = S.data.ed.del; del.has(i) ? del.delete(i) : del.add(i); return renderView(); }
   if (d.insdel !== undefined) { S.data.ed.ins.splice(+d.insdel, 1); return renderView(); }
-  if (d.dfcol) { S.data.filter.column = d.dfcol; return refreshDataFilterMenu(); }
-  if (d.dfback) { S.data.filter.column = ''; return refreshDataFilterMenu(); }
-  if (d.dfedit !== undefined) return showDataFilterMenu(t, +d.dfedit);
-  if (d.dfdel !== undefined) { if (!await guardEdits()) return; S.data.filters.splice(+d.dfdel, 1); S.data.page = 0; return dataLoadRows(); }
   if (d.export) { $('#menu').classList.remove('open'); return exportCSV(d.export, d.ename || 'export'); }
   if (d.sqlh !== undefined) { const h = store.get('sqlHistory', []).filter(x => x.conn === S.data.conn)[+d.sqlh]; $('#menu').classList.remove('open'); if (h) { S.data.sql = h.sql; renderView(); $('#dSQL')?.focus(); } return; }
   if (d.sqlhclear) { store.set('sqlHistory', store.get('sqlHistory', []).filter(x => x.conn !== S.data.conn)); $('#menu').classList.remove('open'); return toast('History cleared'); }
@@ -2469,11 +3553,11 @@ document.addEventListener('click', async (e) => {
     S.agents = null; return loadAgents();
   }
   if (d.agentoff) { logToast(await act(() => bridge.call('agents.disconnect', { id: d.agentoff }), 'Disconnect')); S.agents = null; return loadAgents(); }
-  if (d.approve) {
-    const [id, ok, w] = d.approve.split('|');
-    await act(() => bridge.call('approvals.decide', { id, approve: ok === '1', for_a_while: w === 'w' }), 'Approval');
-    toast(ok !== '1' ? 'Denied. Nothing was done.' : w === 'w' ? 'Approved. The same request is allowed for 10 minutes.' : 'Approved. The agent carries on.', ok === '1' ? 'ok' : 'warn');
-    approvalsShown = ''; return pollApprovals();
+  if (d.approve) { const [id, ok, w] = d.approve.split('|'); t.disabled = true; return decideApproval(id, ok === '1', w === 'w'); }
+  if (d.revoke) {
+    const r = await act(() => bridge.call('approvals.revoke', { id: d.revoke }), 'End pass');
+    if (r) toast('Ended. The next request of that kind asks again.');
+    return pollApprovals();
   }
   if (d.dbopenin) {
     const [name, app] = d.dbopenin.split('|');
@@ -2522,6 +3606,20 @@ document.addEventListener('click', async (e) => {
   if (d.fav) { S.favs.has(d.fav) ? S.favs.delete(d.fav) : S.favs.add(d.fav); saveUI(); return render(); }
   if (d.toggle) { e.stopPropagation(); const s = site(d.toggle); return updateSite(s.folder, { enabled: !s.enabled }); }
   if (d.notice) { e.preventDefault(); return noticeClicked(d.notice); }
+  if (d.suggest) { S.filter = d.suggest; renderHead(); renderView(); return $('#filter')?.focus(); }
+  if (d.goarea) { document.getElementById(d.goarea)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  if (d.dbbackups) return backupsDialog(d.dbbackups);
+  if (d.rlopen) { rlOpen = rlOpen === d.rlopen ? '' : d.rlopen; return renderView(); }
+  if (d.rlfilter) { rlFilter = d.rlfilter; rlOpen = ''; return renderView(); }
+  if (d.rlreceipt) { rlReceipt = rlReceipt === d.rlreceipt ? '' : d.rlreceipt; return renderView(); }
+  if (d.undo) return undoCall(d.undo);
+  if (d.launchhide) { store.set('hide.launch', true); toast('Hidden. Overview still shows anything that needs fixing.'); return renderView(); }
+  if (d.lslevel) { const L = LSV.levels; if (L.has(d.lslevel) && L.size > 1) L.delete(d.lslevel); else L.add(d.lslevel); return lsRedraw(); }
+  if (d.lsclear) { LSV.q = ''; lsRedraw(); return $('#logQ')?.focus(); }
+  if (d.lspause) { if (LSV.paused) return lsJump(); LSV.paused = true; LSV.shown = LSV.lines.length; return lsRedraw(); }
+  if (d.lsjump) return lsJump();
+  if (d.lsgroup) { const id = +d.lsgroup; LSV.open.has(id) ? LSV.open.delete(id) : LSV.open.add(id); return lsRedraw({ bar: false }); }
+  if (d.ntab) { e.preventDefault(); noticeTab = d.ntab; $('#menu').innerHTML = noticeMenuHTML(); return; }
   if (d.noticeall) {
     e.preventDefault();
     await act(() => bridge.call(d.noticeall === 'clear' ? 'notices.clear' : 'notices.read', {}), 'Notifications');
@@ -2602,6 +3700,11 @@ document.addEventListener('click', async (e) => {
   if (d.rootdel !== undefined) { const r = rootsDraft(); r.splice(+d.rootdel, 1); setDraft('roots', r); return renderView(); }
   if (d.rootpick !== undefined) { const p = await act(() => window.go.main.App.ChooseFolder()); if (p) { const r = rootsDraft(); r[+d.rootpick].path = p; if (!r[+d.rootpick].label) r[+d.rootpick].label = p.split('/').pop(); setDraft('roots', r); renderView(); } return; }
   if (d.themeSet) { S.theme = d.themeSet; saveUI(); applyTheme(); return renderView(); }
+  if (d.themepal) return setLook({ palette: d.themepal });
+  if (d.tshue) return setLook({ hue: d.tshue === 'none' ? null : +d.tshue });
+  if (d.tsview) { tsView = d.tsview; return renderView(); }
+  if (d.themereset) { setLook({ ...LOOK_DEFAULT }); return toast('Back to the default theme'); }
+  if (d.themecopy) { await act(() => bridge.copy(lookCSS())); return toast('Theme copied as CSS variables'); }
   if (d.connectdb) {
     if (!await confirmBox(`Connect ${d.connectdb} to ${d.db}?`, `Its .env is backed up, then the database name, user and password are replaced with ${d.db}'s own LocalSites login. You can undo this.`, 'Connect')) return;
     const r = await act(() => bridge.call('sites.connect_db', { folder: d.connectdb, name: d.db }), 'Connect');
@@ -2688,7 +3791,6 @@ document.addEventListener('change', async (e) => {
   if (e.target.id === 'shareOpen') { SF.open = e.target.checked; return renderDetail(); }
   if (e.target.id === 'shareMins') SF.mins = +e.target.value;
   if (e.target.id === 'dTableSel' && e.target.value) return dataOpenTable(e.target.value);
-  if (e.target.id === 'dFOp') { S.data.filter.op = e.target.value; const v = $('#dFVal'); if (v) v.disabled = ['null', 'notnull'].includes(e.target.value); }
   if (e.target.id === 'dAllowWrite') S.data.allowWrite = e.target.checked;
 });
 document.addEventListener('input', (e) => {
@@ -2696,13 +3798,13 @@ document.addEventListener('input', (e) => {
   if (e.target.dataset.root !== undefined && e.target.tagName !== 'SELECT') { const r = rootsDraft(); r[+e.target.dataset.root][e.target.dataset.rootf] = e.target.value; setDraft('roots', r); return; }
   if (e.target.id === 'filter') { S.filter = e.target.value; renderView(); }
   if (e.target.id === 'fmQ') { FM.q = e.target.value; refreshFilterMenu(); }
-  if (e.target.id === 'dfmQ') { DFM.q = e.target.value; refreshDataFilterMenu(); }
   if (e.target.id === 'sharePw') SF.pw = e.target.value;
+  if (e.target.id === 'agentQ') { agentQ = e.target.value; const pos = e.target.selectionStart; renderView(); const q = $('#agentQ'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }
+  if (e.target.id === 'logQ') { const had = !!LSV.q; LSV.q = e.target.value; lsRedraw({ bar: had !== !!LSV.q }); }
   if (e.target.id === 'impUser') S.imp.user = e.target.value;
   if (e.target.id === 'impPass') S.imp.password = e.target.value;
   if (e.target.id === 'agentInput') { S.agent.text = e.target.value; S.agent.sel = 0; renderView(); }
   if (e.target.id === 'dTFilter') { S.data.tfilter = e.target.value; const pos = e.target.selectionStart; renderView(); const f = $('#dTFilter'); if (f) { f.focus(); f.setSelectionRange(pos, pos); } }
-  if (e.target.id === 'dFVal') S.data.filter.value = e.target.value;
   if (e.target.id === 'dSQL') { S.data.sql = e.target.value; acUpdate(e.target); }
 });
 
@@ -2771,10 +3873,21 @@ function noticeDay(t) {
   const d = new Date(t), today = new Date(), y = new Date(); y.setDate(today.getDate() - 1);
   return d.toDateString() === today.toDateString() ? 'Today' : d.toDateString() === y.toDateString() ? 'Yesterday' : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' });
 }
+// Tabs sort the list by what it's about; agent requests still waiting are answered right here.
+const NOTICE_TABS = [['all', 'All', null], ['requests', 'Requests', ['agent']], ['problems', 'Problems', ['crash', 'problem']], ['updates', 'Updates', ['install', 'setup', 'share', 'update']]];
+let noticeTab = 'all';
 function noticeMenuHTML() {
-  const v = S.notices || { notices: [], unread: 0 }, q = quietUntil();
+  const v = S.notices || { notices: [], unread: 0 }, q = quietUntil(), aps = S.approvals || [];
+  const kinds = (NOTICE_TABS.find(t => t[0] === noticeTab) || NOTICE_TABS[0])[2];
+  const list = v.notices.filter(n => !kinds || kinds.includes(n.kind));
+  const count = (k) => { const ks = NOTICE_TABS.find(t => t[0] === k)[2]; return v.notices.filter(n => !n.read && (!ks || ks.includes(n.kind))).length + (k === 'requests' || k === 'all' ? aps.length : 0); };
+  const tabs = `<div class="ntabs" role="tablist">${NOTICE_TABS.map(([k, l]) => { const n = count(k);
+    return `<button data-ntab="${k}" class="${noticeTab === k ? 'on' : ''}" role="tab" aria-selected="${noticeTab === k}">${l}${n ? `<span class="n">${n}</span>` : ''}</button>`; }).join('')}</div>`;
+  const waiting = (!kinds || kinds.includes('agent')) && aps.length ? `<div class="label2">Waiting for you</div>${aps.map(a => `<div class="n-ap ${a.destructive ? 'risky' : ''}">
+      ${a.destructive ? icon.shieldAlert : icon.agent}<span class="nt"><b>${esc(describe({ method: a.method, summary: a.summary }))}</b><span class="note">${esc(whoAsks(a))} · <code>${esc(toolName(a.method))}</code> · <span data-remain="${esc(a.expires)}">${fmtLeft(new Date(a.expires) - Date.now())}</span> left</span>
+      <span class="n-acts">${approvalActions(a, true)}</span></span></div>`).join('')}` : '';
   let day = '', rows = '';
-  for (const n of v.notices.slice(0, 60)) {
+  for (const n of list.slice(0, 60)) {
     const d = noticeDay(n.time);
     if (d !== day) { day = d; rows += `<div class="label2">${esc(d)}</div>`; }
     const k = NOTICE_KINDS[n.kind] || ['', 'info'];
@@ -2784,8 +3897,10 @@ function noticeMenuHTML() {
   const head = `<div class="notice-h"><b>Notifications</b><span class="spacer"></span>${v.unread ? '<button class="linkish" data-noticeall="read">Mark all as read</button>' : ''}${v.notices.length ? '<button class="linkish" data-noticeall="clear">Clear</button>' : ''}</div>`;
   const dnd = q ? `<div class="notice-dnd on">${icon.bellOff}<span>Do Not Disturb ${esc(quietLabel(q))}</span><span class="spacer"></span><button class="linkish" data-quiet="0">Turn off</button></div>`
     : `<div class="notice-dnd">${icon.moonStar}<span>Do Not Disturb</span><span class="spacer"></span><button class="linkish" data-quiet="60">1 hour</button><button class="linkish" data-quiet="tomorrow">Until tomorrow</button><button class="linkish" data-quiet="-1">Until I turn it off</button></div>`;
-  const empty = '<div class="menu-empty">Nothing yet. Services that stop, finished installs, agent requests, shares about to end, updates and problems show up here.</div>';
-  return head + dnd + (rows || empty);
+  const empty = { all: 'Nothing yet. Services that stop, finished installs, agent requests, shares about to end, updates and problems show up here.',
+    requests: 'No agent requests. When an AI agent asks to do something risky, it waits here for you.', problems: 'No problems. Services that stop unexpectedly and crashes show up here.',
+    updates: 'Nothing here yet. Finished installs, setup, shares ending and new versions show up here.' }[noticeTab];
+  return head + tabs + dnd + `<div class="n-list">${waiting + rows || `<div class="menu-empty">${empty}</div>`}</div>`;
 }
 function showNoticeMenu(anchor) { menuAt(anchor, noticeMenuHTML(), 'wide notices'); }
 // Minutes until 8:00 tomorrow
@@ -2834,7 +3949,6 @@ async function command(cmd, opts = {}) {
     case 'dinsert': { S.data.ed.ins.unshift({}); renderView(); const c = document.querySelector('tr.ins td[data-cell]'); if (c) editCell(c); return; }
     case 'ddiscard': S.data.ed = newEdits(); return renderView();
     case 'dreview': return reviewAndSave();
-    case 'dfiltermenu': return showDataFilterMenu(opts.anchor || $('[data-cmd="dfiltermenu"]'));
     case 'dexport': return showExportMenu(opts.anchor, S.data.result, S.data.table || 'rows');
     case 'dexportq': return showExportMenu(opts.anchor, S.data.qres, 'query');
     case 'dhistory': return showSQLHistory(opts.anchor);
@@ -2845,32 +3959,7 @@ async function command(cmd, opts = {}) {
       if (r) { S.sites = r.sites; logToast(r); render(); }
       return;
     }
-    case 'envedit': case 'iniedit': {
-      const s = site(opts.folder), env = cmd === 'envedit', cur0 = (env ? s.env_vars : s.php_ini) || {};
-      const text = Object.entries(cur0).map(([k, v]) => `${k}=${v}`).join('\n');
-      const p = dialog(`<h3>${env ? 'Environment variables' : 'php.ini overrides'} · ${esc(s.name)}</h3>
-        <p class="note">${env ? 'One <code>NAME=value</code> per line. Set for the dev server when it starts (your <code>.env</code> file is not changed).' : 'One <code>setting=value</code> per line, e.g. <code>memory_limit=512M</code>. Applies to this project only, on top of Settings → PHP.'}</p>
-        <textarea class="input mono kvedit" id="kvText" rows="8" spellcheck="false" placeholder="${env ? 'API_URL=http://127.0.0.1:8000' : 'memory_limit=512M\nmax_execution_time=120'}">${esc(text)}</textarea>
-        <p class="note warn" id="kvErr" role="alert"></p>
-        <div class="form-row" style="justify-content:flex-end;margin-top:8px"><button class="btn ghost" data-dlg="cancel">Cancel</button><button class="btn primary" id="kvSave">Save</button></div>`);
-      const box = $('#keysDialog'), ta = box.querySelector('#kvText');
-      ta.focus();
-      box.querySelector('#kvSave').onclick = async () => {
-        const out = {}, bad = [];
-        for (const line of ta.value.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))) {
-          const i = line.indexOf('=');
-          if (i < 1) { bad.push(line); continue; }
-          out[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-        }
-        if (bad.length) { box.querySelector('#kvErr').textContent = 'Use NAME=value: ' + bad[0]; return; }
-        try {
-          const r = await bridge.call('sites.update', { folder: s.folder, [env ? 'env_vars' : 'php_ini']: out });
-          box.querySelector('[data-dlg="cancel"]').click();
-          S.sites = r.sites; logToast(r); render();
-        } catch (e) { box.querySelector('#kvErr').textContent = e.message; }
-      };
-      return p;
-    }
+    case 'envedit': case 'iniedit': return kvEditor(site(opts.folder), cmd === 'envedit');
     case 'palette': return openPalette();
     case 'keys': return showKeys();
     case 'helpmenu': return showHelpMenu(document.querySelector('.help'));
@@ -2886,14 +3975,6 @@ async function command(cmd, opts = {}) {
     case 'dretry': return dataConnect();
     case 'dprev': if (!await guardEdits()) return; S.data.page = Math.max(0, S.data.page - 1); return dataLoadRows();
     case 'dnext': if (!await guardEdits()) return; S.data.page++; return dataLoadRows();
-    case 'dfilter': {
-      const d = S.data, f = d.filter;
-      if (!f.column) return toast('Pick a column to filter', 'warn');
-      if (!await guardEdits()) return;
-      const nf = { column: f.column, op: f.op, value: ['null', 'notnull'].includes(f.op) ? '' : f.value };
-      if (f.idx >= 0) d.filters[f.idx] = nf; else d.filters.push(nf);
-      $('#menu').classList.remove('open'); d.page = 0; return dataLoadRows();
-    }
     case 'dsavepw': {
       const pw = $('#dPw')?.value || '';
       if (!pw) return;
@@ -2970,6 +4051,8 @@ async function command(cmd, opts = {}) {
     }
     case 'activitymenu': return showActivityMenu($('#statusbar [data-cmd="activitymenu"]'));
     case 'noticemenu': await loadNotices(); renderStatus(); return showNoticeMenu($('#statusbar [data-cmd="noticemenu"]'));
+    case 'passmenu': return menuAt($('#statusbar [data-cmd="passmenu"]'), passMenuHTML(), 'wide passes');
+    case 'reconnect': try { await bridge.call('status'); offlineBack(); } catch (_) { S.offlineNext = Date.now() + 5000; renderOffline(); toast('Still not answering. If it stays this way, quit and open LocalSites again.', 'warn'); } return;
     case 'restart': { toast('Restarting services…', 'warn'); logToast(await act(() => bridge.call('restart'))); return refresh(); }
     case 'stop': {
       if (!await confirmBox('Stop all services?', 'Your sites go offline until you start them again.', 'Stop')) return;
@@ -3004,9 +4087,10 @@ async function command(cmd, opts = {}) {
       return;
     }
     case 'doctor': {
-      S.doctorBusy = true; if (cur().view === 'doctor') renderHead();
+      if (S.doctorBusy) return;
+      S.doctorBusy = true; S.doctorAt = Date.now(); if (cur().view === 'doctor') { renderHead(); if (S.doctor) renderView(); }
       S.doctor = await act(() => bridge.call('doctor')) || [];
-      S.doctorBusy = false;
+      S.doctorBusy = false; S.doctorTook = Date.now() - S.doctorAt; S.doctorWhen = new Date().toISOString();
       const fails = S.doctor.filter(c => c.status === 'fail').length;
       if (!opts.quiet && cur().view !== 'doctor') toast(fails ? `Doctor found ${fails} problem(s)` : 'Doctor: all good', fails ? 'err' : 'ok');
       return render();
@@ -3031,8 +4115,8 @@ async function command(cmd, opts = {}) {
     }
     case 'updskip': if (S.upd?.latest) { await setUpdSetting('update_skip', S.upd.latest.version); await act(loadUpdate); renderView(); renderSide(); } return;
     case 'updunskip': await setUpdSetting('update_skip', ''); await act(loadUpdate); renderView(); renderSide(); return;
-    case 'updoptin': if (await setUpdSetting('update_auto_check', true)) { $('#updAsk')?.remove(); toast('LocalSites checks for updates once a day. Change this in Settings → Updates.'); } return;
-    case 'updoptout': if (await setUpdSetting('update_asked', true)) { $('#updAsk')?.remove(); toast('Automatic checks stay off. You can check any time in Settings → Updates.'); } return;
+    case 'updoptin': if (await setUpdSetting('update_auto_check', true)) { { const a = $('#updAsk'); if (a) dropToast(a); } toast('LocalSites checks for updates once a day. Change this in Settings → Updates.'); } return;
+    case 'updoptout': if (await setUpdSetting('update_asked', true)) { { const a = $('#updAsk'); if (a) dropToast(a); } toast('Automatic checks stay off. You can check any time in Settings → Updates.'); } return;
     case 'checkupdate': {
       const u = await act(() => bridge.call('version.check'), 'Update check'); if (!u) return;
       if (u.newer) { if (await confirmBox(`LocalSites ${u.latest} is available`, `You're on ${u.current}. Open the release page to download it?`, 'Open release page')) openWeb(u.url); }
@@ -3120,9 +4204,8 @@ document.addEventListener('keydown', (e) => {
     if (mod && e.key === 'Enter') { e.preventDefault(); return dataRunSQL(); }
   }
   if ($('#menu').classList.contains('open') && e.key === 'Escape') { e.preventDefault(); $('#menu').classList.remove('open'); return; }
-  if ((e.target.id === 'fmQ' || e.target.id === 'dfmQ') && e.key === 'Enter') { e.preventDefault(); return $('#menu .menu-list button')?.click(); }
-  if ((e.target.id === 'fmQ' || e.target.id === 'dfmQ') && (e.key === 'ArrowDown')) { e.preventDefault(); return $('#menu .menu-list button')?.focus(); }
-  if (e.target.id === 'dFVal' && e.key === 'Enter') { e.preventDefault(); return command('dfilter'); }
+  if (e.target.id === 'fmQ' && e.key === 'Enter') { e.preventDefault(); return $('#menu .menu-list button')?.click(); }
+  if (e.target.id === 'fmQ' && (e.key === 'ArrowDown')) { e.preventDefault(); return $('#menu .menu-list button')?.focus(); }
   if (e.target.id === 'dPw' && e.key === 'Enter') { e.preventDefault(); return command('dsavepw'); }
   if (e.target.id === 'agentInput') {
     const n = parseIntent(S.agent.text).length;
@@ -3132,6 +4215,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { S.agent.text = ''; return renderView(); }
     return;
   }
+  if (e.target.id === 'logQ' && e.key === 'Escape' && LSV.q) { e.preventDefault(); LSV.q = ''; return lsRedraw(); }
   if (e.key === 'Escape' && S.sidePeek) { S.sidePeek = false; $('#body').classList.remove('peek'); return; }
   if (e.key === 'Escape') { $('#menu').classList.remove('open'); if (typing) e.target.blur(); else if (cur().sel) navigate('projects', null); return; }
   if (typing) { if (e.key === 'Enter' && e.target.dataset.field) e.target.blur(); return; }
@@ -3166,9 +4250,13 @@ function commands() {
     c.push({ sect: 'Projects', label: s.enabled ? `Switch off ${s.folder}` : `Switch on ${s.folder}`, icon: 'power', run: () => updateSite(s.folder, { enabled: !s.enabled }) });
     if (s.enabled) c.push({ sect: 'Projects', label: `Open ${s.folder} in browser`, icon: 'globe', hint: s.domain, run: () => bridge.call('open', { folder: s.folder, app: 'browser' }) });
     c.push({ sect: 'Projects', label: `Open ${s.folder} in ${prefApp('editor')?.name || 'your code editor'}`, icon: 'code', run: () => openWith('editor', s.folder) });
-    c.push({ sect: 'Projects', label: `Show ${s.folder}`, icon: 'site', run: () => navigate('projects', s.folder) });
+    c.push({ sect: 'Projects', label: `Show ${s.folder}`, icon: 'site', dot: s.runtime === 'none' ? '' : s.enabled || s.served_by ? 'on' : 'off', hint: s.enabled ? s.domain : typeOf(s).label, run: () => navigate('projects', s.folder) });
     c.push({ sect: 'Projects', label: `Open ${s.folder} in a new tab`, icon: 'plus', run: () => navigate('projects', s.folder, { newTab: true }) });
     for (const p of S.status?.php || []) if (p.version !== s.php) c.push({ sect: 'PHP', label: `${s.folder} → PHP ${p.version}`, icon: 'php', run: () => updateSite(s.folder, { php: p.version }) });
+    const live = (S.status?.shares || []).find(x => x.folder === s.folder);
+    if (live) c.push({ sect: 'Share', label: `Stop sharing ${s.folder}`, icon: 'stop', hint: live.url.replace(/^https?:\/\//, ''), run: () => bridge.call('share.stop', { id: live.id }).then(logToast).then(refresh) });
+    else if (s.enabled && s.runtime !== 'none') c.push({ sect: 'Share', label: `Share ${s.folder} on the internet…`, icon: 'globe', run: () => { S.dpane = 'details'; navigate('projects', s.folder); setTimeout(() => $('#detail .share-form, #detail .tunnels')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60); } });
+    if (s.database) c.push({ sect: 'Databases', label: `Open ${s.folder}’s database (${s.database})`, icon: 'table', run: () => openDatabase('localsites', s.database) });
     if (s.enabled) c.push({ sect: 'Debug', label: `Check connection: ${s.folder}`, icon: 'doctor', run: () => { navigate('projects', s.folder); return runCheck(s.folder); } });
   }
   c.push({ sect: 'Debug', label: 'Run Doctor (health check)', icon: 'doctor', run: () => { navigate('doctor'); return command('doctor'); } });
@@ -3177,6 +4265,7 @@ function commands() {
   c.push({ sect: 'Services', label: 'Restart all services', icon: 'refresh', run: () => command('restart') });
   c.push({ sect: 'Services', label: 'Stop all services', icon: 'stop', run: () => command('stop') });
   c.push({ sect: 'Databases', label: 'Create database…', icon: 'db', run: () => { navigate('databases'); return command('newdb'); } });
+  for (const d of S.dbs || []) c.push({ sect: 'Databases', label: `Open database ${d.name}`, icon: 'table', hint: plural(d.tables, 'table'), run: () => openDatabase('localsites', d.name) });
   c.push({ sect: 'Databases', label: 'Copy databases from MAMP PRO', icon: 'import', run: () => navigate('import') });
   c.push({ sect: 'Data', label: 'Browse data (tables, rows, SQL)', icon: 'table', hint: 'G T', run: () => navigate('data') });
   c.push({ sect: 'Data', label: 'New database connection…', icon: 'plus', run: () => { navigate('data'); return command('dnewconn'); } });
@@ -3192,28 +4281,41 @@ function score(label, q) {
   for (const ch of q) { if (ch === ' ') continue; const j = l.indexOf(ch, i); if (j < 0) return 0; s += j === last + 1 ? 3 : 1; if (j === 0 || l[j - 1] === ' ') s += 2; last = j; i = j + 1; }
   return s - l.length * 0.01;
 }
+// Launcher: recent commands first, then everything grouped; typing searches every command and project.
+const recentCmds = () => store.get('recentCmds', []);
+function rememberCmd(label) { store.set('recentCmds', [label, ...recentCmds().filter(l => l !== label)].slice(0, 5)); }
 function openPalette() { $('#overlay').classList.add('open'); $('#pInput').value = ''; pSel = 0; paletteRender(); $('#pInput').focus(); }
 function closePalette() { $('#overlay').classList.remove('open'); }
+function runPaletteItem(c) { closePalette(); if (!c) return; rememberCmd(c.label); act(() => c.run()); }
 function paletteRender() {
-  const q = $('#pInput').value.trim().toLowerCase();
-  pItems = commands().map(c => ({ ...c, s: score(c.label, q) })).filter(c => c.s > 0);
-  if (q) pItems.sort((a, b) => b.s - a.s); else pItems = pItems.filter(c => c.sect !== 'PHP').slice(0, 40);
+  const q = $('#pInput').value.trim().toLowerCase(), all = commands();
+  let list;
+  if (q) {
+    const hits = all.map(c => ({ ...c, s: score(c.label, q) })).filter(c => c.s > 0).sort((a, b) => b.s - a.s).slice(0, 60);
+    const order = uniq(hits.map(c => c.sect)); // groups in the order of their best match
+    list = order.flatMap(g => hits.filter(c => c.sect === g));
+  } else {
+    const rec = recentCmds().map(l => all.find(c => c.label === l)).filter(Boolean).map(c => ({ ...c, sect: 'Recent' }));
+    list = [...rec, ...all.filter(c => c.sect !== 'PHP' && !rec.some(r => r.label === c.label)).slice(0, 40)];
+  }
+  pItems = list;
   pSel = Math.min(pSel, Math.max(0, pItems.length - 1));
   let last = '';
   $('#pList').innerHTML = pItems.map((c, i) => {
-    const head = !q && c.sect !== last ? `<div class="sect2">${esc(c.sect)}</div>` : ''; last = c.sect;
-    return `${head}<div class="item ${i === pSel ? 'sel' : ''}" data-pi="${i}">${icon[c.icon] || ''}<span>${esc(c.label)}</span><span class="hint">${esc(c.hint || '')}</span></div>`;
-  }).join('') || '<div class="item">No matching commands</div>';
+    const head = c.sect !== last ? `<div class="sect2">${esc(c.sect)}</div>` : ''; last = c.sect;
+    return `${head}<div class="item ${i === pSel ? 'sel' : ''}" data-pi="${i}">${c.dot ? `<span class="dot ${c.dot}"></span>` : icon[c.icon] || ''}<span>${esc(c.label)}</span><span class="hint">${esc(c.hint || '')}</span></div>`;
+  }).join('') || `<div class="p-none">${icon.search2}<span>Nothing matches “${esc(q)}”. Try a project name, a view or an action like “restart”.</span></div>`;
+  $('#pCount').textContent = q ? plural(pItems.length, 'result') : '';
   $('#pList .item.sel')?.scrollIntoView({ block: 'nearest' });
 }
 function paletteKey(e) {
   if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
   else if (e.key === 'ArrowDown') { e.preventDefault(); pSel = Math.min(pItems.length - 1, pSel + 1); paletteRender(); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); pSel = Math.max(0, pSel - 1); paletteRender(); }
-  else if (e.key === 'Enter') { e.preventDefault(); const c = pItems[pSel]; closePalette(); if (c) act(() => c.run()); }
+  else if (e.key === 'Enter') { e.preventDefault(); runPaletteItem(pItems[pSel]); }
 }
 $('#pInput').addEventListener('input', () => { pSel = 0; paletteRender(); });
-$('#pList').addEventListener('click', (e) => { const it = e.target.closest('[data-pi]'); if (!it) return; const c = pItems[+it.dataset.pi]; closePalette(); act(() => c.run()); });
+$('#pList').addEventListener('click', (e) => { const it = e.target.closest('[data-pi]'); if (it) runPaletteItem(pItems[+it.dataset.pi]); });
 $('#overlay').addEventListener('mousedown', (e) => { if (e.target.id === 'overlay') closePalette(); });
 
 /* -------------------------------------------------------------------- boot */
@@ -3329,7 +4431,7 @@ setTimeout(() => {
   t.innerHTML = `<span class="c-ic">${icon.sparkles}</span><div><div class="label">Check for updates automatically?</div>
     <div class="note">Once a day LocalSites reads the public list of releases. Nothing about you or your projects is sent.</div>
     <div class="form-row" style="margin-top:8px">${UI.btn('Turn on', { kind: 'primary', attrs: 'data-cmd="updoptin"' })}${UI.btn('Not now', { kind: 'ghost', attrs: 'data-cmd="updoptout"' })}${UI.btn('Settings', { kind: 'ghost', attrs: 'data-menu="whatsnew"' })}</div></div>`;
-  $('#toasts').append(t);
+  $('#toasts').append(t); layoutToasts();
 }, 8000);
 window.addEventListener('focus', () => pollApprovals());
 act(async () => { S.exe = window.go?.main?.App?.Executable ? await window.go.main.App.Executable() : '/path/to/localsites'; render(); });
@@ -3348,6 +4450,24 @@ async function refreshAll() {
   if (snap !== lastSnap) { lastSnap = snap; render(); } else renderStatus();
   if (legacy) pollApprovals();
 }
+/* --- Connection Lost: the background service stopped answering; say so and keep trying --- */
+let misses = 0;
+function offlineMiss() {
+  if (++misses < 2) return; // one miss is a restart in progress
+  S.offline ||= Date.now(); S.offlineNext = Date.now() + 5000; renderOffline();
+}
+function offlineBack() {
+  if (!misses && !S.offline) return;
+  const was = S.offline; misses = 0; S.offline = 0; renderOffline();
+  if (was) { toast('Connected to the background service again'); refreshAll(); pollApprovals(); }
+}
+function renderOffline() {
+  let el = $('#offline');
+  if (!S.offline) { el?.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'offline'; el.className = 'offline'; el.setAttribute('role', 'status'); $('.panel').prepend(el); }
+  el.innerHTML = `${icon.wifiOff}<div><b>LocalSites’ background service isn’t answering.</b> <span class="note">Your sites may be unreachable too. Not answering for <span data-elapsed="${S.offline}">${fmtClock(Date.now() - S.offline)}</span>; trying again in <span data-remain="${new Date(S.offlineNext).toISOString()}">5s</span>.</span></div>
+    <span class="spacer"></span><button class="btn sm" data-cmd="reconnect">${icon.refresh}Try now</button>`;
+}
 async function watchChanges() {
   if (watching || legacy) return;
   watching = true;
@@ -3357,8 +4477,9 @@ async function watchChanges() {
       try { v = (await bridge.call('events.wait', { since: evVer })).version; }
       catch (e) {
         if (/unknown method/i.test(String(e?.message || e))) { legacy = true; break; }
-        await new Promise(r => setTimeout(r, 5000)); continue; // service restarting
+        offlineMiss(); await new Promise(r => setTimeout(r, 5000)); continue; // service restarting
       }
+      offlineBack();
       if (v === evVer || document.hidden) continue;
       evVer = v;
       await new Promise(r => setTimeout(r, 150)); // changes come in bursts: refresh once
@@ -3384,6 +4505,7 @@ addEventListener('resize', () => {
   if (!narrowWin() && S.sidePeek) { S.sidePeek = false; $('#body').classList.remove('peek'); }
 }, { passive: true });
 setInterval(() => { if (!document.hidden && cur().view === 'logs' && S.logAuto) loadLog(false); }, 2000);
+setInterval(() => { if (!document.hidden && cur().view === 'overview') loadUptime(); }, 5 * 60000); // samples arrive once a minute
 
 // Read-only hook for automated UI tests (does not touch window.go / window.runtime).
 Object.defineProperty(window, '__localsites', { value: Object.freeze({ state: () => S, commands: () => commands().map(c => c.label) }) });
