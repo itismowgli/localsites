@@ -1,8 +1,6 @@
 The commit graph, log, agent run and filter demos in demos.js, the footer, and the Security page's tile grid in
 site.css and the page markup are adapted from components published under the MIT License:
 
-MIT License:
-
 MIT License
 
 Copyright (c) devl (https://devl.dev)
