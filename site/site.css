@@ -893,3 +893,64 @@ h1, h2, h3 { text-wrap: balance; }
 .points.cols li b { font: var(--type-body-lg); font-weight: 600; text-wrap: pretty; }
 .points.cols li .pt-d { color: var(--ink-muted); font: var(--type-body-sm); line-height: 1.6; text-wrap: wrap; }
 @media (max-width: 900px) { .points.cols li { padding: var(--space-4) var(--space-6) var(--space-6); } }
+
+/* ============================================================ scrolling */
+/* smooth scrolling (vendor/lenis.min.js, MIT): its own small stylesheet */
+html.lenis, html.lenis body { height: auto; }
+html.lenis { scroll-behavior: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+/* a thin scrollbar in the site's colours instead of the system one */
+html { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--dim); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ============================================================ phones */
+@media (max-width: 640px) {
+  /* tighter rhythm */
+  section { padding-top: var(--space-16); }
+  .band, .blk.band { margin-top: var(--space-16); padding: var(--space-16) 0; }
+  .head { margin-bottom: var(--space-8); }
+  .head h2, h2 { font-size: 1.85rem; line-height: 1.12; letter-spacing: -.03em; }
+  .head .sub, .sub { font: var(--type-body-md); }
+  .hero { padding-top: var(--space-12); }
+  .lead { font: var(--type-body-md); margin-bottom: var(--space-6); }
+  .cta .btn { flex: 1 1 100%; min-height: 48px; }
+  .final { padding: var(--space-16) 0; }
+  .final img { width: 72px; height: 72px; }
+  .stage { margin-top: var(--space-12); }
+  .stats { gap: var(--space-6) var(--space-4); padding-top: var(--space-12); }
+  .stat b { font: var(--type-headline-lg); }
+
+  /* the stack strip scrolls sideways instead of wrapping into a block */
+  .stack { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; gap: var(--space-6); padding: var(--space-8) var(--space-6) var(--space-4); margin: 0; max-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, black var(--space-6), black calc(100% - var(--space-6)), transparent); mask-image: linear-gradient(90deg, transparent, black var(--space-6), black calc(100% - var(--space-6)), transparent); }
+  .stack::-webkit-scrollbar { display: none; }
+  .stack span { flex: none; }
+
+  /* card rows swipe sideways, the next card peeking in */
+  .cards, #only .points.cols { display: flex; grid-template-columns: none; gap: var(--space-3); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 var(--space-6);
+    margin: 0 calc(-1 * var(--space-6)); padding: var(--space-1) var(--space-6) var(--space-4); scrollbar-width: none; overscroll-behavior-x: contain; }
+  .cards::-webkit-scrollbar, #only .points.cols::-webkit-scrollbar { display: none; }
+  .cards > .card, #only .points.cols > li { flex: 0 0 82%; scroll-snap-align: start; }
+  .card { padding: var(--space-5); }
+  .card h3 { font: var(--type-body-lg); font-weight: 600; }
+  .card:hover { transform: none; }
+
+  /* other point lists: compact cards, icon beside the title */
+  .points.cols li { display: grid; grid-template-columns: 36px 1fr; column-gap: var(--space-3); row-gap: var(--space-1); padding: var(--space-4); align-items: start; }
+  .points.cols .pt-ic { grid-row: span 2; width: 36px; height: 36px; margin: 0; }
+  .points.cols .pt-ic svg { width: 18px; height: 18px; }
+  .points.cols li b { font: var(--type-body-md); font-weight: 600; }
+  #only .points.cols li { display: flex; flex-direction: column; padding: var(--space-5); }
+  #only .points.cols .pt-ic { margin-bottom: var(--space-2); }
+
+  .steps { gap: var(--space-3); }
+  .panel { padding: var(--space-4) var(--space-3); }
+  .mf-word { margin-top: var(--space-8); }
+}

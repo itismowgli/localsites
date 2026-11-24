@@ -52,6 +52,14 @@
   const mfo = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('in', e.isIntersecting || e.target.classList.contains('mf-word') && e.target.classList.contains('in'))), { threshold: 0.3 });
   document.querySelectorAll('.mf-word, .mf-status').forEach((el) => mfo.observe(el));
 
+  // Smooth wheel and trackpad scrolling (vendor/lenis.min.js). Touch screens keep native scrolling, and it stays
+  // off for reduced motion. Links to #sections land below the sticky header.
+  if (window.Lenis && matchMedia('(pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const lenis = new Lenis({ lerp: 0.12, anchors: { offset: -72 }, allowNestedScroll: true });
+    const frame = (t) => { lenis.raf(t); requestAnimationFrame(frame); };
+    requestAnimationFrame(frame);
+  }
+
   const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
   const frame = document.getElementById('heroFrame');
