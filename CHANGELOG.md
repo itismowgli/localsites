@@ -4,6 +4,12 @@ Every LocalSites release, newest first. Written from `internal/version/changelog
 `go run ./tools/release changelog`; the app shows the same list under What's new. Versions follow
 [semantic versioning](https://semver.org): a new feature raises the middle number, a fix the last one.
 
+## 1.7.1 (2026-11-24): Back to Overview after an update
+
+### Improved
+
+- After an update LocalSites opens on Overview, with a notice that links to what changed. A normal restart still opens where you left off
+
 ## 1.7.0 (2026-11-24): A clearer look for approvals, logs, agent runs and data filters
 
 ### New

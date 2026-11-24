@@ -176,12 +176,14 @@ function openWeb(url) {
 // A deck: the newest toast on top, older ones tucked behind it. Hovering fans them out and pauses their
 // timers; each one closes with its x or a swipe to the right.
 const TOAST_MAX = 6;
-function toast(text, kind = 'ok') {
+// action: an optional button, { label, attrs } (attrs are data-* the click router knows, e.g. data-menu="whatsnew")
+function toast(text, kind = 'ok', action = null) {
   const t = document.createElement('div');
   t.className = 'toast';
   t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-  t.innerHTML = `<span class="dot ${kind === 'err' ? 'err' : kind === 'warn' ? 'warn' : 'on'}"></span><pre>${esc(text)}</pre><button class="toast-x" title="Dismiss">${icon.x}</button>`;
-  t._left = kind === 'err' ? 9000 : 4200;
+  const act = action ? `<button class="btn sm toast-act" ${action.attrs}>${esc(action.label)}</button>` : '';
+  t.innerHTML = `<span class="dot ${kind === 'err' ? 'err' : kind === 'warn' ? 'warn' : 'on'}"></span><pre>${esc(text)}</pre>${act}<button class="toast-x" title="Dismiss">${icon.x}</button>`;
+  t._left = kind === 'err' ? 9000 : action ? 9000 : 4200;
   $('#toasts').append(t);
   const all = [...$('#toasts').querySelectorAll('.toast:not(.out)')];
   for (const old of all.slice(0, Math.max(0, all.length - TOAST_MAX))) dropToast(old);
@@ -214,7 +216,7 @@ function layoutToasts() {
   const box = $('#toasts');
   box.addEventListener('mouseenter', () => { for (const t of box.querySelectorAll('.toast')) { clearTimeout(t._timer); if (t._from) t._left = Math.max(1200, t._left - (Date.now() - t._from)); } layoutToasts(); });
   box.addEventListener('mouseleave', () => { for (const t of box.querySelectorAll('.toast:not(.out)')) armToast(t); layoutToasts(); });
-  box.addEventListener('click', (e) => { const x = e.target.closest('.toast-x'); if (x) dropToast(x.closest('.toast')); });
+  box.addEventListener('click', (e) => { const x = e.target.closest('.toast-x, .toast-act'); if (x) dropToast(x.closest('.toast')); });
   let drag = null;
   box.addEventListener('pointerdown', (e) => { const t = e.target.closest('.toast'); if (!t || e.target.closest('button, a, input')) return; drag = { t, x: e.clientX }; t.setPointerCapture(e.pointerId); t.classList.add('dragging'); });
   box.addEventListener('pointermove', (e) => { if (!drag) return; const dx = Math.max(0, e.clientX - drag.x); drag.t.style.translate = dx + 'px 0'; drag.t.style.opacity = String(Math.max(0.2, 1 - dx / 240)); });
@@ -4456,7 +4458,17 @@ applyTheme();
 render();
 onEnter(cur().view);
 refresh();
-act(loadVersion).then(renderSide);
+act(loadVersion).then(() => {
+  renderSide();
+  // Right after an update the app starts on Overview (other tabs stay) and says what changed. Before 1.7.1 there
+  // was no lastVersion, so the version last seen in What's new stands in for it once.
+  const v = S.version?.version, last = store.get('lastVersion', '') || S.seenVersion;
+  if (v && last && last !== v) {
+    if (!location.hash && cur().view !== 'overview') { cur().view = 'overview'; cur().sel = null; saveUI(); onEnter('overview'); render(); }
+    toast(`Updated to LocalSites ${v}`, 'ok', { label: "What's new", attrs: 'data-menu="whatsnew"' });
+  }
+  if (v) store.set('lastVersion', v);
+});
 { // back from a suspended page: the same settings section, SQL and agent text
   const r = store.get('resume', null);
   if (r && Date.now() - (r.at || 0) < 7 * 864e5) { if (r.setSec) S.setSec = r.setSec; if (r.sql) S.data.sql = r.sql; if (r.agent) S.agent.text = r.agent; }

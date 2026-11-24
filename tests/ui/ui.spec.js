@@ -171,6 +171,25 @@ test('settings: appearance switch', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined();
 });
 
+test('after an update the app starts on Overview and offers What\'s new; a normal restart keeps the tabs', async ({ page }) => {
+  await page.waitForFunction(() => window.__localsites.state().version);
+  const v = (await call(page, 'version')).version;
+  // a normal restart: the same version as last time, Settings open, so Settings again and no notice
+  await page.evaluate(([ver]) => { localStorage.setItem('ls.lastVersion', JSON.stringify(ver)); localStorage.setItem('ls.tabs', JSON.stringify([{ view: 'settings', sel: null }])); localStorage.setItem('ls.tab', '0'); }, [v]);
+  await page.reload();
+  await page.waitForFunction(() => window.__localsites.state().version);
+  await expect(page.locator('#toasts .toast-act')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ls.tabs'))[0].view)).toBe('settings');
+  // right after an update: an older last version, so Overview in the current tab, other tabs kept, and a notice
+  await page.evaluate(() => { localStorage.setItem('ls.lastVersion', JSON.stringify('0.0.1')); localStorage.setItem('ls.tabs', JSON.stringify([{ view: 'settings', sel: null }, { view: 'logs', sel: null }])); localStorage.setItem('ls.tab', '0'); });
+  await page.reload();
+  await expect(page.locator('#toasts .toast')).toContainText('Updated to LocalSites ' + v);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ls.tabs')).map(t => t.view))).toEqual(['overview', 'logs']);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ls.lastVersion')))).toBe(v);
+  await page.locator('#toasts .toast-act').click();
+  await expect(page.locator('.settings .page h2')).toHaveText('Updates');
+});
+
 test("help menu shows What's new and opens the full changelog", async ({ page }) => {
   await page.waitForFunction(() => window.__localsites.state().version);
   await page.locator('.help').click();

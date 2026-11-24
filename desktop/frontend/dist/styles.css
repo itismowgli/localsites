@@ -291,6 +291,8 @@ table.t tr:hover td { background: var(--hover); }
 .toast.out { opacity: 0; transform: translateX(12px); }
 .toast .dot { margin-top: 5px; }
 .toast pre { margin: 0; font: inherit; white-space: pre-wrap; color: var(--text-2); }
+.toast pre { flex: 1; min-width: 0; }
+.toast .toast-act { flex: none; margin: -3px 0; }
 @keyframes in { from { transform: translateY(6px); opacity: 0; } }
 /* Loader: a 3x3 pixel grid; a light sweeps round the edge. Takes the text colour, so it fits buttons and notes. */
 .spinner { display: inline-grid; grid-template-columns: repeat(3, 3px); grid-auto-rows: 3px; gap: 2px; width: 13px; height: 13px; vertical-align: -2px; flex: none; }

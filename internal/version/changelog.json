@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.7.1",
+    "date": "2026-11-24",
+    "title": "Back to Overview after an update",
+    "items": [
+      "After an update LocalSites opens on Overview, with a notice that links to what changed. A normal restart still opens where you left off"
+    ],
+    "kinds": [
+      "improved"
+    ]
+  },
+  {
     "version": "1.7.0",
     "date": "2026-11-24",
     "title": "A clearer look for approvals, logs, agent runs and data filters",
