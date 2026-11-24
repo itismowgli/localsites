@@ -39,8 +39,9 @@ jobs:
       - name: GTK and WebKitGTK for the desktop app
         timeout-minutes: 20   # a stalled package mirror fails instead of hanging the job
         run: |
-          # the runner's default mirror is sometimes very slow; use Ubuntu's Azure mirror
-          sudo sed -i -E 's#http://[a-z0-9.-]*archive\.ubuntu\.com/ubuntu#http://azure.archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+          # The runner picks mirrors from /etc/apt/apt-mirrors.txt and its first one is sometimes very slow:
+          # Ubuntu's Azure mirror goes first, the main archive after it
+          printf '%s\n' http://azure.archive.ubuntu.com/ubuntu/ http://archive.ubuntu.com/ubuntu/ | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
           APT="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
           sudo apt-get $APT update -q && sudo apt-get $APT install -y -q libgtk-3-dev libwebkit2gtk-4.1-dev
       - name: Unit tests
