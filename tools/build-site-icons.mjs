@@ -6,7 +6,7 @@ import path from 'node:path';
 const lucide = path.resolve('node_modules', 'lucide-static', 'icons');
 const out = path.resolve('..', 'site', 'icons.svg');
 const ICONS = ['wrench', 'shield-check', 'code', 'folder-pen', 'eye', 'file-code', 'key-round', 'database-backup', 'blocks',
-  'badge-check', 'eye-off', 'plug', 'git-branch', 'globe', 'stethoscope', 'command', 'bell', 'package'];
+  'badge-check', 'eye-off', 'plug', 'git-branch', 'globe', 'stethoscope', 'command', 'bell', 'package', 'hand', 'shield-alert', 'table-2', 'copy-check', 'link-2-off', 'badge-x', 'history', 'combine'];
 
 const symbols = ICONS.map((name) => {
   const src = fs.readFileSync(path.join(lucide, name + '.svg'), 'utf8');

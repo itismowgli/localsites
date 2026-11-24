@@ -130,8 +130,10 @@ test('projects (dark and light)', async ({ page }) => {
 test('choose your editor', async ({ page }) => {
   await stubApps(page, {});
   await page.goto('/#projects/storefront'); await page.reload();
-  await page.locator('#detail [data-openwith="editor"]').scrollIntoViewIfNeeded();
-  await page.locator('#detail [data-openwith="editor"]').click();
+  // the Open split button: its menu lists the editor
+  await page.locator('#detail [data-openmore]').scrollIntoViewIfNeeded();
+  await page.locator('#detail [data-openmore]').click();
+  await page.locator('#menu [data-openwith="editor"]').click();
   await expect(page.locator('#keysDialog')).toContainText('Which code editor');
   await page.waitForTimeout(400);
   await shot(page, 'editor-chooser.jpg');

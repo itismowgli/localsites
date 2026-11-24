@@ -688,7 +688,8 @@ function ring(done, total) {
   return `<svg class="ring-p" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="${r}" class="rp-bg"/><circle cx="12" cy="12" r="${r}" class="rp-fg" stroke-dasharray="${(c * f).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 12 12)"/></svg>`;
 }
 function launchList() {
-  if (store.get('hide.launch', false) || !S.status) return '';
+  // wait until every step can be judged (setup and agents load after the page), so a finished setup never flashes
+  if (store.get('hide.launch', false) || !S.status || !S.setup || !Array.isArray(S.agents)) return '';
   const groups = launchSteps(), all = groups.flatMap(([, l]) => l), done = all.filter(x => x.done).length;
   if (done === all.length) return '';
   return `<section class="launch" aria-label="Set up LocalSites"><div class="launch-h">${ring(done, all.length)}<div><h2>Set up LocalSites</h2><p class="note">${done} of ${all.length} done</p></div>
