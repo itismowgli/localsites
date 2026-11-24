@@ -1588,3 +1588,35 @@ table.dbt .acts .icon-btn svg { width: 16px; height: 16px; }
 .bg-sync { display: inline-flex; flex: none; opacity: .7; }
 .bg-sync svg { width: 10px; height: 10px; }
 .pass-t { overflow-wrap: anywhere; }
+
+/* Recent log lines in the project panel */
+.ml { display: flex; flex-direction: column; max-height: 232px; overflow-y: auto; padding: 4px 0; border: 1px solid var(--line-soft); border-radius: var(--radius-xl); background: var(--win); font: 11.5px/18px var(--mono); }
+.ml-row { display: grid; grid-template-columns: 64px 28px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 4px 10px; }
+.ml-row + .ml-row { border-top: 1px solid var(--line-soft); }
+.ml-row.lv-error { background: color-mix(in srgb, var(--red) 6%, transparent); }
+.ml-row.lv-warn { background: color-mix(in srgb, var(--yellow) 6%, transparent); }
+.ml-t { color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ml-lv { font-weight: 600; color: var(--muted-foreground); }
+.lv-error > .ml-lv { color: var(--red); }
+.lv-warn > .ml-lv { color: var(--yellow); }
+.lv-info > .ml-lv { color: var(--lane-6); }
+.ml-m { min-width: 0; color: var(--text-2); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ml-n { margin-left: 6px; padding: 0 6px; border-radius: 9px; background: var(--hover); color: var(--muted-foreground); font: 500 10.5px/16px var(--font); }
+.ml-empty { margin: 0; padding: 8px 10px; font-family: var(--font); }
+/* The project's database */
+.pdb { border: 1px solid var(--line); border-radius: var(--radius-xl); overflow: hidden; }
+.pdb-main { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pdb-main:hover:not(:disabled) { background: var(--hover); }
+.pdb-main:disabled { cursor: default; }
+.pdb-main > svg { width: 14px; height: 14px; color: var(--faint); flex: none; }
+.pdb-ic { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: var(--radius); background: var(--hover); color: var(--muted-foreground); }
+.pdb-ic svg { width: 15px; height: 15px; }
+.pdb-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pdb-n { font: 500 13px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdb-t .note { font-size: 12px; }
+.pdb-acts { display: flex; gap: 4px; padding: 4px 8px; border-top: 1px solid var(--line-soft); }
+.pdb-acts:empty { display: none; }
+.pdb-none { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+button.chip.dbc { cursor: pointer; font: inherit; font-family: var(--mono); font-size: 11.5px; background: transparent; max-width: 180px; }
+button.chip.dbc span { overflow: hidden; text-overflow: ellipsis; }
+button.chip.dbc:hover { background: var(--hover); color: var(--text); }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -75,6 +76,21 @@ func projectEnv(path, backupDir string) *EnvInfo {
 	}
 	info.Backups = len(envBackups(path, backupDir))
 	return info
+}
+
+// wpDBName is the database a WordPress site uses, from define('DB_NAME', '...') in wp-config.php.
+// Read only: LocalSites never changes wp-config.php.
+var wpDBName = regexp.MustCompile(`define\(\s*['"]DB_NAME['"]\s*,\s*['"]([^'"]+)['"]\s*\)`)
+
+func wpDatabase(path string) string {
+	b, err := os.ReadFile(filepath.Join(path, "wp-config.php"))
+	if err != nil || len(b) > 1<<20 {
+		return ""
+	}
+	if m := wpDBName.FindSubmatch(b); m != nil {
+		return string(m[1])
+	}
+	return ""
 }
 
 // envBackupDir holds a project's .env backups, outside the project (they contain its passwords, and

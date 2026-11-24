@@ -136,7 +136,7 @@ const S = {
   sites: [], status: null, dbs: null, dbErr: null, activity: [], doctor: null, doctorBusy: false, checks: {}, exe: '',
   filter: '', ptab: ['all', 'running', 'attention'].includes(store.get('ptab', 'all')) ? store.get('ptab', 'all') : 'all',
   groupBy: store.get('groupBy', 'folder'), order: store.get('order', 'status'),
-  pf: store.get('pf', {}), props: new Set(store.get('props', ['domain', 'branch', 'account', 'version', 'type'])),
+  pf: store.get('pf', {}), props: new Set(store.get('props', ['domain', 'branch', 'database', 'account', 'version', 'type'])),
   log: { kind: 'apache', folder: '' }, logAuto: true, logText: '',
   tabs: store.get('tabs', [{ view: 'overview', sel: null }]).map(t => ({ ...t, back: [], fwd: [] })), tab: store.get('tab', 0),
   closed: store.get('closed', {}), expanded: new Set(store.get('expanded', ['nav:projects'])), favs: new Set(store.get('favs', [])),
@@ -921,7 +921,7 @@ function displayMenuHTML() {
     <div class="dm-row"><span>${icon.rows}Grouping</span>${sel('groupBy', S.groupBy, [['folder', 'Folder'], ['account', 'Git account'], ['type', 'Type'], ['none', 'No grouping']])}</div>
     <div class="dm-row"><span>${icon.sort}Ordering</span>${sel('orderBy', S.order, [['status', 'Running first'], ['name', 'Name'], ['type', 'Type']])}</div>
     <div class="dm-h">Display properties</div>
-    <div class="dm-props">${[['type', 'Type icon'], ['domain', 'Address'], ['branch', 'Branch'], ['account', 'Git account'], ['version', 'Version']].map(([k, l]) =>
+    <div class="dm-props">${[['type', 'Type icon'], ['domain', 'Address'], ['branch', 'Branch'], ['database', 'Database'], ['account', 'Git account'], ['version', 'Version']].map(([k, l]) =>
       `<button data-dprop="${k}" class="pp ${S.props.has(k) ? 'on' : ''}" aria-pressed="${S.props.has(k)}">${S.props.has(k) ? icon.check : ''}${l}</button>`).join('')}</div></div>`;
 }
 function startCards(title, cards, dismiss = '') {
@@ -998,6 +998,8 @@ function row(s) {
   if (P.has('branch') && s.git?.branch) chips.push(branchChip(s.git.branch));
   if (P.has('account') && s.git?.account && S.groupBy !== 'account') chips.push(`<span class="chip acct" title="${esc(s.git.remote || '')}">${hostIcon(s.git.host)}${esc(s.git.account)}</span>`);
   if (P.has('version') && ver) chips.push(`<span class="chip mono ver">${esc(ver)}</span>`);
+  const dbn = s.database || s.env?.database || s.wp_database;
+  if (P.has('database') && dbn) chips.push(`<button class="chip mono dbc" ${s.db_server === 'mamp' ? `data-dbmamp="${esc(dbn)}"` : `data-dbopen="${esc(dbn)}"`} title="Database ${esc(dbn)}${s.db_server === 'mamp' ? ' on MAMP PRO MySQL' : ''}: open it">${icon.db}<span>${esc(dbn)}</span></button>`);
   const live = s.enabled || valet;
   const ring = s.runtime === 'none' ? `<span class="ring off" title="Not a website"></span>`
     : `<span class="ring ${live ? 'on' : ''} ${err ? 'err' : ''} ${valet ? 'valet' : ''}" ${valet ? 'title="Served by Laravel Valet"' : `data-toggle="${esc(s.folder)}" title="${s.enabled ? 'Switch off' : 'Switch on'} (E)"`}></span>`;
@@ -1059,14 +1061,50 @@ function renderDetail() {
   if (s.served_by !== 'valet') {
     const kind = s.installing ? 'site-install' : s.runtime === 'app' ? 'site-app' : 'site-error';
     const k = s.folder + kind, el = $('#miniLog');
-    if (miniLogAt[k] && Date.now() - miniLogAt[k].at < 4000) { if (el) el.textContent = miniLogAt[k].text; return; }
+    if (miniLogAt[k] && Date.now() - miniLogAt[k].at < 4000) { if (el) el.innerHTML = miniLogHTML(miniLogAt[k].text, s); return; }
     act(async () => {
       const r = await bridge.call('logs', { kind, folder: s.folder, lines: 14 });
       const text = r.text || (s.runtime === 'app' ? 'No output yet.' : 'No errors logged.');
       miniLogAt[k] = { at: Date.now(), text };
-      const box = $('#miniLog'); if (box) box.textContent = text;
+      const box = $('#miniLog'); if (box) box.innerHTML = miniLogHTML(text, s);
     });
   }
+}
+// Recent log lines in a project's panel: newest last, one per row with time and level, repeats folded,
+// paths shortened to the project (./) or your home folder (~)
+function miniLogHTML(text, s) {
+  if (text === undefined) return '<p class="note ml-empty">Loading…</p>';
+  const raw = String(text).split('\n').filter(l => l.trim());
+  if (!raw.length || /^No (errors logged|output yet)/.test(raw[0])) return `<p class="note ml-empty">${esc(raw[0] || 'Nothing logged yet.')}</p>`;
+  const short = (m) => m.split(s.path + '/').join('./').replace(/\/(Users|home)\/[^/\s]+\//g, '~/');
+  let prev = null; const rows = [];
+  for (const r of raw) {
+    const x = parseLogLine(r, s.runtime === 'app' ? 'app' : 'apache', prev); prev = x.ts;
+    const key = x.level + '|' + lsTemplate(x.message), last = rows[rows.length - 1];
+    if (last && last.key === key) { last.n++; last.x = x; continue; }
+    rows.push({ key, x, n: 1 });
+  }
+  const today = new Date().toDateString();
+  return rows.slice(-8).map(({ x, n }) => { const d = x.ts ? new Date(x.ts) : null;
+    const when = d ? (d.toDateString() === today ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : d.toLocaleDateString([], { day: 'numeric', month: 'short' })) : '';
+    const full = short(x.message), msg = full.replace(/^AH\d{5}: /, ''); // Apache's message codes only on hover
+    return `<div class="ml-row lv-${x.level}"><span class="ml-t">${esc(when)}</span><span class="ml-lv">${{ error: 'ERR', warn: 'WRN', info: 'INF', debug: 'DBG' }[x.level]}</span><span class="ml-m" title="${esc(full)}">${esc(msg)}${n > 1 ? `<span class="ml-n">×${n}</span>` : ''}</span></div>`; }).join('');
+}
+// The database a project uses: its own, the one named in .env, or WordPress' wp-config.php
+function projectDB(s) {
+  const name = s.database || s.env?.database || s.wp_database;
+  const from = s.database ? 'its own database' : s.env?.database ? `from ${baseName(s.env.file)}` : s.wp_database ? 'from wp-config.php' : '';
+  if (!name) return `<div class="st">Database</div><p class="note pdb-none">No database named in .env or wp-config.php. ${UI.btn('New database', { ic: 'plus', kind: 'ghost', attrs: 'data-cmd="newdb"' })}</p>`;
+  const mamp = s.db_server === 'mamp';
+  if (!mamp && S.dbs === null && !dbsInFlight) loadDBs().then(() => renderDetail());
+  const d = !mamp ? (S.dbs || []).find(x => x.name === name) : null, missing = !mamp && S.dbs && !d;
+  const facts = d ? `${plural(d.tables, 'table')} · ${d.size_mb.toFixed(1)} MB${d.owner ? ` · login <code>${esc(d.owner)}</code>` : ''}` : mamp ? 'on MAMP PRO MySQL (read-only here)' : missing ? 'not in LocalSites MySQL yet' : '';
+  const open = mamp ? `data-dbmamp="${esc(name)}"` : missing ? 'disabled' : `data-dbopen="${esc(name)}"`;
+  return `<div class="st">Database</div>
+    <div class="pdb"><button class="pdb-main" ${open} title="${missing ? 'Copy it from MAMP PRO in Import first' : 'Open in the data browser'}"><span class="pdb-ic">${icon.db}</span>
+      <span class="pdb-t"><span class="pdb-n">${esc(name)}</span><span class="note">${esc(from)}${facts ? ' · ' : ''}${facts}</span></span>${missing ? '' : icon.chevronR}</button>
+      <div class="pdb-acts">${missing ? UI.btn('Copy from MAMP PRO', { ic: 'import', kind: 'ghost', attrs: 'data-view="import"' })
+        : !mamp ? `${d?.owner ? UI.btn('Connect', { ic: 'plugZap', kind: 'ghost', attrs: `data-mysqlconnect="${esc(name)}"`, title: 'Settings for .env and other apps' }) : ''}${UI.btn('Backups', { ic: 'backup', kind: 'ghost', attrs: `data-dbbackups="${esc(name)}"` })}` : ''}</div></div>`;
 }
 function detailsPane(s) {
   const valet = s.served_by === 'valet', php = s.runtime === 'php', app = s.runtime === 'app';
@@ -1116,6 +1154,7 @@ function detailsPane(s) {
         ${app ? `<button class="btn sm" data-envedit="${esc(s.folder)}">${icon.key}Variables${envCount ? `<span class="badge">${envCount}</span>` : ''}</button>` : ''}
         ${php ? `<button class="btn sm" data-iniedit="${esc(s.folder)}">${icon.sliders}php.ini${iniCount ? `<span class="badge">${iniCount}</span>` : ''}</button>` : ''}</div></div>` : ''}
       ${imported}${s.managed_by ? `<p class="note">Settings from <code>${esc(s.managed_by)}</code> override these.</p>` : ''}
+      ${s.runtime === 'php' && s.served_by !== 'valet' ? projectDB(s) : ''}
       ${s.runtime !== 'none' ? sharePane(s) : ''}
       <div class="st">Open</div>${openSplit(s)}
       ${s.git ? `<div class="st">Git<span class="spacer"></span><button class="btn ghost sm" data-dpane="git">${icon.branch}Open git</button></div>
@@ -1125,7 +1164,7 @@ function detailsPane(s) {
       ${!valet && s.runtime !== 'none' ? `<div class="st">Connection<span class="spacer"></span><button class="btn ghost sm" data-check="${esc(s.folder)}" ${s.enabled ? '' : 'disabled'}>${icon.doctor}Check</button></div>
       <div id="siteChecks">${S.checks[s.folder] ? checksTable(S.checks[s.folder], false) : '<p class="note" style="margin:0">Tests DNS, the server, the database connection and HTTPS, like a browser would.</p>'}</div>` : ''}
       ${!valet ? `<div class="st">${app ? 'Dev server output' : s.installing ? 'Install output' : 'Recent errors'}<span class="spacer"></span><button class="btn ghost sm" data-projlog="${esc(s.folder)}">${icon.logs}All logs</button></div>
-      <pre class="mini" id="miniLog">${esc(miniLogAt[s.folder + (s.installing ? 'site-install' : app ? 'site-app' : 'site-error')]?.text || 'Loading…')}</pre>` : ''}
+      <div class="ml" id="miniLog">${miniLogHTML(miniLogAt[s.folder + (s.installing ? 'site-install' : app ? 'site-app' : 'site-error')]?.text, s)}</div>` : ''}
       <div class="st">Folder</div><div class="note" style="word-break:break-all">${esc(s.path)}</div>
       <div class="form-row proj-manage">${valet ? '<span class="note">Served by Laravel Valet: rename or remove it in Valet.</span>' : `${UI.btn('Rename…', { ic: 'edit', kind: 'ghost', attrs: `data-projrename="${esc(s.folder)}"` })}
         ${UI.btn('Hide', { ic: 'eyeOff', kind: 'ghost', attrs: `data-projhide="${esc(s.folder)}"`, title: 'Stop listing and serving it; the folder stays' })}
@@ -3220,8 +3259,8 @@ function themeStudio() {
       <div class="ts-f"><div class="ts-fh"><span>Accent</span><span class="ts-v" id="tsHueV">${preset ? preset[0] : Math.round(L.hue) + '°'}</span></div>
         <div class="ts-sws" role="radiogroup" aria-label="Accent presets">${swatches}</div>
         <input type="range" class="ts-hue" id="tsHue" min="0" max="360" value="${L.hue ?? 268}" aria-label="Accent hue" style="--grad:linear-gradient(to right, ${grad});--thumb:${L.hue === null ? 'var(--indigo-5e6ad2)' : accentOf(L.hue, dark)}"></div>
-      <div class="ts-f"><div class="ts-fh"><span>Corners</span><span class="ts-v" id="tsRadV">${L.radius}px</span></div>
-        <input type="range" class="ts-rad" id="tsRad" min="0" max="14" value="${L.radius}" aria-label="Corner radius" style="--pct:${(L.radius / 14) * 100}%"></div>
+      <div class="ts-f"><div class="ts-fh"><span>Corners</span><span class="ts-v">${L.radius}px</span></div>
+        ${seg('tsrad', String(L.radius), [['3', 'Sharp'], ['6', 'Default'], ['9', 'Round']])}</div>
       <p class="note ts-check" id="tsCheck">${lookChecks()}</p>
     </div>
     <div class="ts-out">
@@ -3419,7 +3458,7 @@ function viewSettings() {
 }
 
 /* ------------------------------------------------------------------ events */
-const CLICKABLE = ['openuse', 'rbadd', 'rbaddg', 'rbcomb', 'rbmenu', 'rbm', 'rbopt', 'rbundo', 'rbtab', 'rbcopy', 'rbtosql', 'rbtoggle', 'rlopen', 'rlfilter', 'rlreceipt', 'lslevel', 'lsclear', 'lspause', 'lsjump', 'lsgroup', 'goarea', 'dbbackups', 'notice', 'revoke', 'ntab', 'undo', 'splitopen', 'splitmenu', 'tshue', 'tsview', 'themepal', 'themereset', 'themecopy', 'launchhide', 'retry', 'suggest', 'nrdrop', 'noticeall', 'quiet', 'noticeoff', 'addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
+const CLICKABLE = ['openuse', 'dbmamp', 'rbadd', 'rbaddg', 'rbcomb', 'rbmenu', 'rbm', 'rbopt', 'rbundo', 'rbtab', 'rbcopy', 'rbtosql', 'rbtoggle', 'rlopen', 'rlfilter', 'rlreceipt', 'lslevel', 'lsclear', 'lspause', 'lsjump', 'lsgroup', 'goarea', 'dbbackups', 'notice', 'revoke', 'ntab', 'undo', 'splitopen', 'splitmenu', 'tshue', 'tsview', 'tsrad', 'themepal', 'themereset', 'themecopy', 'launchhide', 'retry', 'suggest', 'nrdrop', 'noticeall', 'quiet', 'noticeoff', 'addroot', 'openwith', 'mkdefault', 'projrename', 'projhide', 'projtrash', 'unhide', 'twist', 'scope', 'dbopen', 'dataconn', 'fopen', 'fclear', 'fprop', 'fback', 'dprop', 'dpane', 'gitop', 'gitreload', 'gitall', 'gbranch', 'gswitch', 'openweb',
   'projgit', 'storageclean', 'agenton', 'agentoff', 'approve', 'openmore', 'dbopenin', 'adminer', 'sharestart', 'sharestop', 'shareinstall', 'mysqlconnect', 'hidecards', 'addoninstall', 'addonflush', 'addonconnect', 'addonopts', 'addonlog', 'cell', 'rowdel', 'insdel', 'export', 'sqlh', 'sqlhclear', 'ac', 'agentex', 'takeover', 'envedit', 'iniedit',
   'rootdel', 'rootpick', 'setupfix', 'ptabgo', 'ptab', 'openurl', 'install', 'dtable', 'dtab', 'sortcol', 'setsec', 'theme-set', 'connectdb', 'restoreenv', 'tab', 'closetab', 'view', 'proj',
   'projlog', 'projcheck', 'sect', 'fav', 'toggle', 'app', 'row', 'cmd', 'dbbackup', 'dbcopy', 'impdb', 'copy', 'check', 'agentrun', 'menu', 'updchan', 'repmode', 'probreview', 'probdismiss', 'dbmore', 'dbact', 'pgopen'];
@@ -3609,6 +3648,7 @@ document.addEventListener('click', async (e) => {
   if (d.suggest) { S.filter = d.suggest; renderHead(); renderView(); return $('#filter')?.focus(); }
   if (d.goarea) { document.getElementById(d.goarea)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (d.dbbackups) return backupsDialog(d.dbbackups);
+  if (d.dbmamp) return openDatabase('mamp-pro', d.dbmamp);
   if (d.rlopen) { rlOpen = rlOpen === d.rlopen ? '' : d.rlopen; return renderView(); }
   if (d.rlfilter) { rlFilter = d.rlfilter; rlOpen = ''; return renderView(); }
   if (d.rlreceipt) { rlReceipt = rlReceipt === d.rlreceipt ? '' : d.rlreceipt; return renderView(); }
@@ -3703,6 +3743,7 @@ document.addEventListener('click', async (e) => {
   if (d.themepal) return setLook({ palette: d.themepal });
   if (d.tshue) return setLook({ hue: d.tshue === 'none' ? null : +d.tshue });
   if (d.tsview) { tsView = d.tsview; return renderView(); }
+  if (d.tsrad) return setLook({ radius: +d.tsrad });
   if (d.themereset) { setLook({ ...LOOK_DEFAULT }); return toast('Back to the default theme'); }
   if (d.themecopy) { await act(() => bridge.copy(lookCSS())); return toast('Theme copied as CSS variables'); }
   if (d.connectdb) {

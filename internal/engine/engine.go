@@ -129,6 +129,7 @@ type SiteView struct {
 	URL        string            `json:"url,omitempty"`
 	Imported   *importers.Host   `json:"imported_from,omitempty"`
 	Env        *EnvInfo          `json:"env,omitempty"`
+	WPDatabase string            `json:"wp_database,omitempty"` // WordPress: DB_NAME from wp-config.php
 	Saved      bool              `json:"saved"`
 	PHPMissing bool              `json:"php_missing,omitempty"`
 	Problems   []string          `json:"problems,omitempty"`
@@ -193,6 +194,9 @@ func (e *Engine) Sites() []SiteView {
 		}
 		v.Runtime = runtimeOf(v.Type)
 		v.Env = projectEnv(c.Path, e.envBackupDir(c.ID))
+		if v.Env == nil && v.Type == KindWordPress {
+			v.WPDatabase = wpDatabase(c.Path)
+		}
 		v.Installing = e.Sup.Status("install-" + config.Slug(c.ID)).Running
 		if real, err := filepath.EvalSymlinks(c.Path); err == nil {
 			if vi, ok := valet[real]; ok && !v.Enabled {
