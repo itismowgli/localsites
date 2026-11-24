@@ -205,7 +205,7 @@ function graph(el) {
   let warm = false, wait;
   const show = (i) => { const c = C[i], below = i < C.length - 2;
     card.innerHTML = `<div class="in ${below ? '' : 'up'}"><b>${esc(c.m)}</b><span class="meta">${c.a} · ${c.d}, 2026</span>${c.body ? `<p>${esc(c.body)}</p>` : ''}<div class="foot"><i style="background:${tone(laneOf[i])}"></i><code>${c.s}</code>${c.p.length > 1 ? `<span class="dim">merges ${c.p.join(' + ')}</span>` : c.st ? `<span class="st">${c.st.replace(/^(\+\d+)\s(−\d+)/, '<em class="add">$1</em> <em class="del">$2</em>')}</span>` : ''}</div></div>`;
-    card.style.left = (W + 2) + 'px'; card.style.transform = `translateY(${below ? Y(i) + ROW / 2 + 6 : Y(i) - ROW / 2 - 6}px)`; card.classList.add('open'); };
+    card.style.left = 'auto'; card.style.right = '12px'; card.style.transform = `translateY(${below ? Y(i) + ROW / 2 + 6 : Y(i) - ROW / 2 - 6}px)`; card.classList.add('open'); };
   el.querySelectorAll('.dm-bg-row').forEach(r => {
     r.onmouseenter = () => { const i = +r.dataset.r; el.querySelectorAll('[data-dot]').forEach(g => g.classList.toggle('on', +g.dataset.dot === i)); el.querySelectorAll('.dm-bg-row').forEach(x => x.classList.toggle('hov', x === r));
       clearTimeout(wait); if (warm) show(i); else wait = setTimeout(() => { warm = true; show(i); }, 300); };

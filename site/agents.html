@@ -3,10 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI agents: an MCP server that asks before risky steps · LocalSites</title>
-<meta name="description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app, secrets stay hidden, and every call is listed with undo where possible.">
+<title>AI agents: an MCP server that asks first · LocalSites</title>
+<meta name="description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app and secrets stay hidden from agents.">
 <link rel="canonical" href="https://itismowgli.github.io/localsites/agents.html">
-<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
 <meta name="author" content="itismowgli">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
@@ -16,8 +15,9 @@
 <link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LocalSites">
-<meta property="og:title" content="AI agents: an MCP server that asks before risky steps · LocalSites">
-<meta property="og:description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app, secrets stay hidden, and every call is listed with undo where possible.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="AI agents: an MCP server that asks first · LocalSites">
+<meta property="og:description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app and secrets stay hidden from agents.">
 <meta property="og:url" content="https://itismowgli.github.io/localsites/agents.html">
 <meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
 <meta property="og:image:type" content="image/png">
@@ -25,10 +25,83 @@
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AI agents: an MCP server that asks before risky steps · LocalSites">
-<meta name="twitter:description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app, secrets stay hidden, and every call is listed with undo where possible.">
+<meta name="twitter:title" content="AI agents: an MCP server that asks first · LocalSites">
+<meta name="twitter:description" content="LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app and secrets stay hidden from agents.">
 <meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
-
+<meta name="twitter:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebPage",
+   "@id": "https://itismowgli.github.io/localsites/agents.html#webpage",
+   "url": "https://itismowgli.github.io/localsites/agents.html",
+   "name": "AI agents: an MCP server that asks first",
+   "description": "LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app and secrets stay hidden from agents.",
+   "isPartOf": {
+    "@id": "https://itismowgli.github.io/localsites/#website"
+   },
+   "about": {
+    "@id": "https://itismowgli.github.io/localsites/#software"
+   },
+   "inLanguage": "en",
+   "primaryImageOfPage": "https://itismowgli.github.io/localsites/screenshots/agents.jpg",
+   "breadcrumb": {
+    "@id": "https://itismowgli.github.io/localsites/agents.html#breadcrumb"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://itismowgli.github.io/localsites/agents.html#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "LocalSites",
+     "item": "https://itismowgli.github.io/localsites/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "AI agents",
+     "item": "https://itismowgli.github.io/localsites/agents.html"
+    }
+   ]
+  },
+  {
+   "@type": "FAQPage",
+   "@id": "https://itismowgli.github.io/localsites/agents.html#faq",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Which agents work with LocalSites?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Zed and any other MCP client work with a few lines of settings."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Can an agent approve its own request?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. The approve tool is never offered to agents, and requests can only be answered from the app."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "What does an agent see of my passwords?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Nothing by default. It sees setting names, not values, and tools that reveal passwords stay off unless you add --allow-secrets."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
 <script>try{var t=localStorage.getItem("ls-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="site.css">
@@ -51,7 +124,7 @@
                 <a href="agents.html" data-nav="agents"><span class="dd-ic"><svg><use href="icons.svg#i-blocks"/></svg></span><span><b>AI agents <i class="bdg">MCP</i></b><span>An MCP server that asks before risky steps</span></span></a>
                 <a href="tools.html" data-nav="tools"><span class="dd-ic"><svg><use href="icons.svg#i-git-branch"/></svg></span><span><b>Everyday tools</b><span>Git, logs, Doctor, uptime and sharing</span></span></a>
                 <a href="security.html" data-nav="security"><span class="dd-ic"><svg><use href="icons.svg#i-shield-check"/></svg></span><span><b>Security</b><span>What it does with your computer</span></span></a>
-                <a href="compare.html" data-nav="compare"><span class="dd-ic"><svg><use href="icons.svg#i-badge-check"/></svg></span><span><b>Compare</b><span>Next to MAMP PRO, Herd, XAMPP and Local</span></span></a>
+                <a href="features.html" data-nav="features-all"><span class="dd-ic"><svg><use href="icons.svg#i-combine"/></svg></span><span><b>All features <i class="bdg">206</i></b><span>Every feature, one by one, with search</span></span></a>
               </div>
             </div>
             <a class="mm-feat" href="agents.html#approvals">
@@ -64,29 +137,23 @@
               <span>Risky steps show the exact request and wait for you in the app.</span>
             </a>
           </div>
-          <div class="mm-foot">
-            <a href="features.html" data-nav="features-all"><svg><use href="icons.svg#i-combine"/></svg>Every feature, one by one</a>
-            <a href="compare.html#switch"><svg><use href="icons.svg#i-plug"/></svg>Switching guides</a>
-            <a href="https://github.com/itismowgli/localsites/releases/latest"><svg><use href="icons.svg#i-package"/></svg>What’s new in {{version}}</a>
-          </div>
         </div>
       </div>
       <a href="compare.html" data-nav="compare">Compare</a>
-      <a href="security.html" data-nav="security">Security</a>
       <div class="dd dd-small">
         <button class="dd-btn" aria-expanded="false" aria-haspopup="true">Resources<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div class="dd-menu">
           <a href="https://github.com/itismowgli/localsites/releases"><span class="dd-ic"><svg><use href="icons.svg#i-history"/></svg></span><span><b>Changelog <i class="bdg">{{version}}</i></b><span>Every release and what changed</span></span></a>
           <a href="compare.html#switch"><span class="dd-ic"><svg><use href="icons.svg#i-plug"/></svg></span><span><b>Switching guides</b><span>From MAMP, Herd, XAMPP, Valet or Local</span></span></a>
-          <a href="index.html#faq"><span class="dd-ic"><svg><use href="icons.svg#i-stethoscope"/></svg></span><span><b>FAQ</b><span>Setup, PHP versions, Valet and agents</span></span></a>
+          <a href="./#faq"><span class="dd-ic"><svg><use href="icons.svg#i-stethoscope"/></svg></span><span><b>FAQ</b><span>Setup, PHP versions, Valet and agents</span></span></a>
           <a href="https://github.com/itismowgli/localsites/security/policy"><span class="dd-ic"><svg><use href="icons.svg#i-key-round"/></svg></span><span><b>Security policy</b><span>How to report a vulnerability</span></span></a>
           <a href="https://github.com/itismowgli/localsites/issues"><span class="dd-ic"><svg><use href="icons.svg#i-bell"/></svg></span><span><b>Report a problem</b><span>Open an issue on GitHub</span></span></a>
+          <!-- fund:any --><a href="./#support" class="dd-sponsor"><span class="dd-ic"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg></span><span><b>Sponsor</b><span>Help keep LocalSites free</span></span></a><!-- /fund:any -->
         </div>
       </div>
     </nav>
     <div class="right">
-      <a class="btn sm ghost hide-sm" href="https://github.com/itismowgli/localsites"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
-      <!-- fund:any --><a class="btn sm heart hide-sm" href="index.html#support"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Sponsor</a><!-- /fund:any -->
+      <a class="icon-btn" href="https://github.com/itismowgli/localsites" aria-label="LocalSites on GitHub" title="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
       <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
       <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 8h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="l2" d="M4 16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
@@ -176,8 +243,8 @@
       </div>
       <nav class="mf-cols" aria-label="Footer">
         <div><h3>Product</h3><ul><li><a href="projects.html">Projects</a></li><li><a href="databases.html">Databases</a></li><li><a href="agents.html">AI agents</a><i class="bdg">MCP</i></li><li><a href="tools.html">Everyday tools</a></li><li><a href="features.html">All features</a><i class="bdg">206</i></li></ul></div>
-        <div><h3>Decide</h3><ul><li><a href="compare.html">Compare</a></li><li><a href="security.html">Security</a></li><li><a href="compare.html#switch">Switching guides</a></li><li><a href="index.html#faq">FAQ</a></li></ul></div>
-        <div><h3>Project</h3><ul><li><a href="https://github.com/itismowgli/localsites">GitHub</a></li><li><a href="https://github.com/itismowgli/localsites/releases">Changelog</a><i class="bdg">{{version}}</i></li><li><a href="https://github.com/itismowgli/localsites/issues">Report a problem</a></li><li><a href="https://github.com/itismowgli/localsites/security/policy">Security policy</a></li><!-- fund:any --><li><a href="index.html#support">Sponsor</a></li><!-- /fund:any --></ul></div>
+        <div><h3>Decide</h3><ul><li><a href="compare.html">Compare</a></li><li><a href="security.html">Security</a></li><li><a href="compare.html#switch">Switching guides</a></li><li><a href="./#faq">FAQ</a></li></ul></div>
+        <div><h3>Project</h3><ul><li><a href="https://github.com/itismowgli/localsites">GitHub</a></li><li><a href="https://github.com/itismowgli/localsites/releases">Changelog</a><i class="bdg">{{version}}</i></li><li><a href="https://github.com/itismowgli/localsites/issues">Report a problem</a></li><li><a href="https://github.com/itismowgli/localsites/security/policy">Security policy</a></li><!-- fund:any --><li><a href="./#support">Sponsor</a></li><!-- /fund:any --></ul></div>
         <div><h3>Legal</h3><ul><li><a href="terms.html">Terms</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="refunds.html">Refunds</a></li><li><a href="shipping.html">Shipping</a></li><li><a href="contact.html">Contact</a></li></ul></div>
       </nav>
     </div>

@@ -1,9 +1,11 @@
-<!--page {"title": "LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac and Linux", "description": "Free, open-source local web development for Mac and Linux (beta). Every folder gets https://name.test, PHP per project, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI coding agents.", "path": "index.html", "nav": "home"}-->
+<!--page {"title": "LocalSites: free MAMP PRO alternative for Mac and Linux", "description": "Free, open-source local web development for Mac and Linux. Every folder gets https://name.test, its own PHP version and MySQL, plus an MCP server for AI agents.", "path": "index.html", "nav": "home", "image": "screenshots/projects.jpg"}-->
 <!--head-->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
+  "@id": "https://itismowgli.github.io/localsites/#software",
+  "publisher": {"@id": "https://itismowgli.github.io/localsites/#org"},
   "name": "LocalSites",
   "alternateName": [
     "LocalSites for macOS",
@@ -14,8 +16,7 @@
   "applicationSubCategory": "Local web development environment",
   "operatingSystem": "macOS, Linux",
   "softwareVersion": "{{version}}",
-  "datePublished": "2026-11-09",
-  "softwareRequirements": "macOS on Apple silicon, or Linux (beta: Ubuntu 24.04+, Debian 12+, Fedora; x86_64 or arm64). LocalSites installs Homebrew (httpd, mysql@8.4, php) for you",
+  "softwareRequirements": "macOS on Apple silicon, or Linux (beta: Ubuntu 24.04+, Debian 12+, Fedora; x86_64 or arm64). Nothing to install first: LocalSites installs Homebrew, Apache, MySQL 8.4 and PHP for you",
   "fileSize": "22MB",
   "isAccessibleForFree": true,
   "license": "https://opensource.org/licenses/MIT",
@@ -65,86 +66,6 @@
   },
   "sameAs": [
     "https://github.com/itismowgli/localsites"
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Is LocalSites a free alternative to MAMP PRO, Laravel Herd or XAMPP?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. LocalSites is free and open source under the MIT licence, with no paid tier. It does the same core job: an HTTPS .test address for every project, PHP per project and MySQL. It can copy your databases from MAMP PRO, MAMP or XAMPP and check every row, and works alongside Laravel Valet."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I run several PHP versions on a Mac?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does LocalSites work with Laravel Valet?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can AI coding agents use LocalSites?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What do I need to install first?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Homebrew, then brew install httpd mysql@8.4 php, plus any other php@X.Y versions you want. LocalSites uses them directly."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I get HTTPS .test domains for local sites on a Mac?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://<folder>.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I connect Claude Code, Cursor or VS Code to my local sites?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Open Settings → AI agents and click Connect next to your client, or run localsites mcp config. For Claude Code: claude mcp add localsites -- \"$(which localsites)\" mcp. The agent can then list projects, switch PHP versions, read logs and run health checks."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "macOS says it can't verify LocalSites. What do I do?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "LocalSites isn't notarized by Apple yet, because that needs a paid developer account. The code is open source. To open it the first time: click Done on the warning, open System Settings → Privacy & Security, scroll to Security and click Open Anyway next to LocalSites, then confirm. You only need to do this once."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does LocalSites run on Windows or Linux?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Linux, yes, as a beta from version 1.4: Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Install the .deb or .rpm from the GitHub release. Windows is planned."
-      }
-    }
   ]
 }
 </script>
@@ -226,7 +147,7 @@
         <details><summary>Can AI coding agents use LocalSites?</summary>
           <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
         <details><summary>What do I need to install first?</summary>
-          <p>Homebrew, then <code>brew install httpd mysql@8.4 php</code>, plus any other <code>php@X.Y</code> versions you want. LocalSites uses them directly.</p></details>
+          <p>Nothing. On first launch LocalSites offers to install Homebrew, then Apache, MySQL 8.4 and every PHP version your projects use, showing each command first. You can add more PHP versions later.</p></details>
         <details><summary>How do I get HTTPS .test domains for local sites on a Mac?</summary>
           <p>Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://&lt;folder&gt;.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise.</p></details>
         <details><summary>How do I connect Claude Code, Cursor or VS Code to my local sites?</summary>

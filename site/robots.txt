@@ -4,20 +4,17 @@
 User-agent: *
 Allow: /
 
-# AI search and assistant crawlers, named so it's clear they're allowed
-User-agent: GPTBot
+# AI search, assistant and training crawlers, named so it's clear they're allowed
 User-agent: OAI-SearchBot
 User-agent: ChatGPT-User
-User-agent: ClaudeBot
+User-agent: GPTBot
 User-agent: Claude-SearchBot
 User-agent: Claude-User
-User-agent: anthropic-ai
+User-agent: ClaudeBot
 User-agent: PerplexityBot
 User-agent: Perplexity-User
 User-agent: Google-Extended
 User-agent: Applebot-Extended
-User-agent: Applebot
-User-agent: Bingbot
 User-agent: DuckAssistBot
 User-agent: meta-externalagent
 User-agent: MistralAI-User

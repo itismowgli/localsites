@@ -22,11 +22,14 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # full history, for the sitemap's last-changed dates
       - name: Put the pages, screenshots and icons together
         run: |
           node tools/build-site.mjs --check   # site/*.html match site-src/
           mkdir -p _site
           cp -R site/. _site/
+          node tools/build-site.mjs --sitemap _site/sitemap.xml   # every page, with the date it last changed
           cp -R docs/screenshots _site/screenshots
           cp -R docs/brand _site/brand
           mkdir -p _site/fonts && cp desktop/frontend/dist/fonts/* _site/fonts/
