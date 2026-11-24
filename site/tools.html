@@ -147,7 +147,35 @@
     <div class="right">
       <a class="icon-btn" href="https://github.com/itismowgli/localsites" aria-label="LocalSites on GitHub" title="GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
       <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
-      <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 8h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="l2" d="M4 16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="msheet"><svg class="i-menu" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 16h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><svg class="i-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div class="msheet" id="msheet" aria-hidden="true" inert>
+    <div class="ms-body">
+      <p class="ms-h">Product</p>
+      <div class="ms-grid">
+        <a href="projects.html" data-nav="projects"><span class="ms-ic"><svg><use href="icons.svg#i-folder-pen"/></svg></span><b>Projects</b><span>Addresses, PHP, dev servers</span></a>
+        <a href="databases.html" data-nav="databases"><span class="ms-ic"><svg><use href="icons.svg#i-table-2"/></svg></span><b>Databases</b><span>MySQL, backups, data browser</span></a>
+        <a href="agents.html" data-nav="agents"><span class="ms-ic"><svg><use href="icons.svg#i-blocks"/></svg></span><b>AI agents</b><span>An MCP server that asks first</span></a>
+        <a href="tools.html" data-nav="tools"><span class="ms-ic"><svg><use href="icons.svg#i-git-branch"/></svg></span><b>Everyday tools</b><span>Git, logs, Doctor, sharing</span></a>
+        <a href="security.html" data-nav="security"><span class="ms-ic"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>Security</b><span>What it does and won’t</span></a>
+        <a href="features.html" data-nav="features-all"><span class="ms-ic"><svg><use href="icons.svg#i-combine"/></svg></span><b>All features</b><span>206, one by one</span></a>
+      </div>
+      <p class="ms-h">More</p>
+      <nav class="ms-list" aria-label="More">
+        <a href="compare.html"><span class="ms-ic sm"><svg><use href="icons.svg#i-badge-check"/></svg></span>Compare<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/itismowgli/localsites/releases"><span class="ms-ic sm"><svg><use href="icons.svg#i-history"/></svg></span>Changelog <i class="bdg">{{version}}</i><svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="compare.html#switch"><span class="ms-ic sm"><svg><use href="icons.svg#i-plug"/></svg></span>Switching guides<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="./#faq"><span class="ms-ic sm"><svg><use href="icons.svg#i-stethoscope"/></svg></span>FAQ<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/itismowgli/localsites/security/policy"><span class="ms-ic sm"><svg><use href="icons.svg#i-key-round"/></svg></span>Security policy<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/itismowgli/localsites/issues"><span class="ms-ic sm"><svg><use href="icons.svg#i-bell"/></svg></span>Report a problem<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <!-- fund:any --><a href="./#support" class="ms-sponsor"><span class="ms-ic sm"><svg><use href="icons.svg#i-hand"/></svg></span>Sponsor LocalSites<svg class="ms-go" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a><!-- /fund:any -->
+      </nav>
+    </div>
+    <div class="ms-foot">
+      <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
+      <div class="ms-foot-row"><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="https://github.com/itismowgli/localsites"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div>
+      <p class="ms-ver">Version {{version}} · free and open source</p>
     </div>
   </div>
 </header>
@@ -155,13 +183,13 @@
 <main>
 <div class="hero">
     <div class="wrap">
-      <span class="pill reveal"><b>Everyday tools</b>Git, logs, Doctor, uptime and sharing</span>
+      <span class="pill reveal"><b>Everyday tools</b><span class="pill-t">Git, logs, Doctor, uptime and sharing</span></span>
       <h1 class="reveal">Everything around the code, in one place</h1>
       <p class="lead reveal">Your branch and its pull request, live logs, a Doctor that finds what’s broken, uptime for every project, and sharing a site with a password.</p>
       <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a></div>
       <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
     </div>
-    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/git-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="The Git panel with branch, changes, branch tree and commit history"></picture></div></div></div>
+    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/git-light.jpg" media="(prefers-color-scheme: light)"><img draggable="false" src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="The Git panel with branch, changes, branch tree and commit history"></picture></div></div></div>
   </div>
   <section id="git" class="blk band">
     <div class="wrap">
@@ -194,7 +222,7 @@
   <section id="speed" class="blk band">
     <div class="wrap">
       <div class="head reveal"><div class="eyebrow">Speed</div><h2>Quick from the keyboard</h2><p class="sub">Press ⌘K to find any project, view or action, with your recent ones first. G then a letter jumps to a view, and ? shows every shortcut.</p></div>
-      <div class="panel reveal"><div class="panel-in"><div class="shot"><picture><source srcset="screenshots/palette-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/palette.jpg" loading="lazy" width="2000" height="1264" alt="The command launcher searching for a project"></picture></div></div></div>
+      <div class="panel reveal"><div class="panel-in"><div class="shot"><picture><source srcset="screenshots/palette-light.jpg" media="(prefers-color-scheme: light)"><img draggable="false" src="screenshots/palette.jpg" loading="lazy" width="2000" height="1264" alt="The command launcher searching for a project"></picture></div></div></div>
       <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-combine"/></svg></span><b>Tabs</b><span class="pt-d">Several views side by side, with back and forward.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-bell"/></svg></span><b>Notification centre</b><span class="pt-d">30 days of notices, with agent requests answered in place.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>Theme</b><span class="pt-d">System, dark or light, with your accent and corners.</span></li></ul>
     </div>
   </section>
@@ -211,7 +239,7 @@
     <div class="wrap"><div class="head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div><div class="faq reveal"><details><summary>Which tunnel does sharing use?</summary><p>tunnl.gg by default, which needs only the ssh already on your computer. Cloudflare and bore work too. None of them needs an account.</p></details><details><summary>Does the Git panel change my repository?</summary><p>Only when you ask: Fetch downloads commits without touching your files, Pull is fast-forward only, and switching branch is refused while you have uncommitted work.</p></details></div></div>
   </section>
   <div class="final wrap">
-    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <img draggable="false" class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
     <h2 class="reveal">Your local stack, sorted.</h2>
     <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
     <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>

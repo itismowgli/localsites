@@ -69,7 +69,8 @@ for (const file of readdirSync(join(src, 'pages')).filter(f => f.endsWith('.html
     .replaceAll('{{logo}}', LOGO).replaceAll('{{github}}', GITHUB)
     .replace('{{llms}}', page.path === 'index.html' ? '<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">\n' : '')
     .replace('{{head}}', [structured(page, body), head].filter(Boolean).join('\n'))
-    .replace('{{scripts}}', scripts).replace('{{body}}', body);
+    .replace('{{scripts}}', scripts).replace('{{body}}', body)
+    .replace(/<img(?![^>]*\bdraggable=)/g, '<img draggable="false"'); // images can't be dragged off the page (CSS and site.js back this up)
   const dest = join(out, page.path);
   if (check) { if (!existsSync(dest) || readFileSync(dest, 'utf8') !== html) stale.push(page.path); }
   else if (sitemapAt < 0) { writeFileSync(dest, html); console.log(`site/${page.path}`); }

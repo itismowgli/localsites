@@ -24,9 +24,17 @@
   document.addEventListener('click', (e) => dds.forEach((dd) => { if (!dd.contains(e.target)) setOpen(dd, false); }));
   document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; const dd = dds.find((d) => d.classList.contains('open')); if (dd) { setOpen(dd, false); dd.querySelector('.dd-btn').focus(); } });
 
-  // phone menu
-  const tog = document.querySelector('.nav-toggle');
-  tog?.addEventListener('click', () => { const on = !nav.classList.contains('menu-open'); nav.classList.toggle('menu-open', on); tog.setAttribute('aria-expanded', on); document.documentElement.classList.toggle('menu-lock', on); });
+  // phone menu: a full-screen sheet. Esc, a link or a wider window closes it; the page behind doesn't scroll
+  const tog = document.querySelector('.nav-toggle'), sheet = document.getElementById('msheet');
+  const setMenu = (on) => {
+    nav.classList.toggle('menu-open', on); tog.setAttribute('aria-expanded', on); tog.setAttribute('aria-label', on ? 'Close menu' : 'Menu');
+    document.documentElement.classList.toggle('menu-lock', on);
+    if (sheet) { sheet.setAttribute('aria-hidden', !on); sheet.inert = !on; if (on) sheet.querySelector('a')?.focus({ preventScroll: true }); }
+  };
+  tog?.addEventListener('click', () => setMenu(!nav.classList.contains('menu-open')));
+  sheet?.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.contains('menu-open')) { setMenu(false); tog.focus(); } });
+  matchMedia('(min-width: 901px)').addEventListener('change', (m) => { if (m.matches) setMenu(false); });
 
   // theme: system, light or dark, remembered on this browser; screenshots follow the chosen theme
   const sources = [...document.querySelectorAll('source[media*="prefers-color-scheme: light"]')];
@@ -60,6 +68,9 @@
     requestAnimationFrame(frame);
   }
 
+  // images can't be dragged off the page (also draggable="false" in the HTML and -webkit-user-drag in site.css)
+  document.addEventListener('dragstart', (e) => { if (e.target instanceof Element && e.target.closest('img, svg, picture')) e.preventDefault(); });
+
   const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
   const frame = document.getElementById('heroFrame');
@@ -74,6 +85,16 @@
     tabs.forEach((t, i) => {
       t.addEventListener('click', () => show(t));
       t.addEventListener('keydown', (e) => { const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key]; if (n === undefined) return; e.preventDefault(); show(tabs[(n + tabs.length) % tabs.length], true); });
+    });
+  });
+
+  // comparison table on phones: LocalSites next to one tool at a time, picked with the chips above it
+  document.querySelectorAll('.vs-pick').forEach((pick) => {
+    const table = pick.parentElement.querySelector('.cmp2');
+    pick.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-vs]'); if (!b || !table) return;
+      table.dataset.vs = b.dataset.vs;
+      pick.querySelectorAll('[data-vs]').forEach((x) => x.setAttribute('aria-pressed', x === b));
     });
   });
 

@@ -26,8 +26,10 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Build tools
+        timeout-minutes: 15   # a stalled package mirror fails fast instead of hanging the release
         run: |
-          sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-dev libwebkit2gtk-4.1-dev imagemagick
+          APT="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get $APT update -q && sudo apt-get $APT install -y -q libgtk-3-dev libwebkit2gtk-4.1-dev imagemagick
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
       - name: App, CLI and icons
         run: make linux-binaries

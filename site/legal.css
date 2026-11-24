@@ -33,3 +33,6 @@ footer { border-top: 1px solid var(--line); padding: var(--space-8) 0 var(--spac
 footer .wrap { max-width: 1120px; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
 footer a { text-decoration: none; }
 footer a:hover, footer a[aria-current] { color: var(--text); }
+
+/* images can't be dragged off the page (draggable="false" in the HTML does the same) */
+img, svg { -webkit-user-drag: none; user-drag: none; }
