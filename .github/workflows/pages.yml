@@ -2,7 +2,7 @@ name: Website
 on:
   push:
     branches: [master]
-    paths: ["site/**", "docs/screenshots/**", "docs/brand/**", ".github/FUNDING.yml", "tools/support.mjs", "tools/cachebust.mjs", ".github/workflows/pages.yml", "README.md", "internal/version/version.go"]
+    paths: ["site/**", "site-src/**", "tools/build-site.mjs", "docs/screenshots/**", "docs/brand/**", ".github/FUNDING.yml", "tools/support.mjs", "tools/cachebust.mjs", ".github/workflows/pages.yml", "README.md", "internal/version/version.go"]
   workflow_dispatch:
 
 permissions:
@@ -22,8 +22,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - name: Put the page, screenshots and icons together
+      - name: Put the pages, screenshots and icons together
         run: |
+          node tools/build-site.mjs --check   # site/*.html match site-src/
           mkdir -p _site
           cp -R site/. _site/
           cp -R docs/screenshots _site/screenshots
@@ -35,10 +36,10 @@ jobs:
         run: |
           v=$(sed -n 's/^const Version = "\(.*\)"/\1/p' internal/version/version.go)
           test -n "$v"
-          sed -i "s/{{version}}/$v/g" _site/index.html _site/llms.txt
+          sed -i "s/{{version}}/$v/g" _site/*.html _site/llms.txt
       - name: Turn the support options on or off (from .github/FUNDING.yml)
-        run: node tools/support.mjs --site _site/index.html
-      - name: Fingerprint image and font links (?v=<content hash>), so changed files are never served from a cache
+        run: node tools/support.mjs --site _site/*.html
+      - name: Fingerprint image, font, style and script links (?v=<content hash>), so changed files are never served from a cache
         run: node tools/cachebust.mjs _site/*.html
       - uses: actions/upload-pages-artifact@v5
         with:

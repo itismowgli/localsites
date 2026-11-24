@@ -1,0 +1,67 @@
+<!--page {"title": "Projects: https .test addresses, PHP per project, Node and Docker \u00b7 LocalSites", "description": "Every folder gets https://name.test with a trusted certificate. Each project picks its PHP version and web server, and Node, Next.js and Docker dev servers run behind the same address.", "path": "projects.html", "nav": "projects"}-->
+<!--scripts-->
+<script src="demos.js"></script>
+<!--/scripts-->
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>Projects</b>Folders, addresses, PHP and dev servers</span>
+      <h1 class="reveal">Every folder gets its own https address</h1>
+      <p class="lead reveal">Drop a project in your folder and open it at https://name.test. LocalSites works out what it is and serves it with the right PHP, web server or dev server.</p>
+      <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a></div>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/projects-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/projects.jpg" loading="lazy" width="2000" height="1264" alt="LocalSites projects list with a project open, showing its PHP version, web root and database"></picture></div></div></div>
+  </div>
+  <section id="addresses" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Addresses</div><h2>.test addresses that just work</h2><p class="sub">Real certificates, no port numbers, nothing to edit by hand. LocalSites uses Laravel Valet if you have it, or its own proxy and DNS.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="mock-rows"><div class="row"><span class="dot"></span><span class="url">https://storefront.test</span><span class="tag">Laravel · PHP 8.5</span></div><div class="row"><span class="dot"></span><span class="url">https://journal.test</span><span class="tag">WordPress · PHP 8.3</span></div><div class="row"><span class="dot"></span><span class="url">https://dashboard.test</span><span class="tag">Next.js · pnpm</span></div><div class="row"><span class="dot off"></span><span class="url">https://docs-site.test</span><span class="tag">Static</span></div></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>A certificate that signs only .test</b><span class="pt-d">It can’t be used to fake a real website.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-copy-check"/></svg></span><b>Names that never clash</b><span class="pt-d">Two folders called admin become admin.test and admin-group.test.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-globe"/></svg></span><b>www works too</b><span class="pt-d">www.name.test opens the same site.</span></li></ul>
+    </div>
+  </section>
+  <section id="php" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">PHP</div><h2>The right PHP for each project</h2><p class="sub">Every project picks its own version and gets its own PHP-FPM pool. Laravel projects use the version their composer.json asks for.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ localsites set storefront php=8.3&quot;, &quot;\u2713 storefront now runs PHP 8.3.14&quot;, &quot;$ localsites set storefront xdebug=true&quot;, &quot;\u2713 Xdebug on for storefront (port 9003)&quot;, &quot;# other projects keep their own PHP&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-wrench"/></svg></span><b>Xdebug only where you need it</b><span class="pt-d">Switch it on for one project; your php.ini stays as it is.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-globe"/></svg></span><b>Apache or Nginx</b><span class="pt-d">Apache reads .htaccess. Nginx falls back to index.php for pretty URLs.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><b>Behaves like MAMP</b><span class="pt-d">Upload size, memory and buffering defaults match, so moved sites work the same.</span></li></ul>
+    </div>
+  </section>
+  <section id="dev-servers" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Dev servers</div><h2>Node, Next.js, Docker or any command</h2><p class="sub">Your dev server runs behind a .test address, keeps its port, and comes back on its own if it crashes.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ localsites set dashboard kind=nextjs&quot;, &quot;$ localsites on dashboard&quot;, &quot;\u2713 pnpm dev on 127.0.0.1:3104&quot;, &quot;\u2713 https://dashboard.test&quot;, &quot;# restarted after a crash, same port&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-package"/></svg></span><b>Your Node version</b><span class="pt-d">The version in .nvmrc is used first.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-command"/></svg></span><b>Any command</b><span class="pt-d">python manage.py runserver {port}, rails s, anything.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-blocks"/></svg></span><b>Docker Compose</b><span class="pt-d">Run docker compose up and serve the port it publishes.</span></li></ul>
+    </div>
+  </section>
+  <section id="add-ons" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Add-ons</div><h2>Common services in one click</h2><p class="sub">Mailpit, Redis, Valkey, Memcached, PostgreSQL, Meilisearch and MinIO. Installed with Homebrew after you see the command, and only reachable from your computer.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="shot"><picture><source srcset="screenshots/services-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/services.jpg" loading="lazy" width="2000" height="1264" alt="Services page with Mailpit, Redis and PostgreSQL add-ons"></picture></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-file-code"/></svg></span><b>Settings to paste</b><span class="pt-d">For Laravel, Node, Django, Rails or any language.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-bell"/></svg></span><b>PHP mail goes to Mailpit</b><span class="pt-d">Every email your projects send lands in one inbox.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-alert"/></svg></span><b>Clash warning</b><span class="pt-d">Two add-ons of the same kind? It tells you.</span></li></ul>
+    </div>
+  </section>
+  <section id="command-line" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Command line</div><h2>A CLI for all of it</h2><p class="sub">Everything the app does, from the terminal. Add --json to any command for scripts.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ localsites sites&quot;, &quot;storefront  on   https://storefront.test  PHP 8.5&quot;, &quot;journal     on   https://journal.test     PHP 8.3&quot;, &quot;dashboard   on   https://dashboard.test   Next.js&quot;, &quot;$ localsites db credentials storefront --json&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-combine"/></svg></span><b>Same engine</b><span class="pt-d">The app, the CLI and AI agents share one background service.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-plug"/></svg></span><b>Any API call</b><span class="pt-d">localsites call reaches every method the app uses.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-hand"/></svg></span><b>Scripts ask first</b><span class="pt-d">A command run without a terminal needs your approval for risky actions.</span></li></ul>
+    </div>
+  </section>
+  <section class="also">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">And more</div><h2>Also in Projects</h2><p class="sub">The smaller things that save you time. <a class="text-link" href="features.html">See every feature</a>.</p></div>
+      <ul class="grid-list reveal"><li><b>Several projects folders</b><span>Each with its own label and layout.</span></li><li><b>Type detected for you</b><span>Laravel, WordPress, Next.js, Node, PHP and static sites.</span></li><li><b>Install dependencies</b><span>composer or npm, pnpm, yarn and bun, with a log.</span></li><li><b>Rename, hide or trash</b><span>Settings and logs move with a renamed folder.</span></li><li><b>Open in your apps</b><span>The Open button remembers how you last opened a project.</span></li><li><b>Project file</b><span>localsites.yaml sets domain, PHP, web root and database.</span></li><li><b>Environment variables</b><span>Per project, values hidden until you show them.</span></li><li><b>Protected folders</b><span>Documents and Desktop wait for macOS access instead of freezing.</span></li><li><b>Configs tested first</b><span>A typo never takes your sites down.</span></li></ul>
+    </div>
+  </section>
+  <section class="rel band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Keep exploring</div><h2>More of LocalSites</h2></div><div class="cards"><a class="card reveal" href="databases.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><h3>Databases</h3><p>MySQL, backups and a safe data browser</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="tools.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-git-branch"/></svg></span><h3>Everyday tools</h3><p>Git, logs, Doctor, uptime and sharing</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="compare.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><h3>Compare</h3><p>Side by side with MAMP PRO, Herd, XAMPP, Valet and Local</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div></div>
+  </section>
+  <section class="pfaq">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div><div class="faq reveal"><details><summary>Which PHP versions can I use?</summary><p>Any version Homebrew installs, side by side: PHP 7.1 to 8.5, and older versions through the shivammathur tap. Each project picks its own.</p></details><details><summary>Do I need Laravel Valet?</summary><p>No. If Valet is installed, LocalSites uses its domains and certificates and leaves your Valet sites alone. Without Valet it runs its own HTTPS proxy and DNS for .test.</p></details><details><summary>Can it run things that aren’t PHP?</summary><p>Yes. Next.js and Node dev servers are detected, and any command or Docker Compose setup can run behind https://name.test.</p></details></div></div>
+  </section>
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>

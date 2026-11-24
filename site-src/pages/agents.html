@@ -1,0 +1,67 @@
+<!--page {"title": "AI agents: an MCP server that asks before risky steps \u00b7 LocalSites", "description": "LocalSites is an MCP server for Claude, Cursor, VS Code and Windsurf. Risky actions wait for your approval in the app, secrets stay hidden, and every call is listed with undo where possible.", "path": "agents.html", "nav": "agents"}-->
+<!--scripts-->
+<script src="demos.js"></script>
+<!--/scripts-->
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>AI agents</b>An MCP server that asks before risky steps</span>
+      <h1 class="reveal">Your agent runs your stack, and asks first</h1>
+      <p class="lead reveal">LocalSites is an MCP server. Claude, Cursor, VS Code and Windsurf connect in one click, and anything risky waits for you in the app.</p>
+      <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a></div>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/agents-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/agents.jpg" loading="lazy" width="2000" height="1264" alt="Settings listing AI agent apps: Claude Code and Claude Desktop connected, Cursor and VS Code ready to connect"></picture></div></div></div>
+  </div>
+  <section id="tools" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Tools</div><h2>Typed tools instead of shell commands</h2><p class="sub">Agents list projects, switch PHP, read logs, run checks and manage databases through tools that say what they do and whether they need you.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ claude mcp add localsites -- localsites mcp&quot;, &quot;\u2713 LocalSites connected&quot;, &quot;&gt; switch storefront to PHP 8.3&quot;, &quot;  sites_update folder=storefront php=8.3&quot;, &quot;\u2713 storefront now runs PHP 8.3.14&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><b>Honest labels</b><span class="pt-d">Each tool says if it only reads, changes something or needs approval.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-x"/></svg></span><b>No surprise arguments</b><span class="pt-d">Unknown parameters are refused.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-file-code"/></svg></span><b>Built-in instructions</b><span class="pt-d">Agents are told never to change databases unless you asked.</span></li></ul>
+    </div>
+  </section>
+  <section id="approvals" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Approvals</div><h2>Risky steps wait for your click</h2><p class="sub">The card shows the exact tool and its parameters, and what’s at stake in plain words. Steps that can’t be undone need the button held for a moment.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="approve" aria-label="An approval request you can approve by holding, or deny"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-hand"/></svg></span><b>Only you can answer</b><span class="pt-d">Agents never get the approve tool.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-bell"/></svg></span><b>Nothing happens on silence</b><span class="pt-d">No answer in 90 seconds means no change.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-bell"/></svg></span><b>Answer from anywhere</b><span class="pt-d">The card, the notification, the bell or the run list.</span></li></ul>
+    </div>
+  </section>
+  <section id="passes" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Passes</div><h2>Approve once, for ten minutes</h2><p class="sub">For everyday actions you’re watching, approve the same step on the same project for ten minutes. The pass counts down, and you can end it early.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="pass" aria-label="A pass that lets Cursor update one project without asking for ten minutes"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-key-round"/></svg></span><b>Narrow on purpose</b><span class="pt-d">Same action, same agent, same project.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-alert"/></svg></span><b>Some steps always ask</b><span class="pt-d">Deleting, installing and publishing never get a pass.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>Shown in the status bar</b><span class="pt-d">With the time left.</span></li></ul>
+    </div>
+  </section>
+  <section id="runs" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Runs</div><h2>Every run, every call</h2><p class="sub">Each agent session is a run with a live clock, its status and its last steps. Open one to see every tool it called, with Undo where the change can be undone.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="runlist" aria-label="A list of agent runs with status tabs; click a run to see its steps"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Undo with care</b><span class="pt-d">Only when nothing has changed it since.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-database-backup"/></svg></span><b>Backups for the rest</b><span class="pt-d">Database steps link straight to their backups.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-hand"/></svg></span><b>Approve from the run</b><span class="pt-d">When it’s waiting on you.</span></li></ul>
+    </div>
+  </section>
+  <section id="secrets" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Secrets</div><h2>Secrets stay with you</h2><p class="sub">Agents see the names of your .env settings, never the values. Tools that reveal passwords stay off unless you start the server with --allow-secrets.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;&gt; what is in storefront&#x27;s .env?&quot;, &quot;  sites_context folder=storefront&quot;, &quot;DB_DATABASE   (value hidden)&quot;, &quot;DB_PASSWORD   (value hidden)&quot;, &quot;STRIPE_KEY    (value hidden)&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye-off"/></svg></span><b>Masked in requests</b><span class="pt-d">Approval cards show passwords as dots.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-database-backup"/></svg></span><b>Config backed up</b><span class="pt-d">Connecting an agent copies its settings file first.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><b>Names cleaned</b><span class="pt-d">An agent’s name is shortened and stripped of control characters.</span></li></ul>
+    </div>
+  </section>
+  <section class="also">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">And more</div><h2>Also for agents</h2><p class="sub">The smaller things that save you time. <a class="text-link" href="features.html">See every feature</a>.</p></div>
+      <ul class="grid-list reveal"><li><b>One-click connect</b><span>Claude Desktop, Claude Code, Cursor, VS Code and Windsurf.</span></li><li><b>Any MCP client</b><span>Copy the JSON settings.</span></li><li><b>Resources and prompts</b><span>Project summaries, error logs, diagnose_site and explain_project.</span></li><li><b>Agent names shown</b><span>From the agent’s own hello.</span></li><li><b>Activity in plain words</b><span>Who changed what: you, the CLI or an agent.</span></li><li><b>Approvals always pop up</b><span>Even during Do Not Disturb.</span></li><li><b>Scripts treated like agents</b><span>A command without a terminal asks too.</span></li><li><b>The app proves itself</b><span>On macOS the caller’s code signature is checked.</span></li><li><b>Ask in plain words</b><span>The Agent page understands simple requests on your computer.</span></li></ul>
+    </div>
+  </section>
+  <section class="rel band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Keep exploring</div><h2>More of LocalSites</h2></div><div class="cards"><a class="card reveal" href="security.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><h3>Security</h3><p>What it does with your computer, and what it won’t</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="databases.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><h3>Databases</h3><p>MySQL, backups and a safe data browser</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="tools.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-git-branch"/></svg></span><h3>Everyday tools</h3><p>Git, logs, Doctor, uptime and sharing</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div></div>
+  </section>
+  <section class="pfaq">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div><div class="faq reveal"><details><summary>Which agents work with LocalSites?</summary><p>Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Zed and any other MCP client work with a few lines of settings.</p></details><details><summary>Can an agent approve its own request?</summary><p>No. The approve tool is never offered to agents, and requests can only be answered from the app.</p></details><details><summary>What does an agent see of my passwords?</summary><p>Nothing by default. It sees setting names, not values, and tools that reveal passwords stay off unless you add --allow-secrets.</p></details></div></div>
+  </section>
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>

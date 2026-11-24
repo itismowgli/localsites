@@ -9,7 +9,7 @@
 //
 //   node tools/support.mjs                  update README.md
 //   node tools/support.mjs --check          fail if README.md is out of date (used by CI)
-//   node tools/support.mjs --site <file>    fill in the website page (used when publishing)
+//   node tools/support.mjs --site <file…>   fill in the website pages (used when publishing)
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const LINKS = {
@@ -96,7 +96,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const on = readFunding(readFileSync('.github/FUNDING.yml', 'utf8'));
   const args = process.argv.slice(2);
   if (args[0] === '--site') {
-    writeFileSync(args[1], site(readFileSync(args[1], 'utf8'), on));
+    for (const f of args.slice(1)) writeFileSync(f, site(readFileSync(f, 'utf8'), on));
     console.log('Website support options:', Object.keys(on).join(', ') || 'none');
   } else {
     const cur = readFileSync('README.md', 'utf8');

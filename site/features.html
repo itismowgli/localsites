@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Every LocalSites feature, one by one</title>
+<meta name="description" content="All 206 LocalSites features in 15 groups: projects, PHP, Node and Docker, databases, the data browser, add-ons, sharing, Git, AI agents, logs, setup, switching, the app, the CLI and security.">
+<link rel="canonical" href="https://itismowgli.github.io/localsites/features.html">
+<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
+<meta name="author" content="itismowgli">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" type="image/png" href="brand/app-icon-1024.png">
+<link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalSites">
+<meta property="og:title" content="Every LocalSites feature, one by one">
+<meta property="og:description" content="All 206 LocalSites features in 15 groups: projects, PHP, Node and Docker, databases, the data browser, add-ons, sharing, Git, AI agents, logs, setup, switching, the app, the CLI and security.">
+<meta property="og:url" content="https://itismowgli.github.io/localsites/features.html">
+<meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Every LocalSites feature, one by one">
+<meta name="twitter:description" content="All 206 LocalSites features in 15 groups: projects, PHP, Node and Docker, databases, the data browser, add-ons, sharing, Git, AI agents, logs, setup, switching, the app, the CLI and security.">
+<meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+
+<script>try{var t=localStorage.getItem("ls-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="features-all">
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="LocalSites home"><svg class="logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M1.5 6.75C1.5 5.75544 1.89509 4.80161 2.59835 4.09835C3.30161 3.39509 4.25544 3 5.25 3H8.379C8.97554 3.00053 9.54745 3.23792 9.969 3.66L12 5.688L8.91 8.778C8.84029 8.84832 8.75734 8.90415 8.66595 8.94225C8.57455 8.98035 8.47652 8.99998 8.3775 9H1.5V6.75ZM1.5 10.5V17.25C1.5 18.2446 1.89509 19.1984 2.59835 19.9016C3.30161 20.6049 4.25544 21 5.25 21H9.9C9.0367 19.3101 8.7824 17.3742 9.17994 15.5186C9.57747 13.663 10.6026 12.0013 12.0824 10.8133C13.5623 9.62538 15.4064 8.98393 17.304 8.99708C19.2017 9.01023 21.0367 9.67717 22.5 10.8855V9.75C22.5 8.75544 22.1049 7.80161 21.4016 7.09835C20.6984 6.39509 19.7446 6 18.75 6H13.8105L9.9705 9.84C9.76141 10.0493 9.51308 10.2154 9.23973 10.3287C8.96638 10.4419 8.67338 10.5001 8.3775 10.5H1.5ZM15.825 12.225C15.39 13.3155 15.0855 14.808 15.015 16.5H19.485C19.4145 14.808 19.11 13.3155 18.675 12.225C18.4245 11.5995 18.1455 11.142 17.8725 10.854C17.6025 10.569 17.3925 10.5 17.25 10.5C17.1075 10.5 16.8975 10.569 16.6275 10.854C16.3545 11.142 16.0755 11.5995 15.825 12.225ZM14.745 10.98C14.629 11.2041 14.5244 11.4339 14.4315 11.6685C13.9155 12.96 13.584 14.649 13.515 16.5H10.5405C10.676 15.2855 11.1387 14.1305 11.8791 13.1584C12.6196 12.1862 13.6101 11.4333 14.745 10.98ZM19.755 10.98C19.867 11.198 19.971 11.4275 20.067 11.6685C20.5845 12.9615 20.9145 14.649 20.985 16.5H23.958C23.8226 15.2857 23.3602 14.1308 22.62 13.1587C21.8798 12.1865 20.8896 11.4335 19.755 10.98ZM23.958 18H20.985C20.9145 19.851 20.5845 21.54 20.067 22.8315C19.971 23.0715 19.867 23.301 19.755 23.52C20.8896 23.0665 21.8798 22.3135 22.62 21.3413C23.3602 20.3692 23.8226 19.2143 23.958 18ZM17.25 24C17.391 24 17.6025 23.931 17.8725 23.646C18.1455 23.358 18.4245 22.9005 18.675 22.275C19.11 21.1845 19.4145 19.692 19.485 18H15.015C15.0855 19.692 15.39 21.1845 15.825 22.275C16.0755 22.9005 16.3545 23.358 16.6275 23.646C16.8975 23.931 17.1075 24 17.25 24ZM14.745 23.52C13.6099 23.0669 12.619 22.3141 11.8783 21.3419C11.1375 20.3697 10.6746 19.2147 10.539 18H13.515C13.5855 19.851 13.917 21.54 14.433 22.8315C14.53 23.0715 14.634 23.301 14.745 23.52Z"/></svg>LocalSites</a>
+    <nav class="links" aria-label="Main">
+      <div class="dd dd-mega">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true" data-nav="features">Features<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <div class="mm">
+            <div class="mm-main">
+              <p class="mm-h">Product</p>
+              <div class="mm-grid">
+                <a href="projects.html" data-nav="projects"><span class="dd-ic"><svg><use href="icons.svg#i-folder-pen"/></svg></span><span><b>Projects</b><span>Folders, addresses, PHP and dev servers</span></span></a>
+                <a href="databases.html" data-nav="databases"><span class="dd-ic"><svg><use href="icons.svg#i-table-2"/></svg></span><span><b>Databases</b><span>MySQL, backups and a safe data browser</span></span></a>
+                <a href="agents.html" data-nav="agents"><span class="dd-ic"><svg><use href="icons.svg#i-blocks"/></svg></span><span><b>AI agents <i class="bdg">MCP</i></b><span>An MCP server that asks before risky steps</span></span></a>
+                <a href="tools.html" data-nav="tools"><span class="dd-ic"><svg><use href="icons.svg#i-git-branch"/></svg></span><span><b>Everyday tools</b><span>Git, logs, Doctor, uptime and sharing</span></span></a>
+                <a href="security.html" data-nav="security"><span class="dd-ic"><svg><use href="icons.svg#i-shield-check"/></svg></span><span><b>Security</b><span>What it does with your computer</span></span></a>
+                <a href="compare.html" data-nav="compare"><span class="dd-ic"><svg><use href="icons.svg#i-badge-check"/></svg></span><span><b>Compare</b><span>Next to MAMP PRO, Herd, XAMPP and Local</span></span></a>
+              </div>
+            </div>
+            <a class="mm-feat" href="agents.html#approvals">
+              <span class="mm-card" aria-hidden="true">
+                <span class="mm-card-h"><svg><use href="icons.svg#i-shield-alert"/></svg>Claude Code wants to</span>
+                <b>Delete database shop_staging</b>
+                <span class="mm-card-a"><i>Deny</i><i class="on">Hold to approve</i></span>
+              </span>
+              <b>Agents wait for your click</b>
+              <span>Risky steps show the exact request and wait for you in the app.</span>
+            </a>
+          </div>
+          <div class="mm-foot">
+            <a href="features.html" data-nav="features-all"><svg><use href="icons.svg#i-combine"/></svg>Every feature, one by one</a>
+            <a href="compare.html#switch"><svg><use href="icons.svg#i-plug"/></svg>Switching guides</a>
+            <a href="https://github.com/itismowgli/localsites/releases/latest"><svg><use href="icons.svg#i-package"/></svg>What’s new in {{version}}</a>
+          </div>
+        </div>
+      </div>
+      <a href="compare.html" data-nav="compare">Compare</a>
+      <a href="security.html" data-nav="security">Security</a>
+      <div class="dd dd-small">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true">Resources<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <a href="https://github.com/itismowgli/localsites/releases"><span class="dd-ic"><svg><use href="icons.svg#i-history"/></svg></span><span><b>Changelog <i class="bdg">{{version}}</i></b><span>Every release and what changed</span></span></a>
+          <a href="compare.html#switch"><span class="dd-ic"><svg><use href="icons.svg#i-plug"/></svg></span><span><b>Switching guides</b><span>From MAMP, Herd, XAMPP, Valet or Local</span></span></a>
+          <a href="index.html#faq"><span class="dd-ic"><svg><use href="icons.svg#i-stethoscope"/></svg></span><span><b>FAQ</b><span>Setup, PHP versions, Valet and agents</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/security/policy"><span class="dd-ic"><svg><use href="icons.svg#i-key-round"/></svg></span><span><b>Security policy</b><span>How to report a vulnerability</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/issues"><span class="dd-ic"><svg><use href="icons.svg#i-bell"/></svg></span><span><b>Report a problem</b><span>Open an issue on GitHub</span></span></a>
+        </div>
+      </div>
+    </nav>
+    <div class="right">
+      <a class="btn sm ghost hide-sm" href="https://github.com/itismowgli/localsites"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+      <!-- fund:any --><a class="btn sm heart hide-sm" href="index.html#support"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Sponsor</a><!-- /fund:any -->
+      <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 8h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="l2" d="M4 16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>All features</b>206 features in 15 groups</span>
+      <h1 class="reveal">Everything LocalSites does</h1>
+      <p class="lead reveal">Every feature, one by one, so nothing is left to guess. Search, or jump to a group.</p>
+    </div>
+  </div>
+  <section id="all" class="catalog-sec band">
+    <div class="wrap">
+        <h1>Everything LocalSites does</h1>
+        <p class="sub">All 206 features, one by one, so nothing is left to guess. Search, or jump to a group.</p>
+      </div>
+      <div class="catalog">
+        <aside class="cat-nav" aria-label="Feature groups">
+          <label class="cat-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="catQ" type="search" placeholder="Search 206 features" autocomplete="off" spellcheck="false" aria-label="Search features"></label>
+          <nav class="cat-links"><a href="#f-projects" data-cat="projects">Projects and addresses<span>20</span></a><a href="#f-php" data-cat="php">PHP and web servers<span>15</span></a><a href="#f-apps" data-cat="apps">Node, Docker and any command<span>12</span></a><a href="#f-databases" data-cat="databases">Databases<span>19</span></a><a href="#f-data" data-cat="data">Data browser<span>18</span></a><a href="#f-addons" data-cat="addons">Add-ons<span>12</span></a><a href="#f-sharing" data-cat="sharing">Sharing on the internet<span>12</span></a><a href="#f-git" data-cat="git">Git<span>12</span></a><a href="#f-agents" data-cat="agents">AI agents<span>16</span></a><a href="#f-health" data-cat="health">Logs, Doctor and uptime<span>12</span></a><a href="#f-setup" data-cat="setup">Setup, updates and Linux<span>15</span></a><a href="#f-switching" data-cat="switching">Coming from another tool<span>10</span></a><a href="#f-app" data-cat="app">The app<span>16</span></a><a href="#f-cli" data-cat="cli">Command line<span>6</span></a><a href="#f-safety" data-cat="safety">Safety and privacy<span>11</span></a></nav>
+        </aside>
+        <div class="cat-body">
+          <p class="cat-none" id="catNone" hidden>No feature matches that. Try a shorter word, like “php” or “backup”.</p>
+        <div class="cat-group" id="f-projects" data-cat="projects">
+          <div class="cat-h"><h3>Projects and addresses</h3><span class="cat-n">20</span></div>
+          <p class="cat-intro">Drop a folder in, get a working https address.</p>
+          <ul class="cat-list"><li><b>Every folder is a project</b><span>Each folder in your projects folder shows up on its own, ready to switch on.</span></li><li><b>https://name.test for each one</b><span>A real address with a trusted certificate and no port number.</span></li><li><b>Several projects folders</b><span>Add as many folders as you like, each with its own label.</span></li><li><b>Group folders understood</b><span>One folder per git account? LocalSites looks one level down for the projects.</span></li><li><b>Type detected for you</b><span>Laravel, WordPress, Next.js, Node, PHP and static sites, with their versions.</span></li><li><b>Change the type yourself</b><span>Force PHP, static, Next.js, Node, a custom command, Docker or not a website.</span></li><li><b>Unique addresses</b><span>Two folders called admin become admin.test and admin-group.test.</span></li><li><b>www works too</b><span>www.name.test opens the same site.</span></li><li><b>Missing packages flagged</b><span>A project without vendor or node_modules says so, with an Install button.</span></li><li><b>Install dependencies</b><span>Runs composer or npm, pnpm, yarn or bun in the background with a log.</span></li><li><b>Rename a project</b><span>The folder is renamed; settings, logs and the address move with it.</span></li><li><b>Hide a project</b><span>It stops being listed and served. Files and database stay as they are.</span></li><li><b>Move to the Trash</b><span>You type the name to confirm, and can put it back from the Trash.</span></li><li><b>Favorites</b><span>Star a project to pin it in the sidebar.</span></li><li><b>Open it in your apps</b><span>Browser, Finder or Files, your terminal and your code editor.</span></li><li><b>The Open button remembers</b><span>The way you last opened a project becomes the main button.</span></li><li><b>Your editor, never a guess</b><span>The first Open asks which editor you use and remembers it.</span></li><li><b>40+ apps recognised</b><span>VS Code, Cursor, Zed, PhpStorm, Ghostty, Fork, TablePlus and more.</span></li><li><b>Project file</b><span>A localsites.yaml in the project sets its domain, PHP, web root and database.</span></li><li><b>Protected folders handled</b><span>A projects folder in Documents waits for macOS access instead of freezing anything.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-php" data-cat="php">
+          <div class="cat-h"><h3>PHP and web servers</h3><span class="cat-n">15</span></div>
+          <p class="cat-intro">The right PHP and web server for each project.</p>
+          <ul class="cat-list"><li><b>PHP per project</b><span>Each project picks its own version, side by side.</span></li><li><b>PHP from composer.json</b><span>Laravel projects get the newest installed version their composer.json allows.</span></li><li><b>Default for new projects</b><span>Choose the PHP version new projects start with.</span></li><li><b>Own PHP-FPM pool per project</b><span>Its own socket, temp folder and error log.</span></li><li><b>Unused versions stop</b><span>A PHP version with no project running doesn't use memory.</span></li><li><b>MAMP-like php.ini defaults</b><span>Upload size, memory and buffering match MAMP, so moved sites behave the same.</span></li><li><b>php.ini overrides</b><span>Change safe settings for all projects, or for one project on top.</span></li><li><b>Xdebug per project</b><span>Switch it on for the project you're debugging, on port 9003.</span></li><li><b>Xdebug install help</b><span>Shows the one pecl command when Xdebug isn't installed. Your php.ini isn't touched.</span></li><li><b>Extensions list</b><span>See every PHP version's extensions in Settings.</span></li><li><b>Broken PHP found</b><span>A PHP build that can't start is listed with the command that repairs it.</span></li><li><b>Apache or Nginx</b><span>Pick per project. Apache reads .htaccess; Nginx falls back to index.php.</span></li><li><b>Web root detected</b><span>public/ and similar folders are found for you, or set your own.</span></li><li><b>Configs tested first</b><span>Apache and PHP configs are checked before reloading, so a typo never takes sites down.</span></li><li><b>mail() goes to Mailpit</b><span>When Mailpit is on, PHP's mail() lands in its inbox.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-apps" data-cat="apps">
+          <div class="cat-h"><h3>Node, Docker and any command</h3><span class="cat-n">12</span></div>
+          <p class="cat-intro">Dev servers behind a .test address, kept running.</p>
+          <ul class="cat-list"><li><b>Next.js and Node</b><span>Your dev server runs behind https://name.test.</span></li><li><b>Each project keeps its port</b><span>Ports start at 3100 and never change between runs.</span></li><li><b>Busy port handled</b><span>If a project's port is taken, it moves to a free one.</span></li><li><b>Restarted after a crash</b><span>Dev servers come back on their own, with a pause between tries.</span></li><li><b>Your Node version</b><span>The version in .nvmrc is used first.</span></li><li><b>Package manager detected</b><span>npm, pnpm, yarn or bun, from the lock file.</span></li><li><b>Custom command</b><span>Anything with {port}, like python manage.py runserver {port}.</span></li><li><b>Docker Compose</b><span>Run docker compose up and serve the port it publishes.</span></li><li><b>Environment variables</b><span>Set per project for the dev server. Your .env file isn't changed.</span></li><li><b>Paste a .env</b><span>Paste lines from a .env file; names are checked and duplicates flagged.</span></li><li><b>Values hidden</b><span>Variable values stay masked until you choose Show values.</span></li><li><b>Startup output</b><span>The panel shows the dev server's latest output.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-databases" data-cat="databases">
+          <div class="cat-h"><h3>Databases</h3><span class="cat-n">19</span></div>
+          <p class="cat-intro">MySQL 8.4, PostgreSQL and backups you don't have to think about.</p>
+          <ul class="cat-list"><li><b>MySQL 8.4 LTS</b><span>Set up on first use, with a random root password in the Keychain.</span></li><li><b>One login per database</b><span>Each database gets a user that can only reach that database.</span></li><li><b>See a project's database</b><span>The project panel shows which database it uses, from LocalSites, .env or wp-config.php.</span></li><li><b>Open it in one click</b><span>Jump from a project straight to its database in the data browser.</span></li><li><b>MySQL sleeps when idle</b><span>After 20 quiet minutes it stops, and wakes when something needs it.</span></li><li><b>Keep it running instead</b><span>Switch idle sleep off in Settings.</span></li><li><b>MAMP-compatible settings</b><span>sql_mode and table-name handling match MAMP, so moved sites behave the same.</span></li><li><b>Connection snippets</b><span>Ready to paste for Laravel, Node, Django, Rails, WordPress, PDO and GUI apps.</span></li><li><b>Open in TablePlus or Sequel Ace</b><span>The details are filled in for you.</span></li><li><b>Export</b><span>.sql or .sql.gz, full, structure only or data only.</span></li><li><b>Import</b><span>.sql, .sql.gz or .zip, with a backup made first.</span></li><li><b>Backups</b><span>Made before every import, restore, empty and delete. Restore one in a click.</span></li><li><b>Duplicate</b><span>Copy structure and data into a new database with its own login.</span></li><li><b>Empty or delete</b><span>Each one backs up first, and you type the name to delete.</span></li><li><b>Connect a project</b><span>Writes the database's own login into .env, after backing the file up.</span></li><li><b>Undo connect</b><span>Puts the project's .env back as it was.</span></li><li><b>PostgreSQL 17 add-on</b><span>Create, export, import, duplicate, empty and delete, all backed up first.</span></li><li><b>Adminer</b><span>A checked copy of Adminer at adminer.test, if you prefer a web tool.</span></li><li><b>Change the root password</b><span>Random and strong by default, saved in the Keychain.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-data" data-cat="data">
+          <div class="cat-h"><h3>Data browser</h3><span class="cat-n">18</span></div>
+          <p class="cat-intro">Browse and edit tables without fear of breaking them.</p>
+          <ul class="cat-list"><li><b>Every kind of database</b><span>LocalSites MySQL, MAMP's MySQL, MySQL or MariaDB over SSH, PostgreSQL and SQLite.</span></li><li><b>SSH tunnels</b><span>Use your own ssh keys. It never asks for passwords.</span></li><li><b>Read-only until you say so</b><span>The database server itself refuses changes until you allow them.</span></li><li><b>Edit mode</b><span>Change cells, add rows and mark rows for deletion.</span></li><li><b>See the SQL first</b><span>Review &amp; save shows the exact statements before anything is written.</span></li><li><b>All or nothing</b><span>Changes save in one transaction, only if each row still matches.</span></li><li><b>Filter rules that read like a sentence</b><span>Where, and, or, with groups inside groups.</span></li><li><b>Filters fit the column</b><span>Date pickers, ranges, lists and yes or no, depending on the column type.</span></li><li><b>Filter as SQL, JSON or plain English</b><span>The output rewrites itself as you build the filter.</span></li><li><b>Undo filter changes</b><span>⌘Z and ⇧⌘Z, one step per field.</span></li><li><b>Edit the filter as SQL</b><span>Send the filter to the SQL tab with its values written in.</span></li><li><b>SQL tab</b><span>Run a query with autocomplete for keywords, tables and columns.</span></li><li><b>Query history</b><span>The last 60 queries for each connection.</span></li><li><b>Writes need two switches</b><span>The connection must allow changes, and each write query must ask to.</span></li><li><b>Sort and page</b><span>Click a column to sort; 100 rows a page.</span></li><li><b>Structure</b><span>Columns, types, keys and indexes for every table.</span></li><li><b>Export results</b><span>Copy as CSV or save a CSV file.</span></li><li><b>Asks before throwing work away</b><span>Unsaved edits are never dropped without asking.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-addons" data-cat="addons">
+          <div class="cat-h"><h3>Add-ons</h3><span class="cat-n">12</span></div>
+          <p class="cat-intro">Common services in one click, only reachable from your computer.</p>
+          <ul class="cat-list"><li><b>Mailpit</b><span>Catches every email your projects send. Inbox at mail.test.</span></li><li><b>Send a test email</b><span>Check the mail setup in one click.</span></li><li><b>Redis and Valkey</b><span>Valkey is Redis-compatible; both can save to disk.</span></li><li><b>Memcached</b><span>With a memory limit you set.</span></li><li><b>PostgreSQL 17</b><span>Its own port, with a password over TCP.</span></li><li><b>Meilisearch</b><span>Search engine with its dashboard at meilisearch.test.</span></li><li><b>MinIO</b><span>S3-compatible storage with a random password per computer.</span></li><li><b>See the command first</b><span>Installs with Homebrew, showing the command and licence before it runs.</span></li><li><b>Connect a project</b><span>Settings to paste for Laravel, Node, Django, Rails or any language.</span></li><li><b>Flush a cache</b><span>Empty Redis, Valkey or Memcached after a confirmation.</span></li><li><b>Options</b><span>Ports, keep mail, save to disk and memory.</span></li><li><b>Clash warning</b><span>Tells you when two add-ons of the same kind are on.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-sharing" data-cat="sharing">
+          <div class="cat-h"><h3>Sharing on the internet</h3><span class="cat-n">12</span></div>
+          <p class="cat-intro">Show a client your work without deploying it.</p>
+          <ul class="cat-list"><li><b>Nothing to install</b><span>tunnl.gg uses the ssh already on your computer. Cloudflare and bore work too.</span></li><li><b>No account</b><span>None of the tunnels need you to sign up.</span></li><li><b>Password by default</b><span>Four random words and a number, made on your computer.</span></li><li><b>Link and password copied apart</b><span>So you can send them separately.</span></li><li><b>Guessing is limited</b><span>Ten wrong passwords per visitor in ten minutes.</span></li><li><b>Ends by itself</b><span>Pick 15 minutes to 24 hours; it stops on its own.</span></li><li><b>Only this site</b><span>Each share reaches one site, never your other sites or databases.</span></li><li><b>.env and .git never served</b><span>Hidden files return Not found.</span></li><li><b>Local-only pages stay closed</b><span>The site never sees a share visitor as localhost.</span></li><li><b>Your ssh identity stays private</b><span>tunnl.gg runs without your ssh keys, agent or config.</span></li><li><b>Visit counts</b><span>See how many visits a share had and how many were refused.</span></li><li><b>Ending soon notice</b><span>A notification 5 minutes before the end, with Extend and Stop.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-git" data-cat="git">
+          <div class="cat-h"><h3>Git</h3><span class="cat-n">12</span></div>
+          <p class="cat-intro">The state of your branch, without leaving the app.</p>
+          <ul class="cat-list"><li><b>Branch and sync status</b><span>Ahead and behind, changed files and stashes.</span></li><li><b>Fetch</b><span>Downloads new commits. Your files aren't changed.</span></li><li><b>Safe pull</b><span>Fast-forward only, and refused with uncommitted changes.</span></li><li><b>Switch branch</b><span>Refused while there's uncommitted work, so nothing is lost.</span></li><li><b>New branch</b><span>From the current commit.</span></li><li><b>Branch tree</b><span>feature/ names fold into folders; remote branches sit apart.</span></li><li><b>Commit graph</b><span>Coloured lanes and curved merges for every branch.</span></li><li><b>Commit details on hover</b><span>Message, body, author, date and lines changed.</span></li><li><b>Remote copies folded</b><span>main and origin/main on the same commit show once.</span></li><li><b>Pull request and CI</b><span>The open pull request and latest CI run for your branch on GitHub.</span></li><li><b>Opens on the web</b><span>Click a commit to open it on GitHub or GitLab.</span></li><li><b>Never hangs</b><span>Git never prompts for a password; hooks in the project don't run.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-agents" data-cat="agents">
+          <div class="cat-h"><h3>AI agents</h3><span class="cat-n">16</span></div>
+          <p class="cat-intro">Your agent runs the same stack you do, and asks before anything risky.</p>
+          <ul class="cat-list"><li><b>MCP server</b><span>Claude, Cursor, VS Code, Windsurf and any MCP client can use LocalSites.</span></li><li><b>Connect in one click</b><span>Claude Desktop, Claude Code, Cursor, VS Code and Windsurf.</span></li><li><b>Agent config backed up</b><span>The file is copied first, and only the LocalSites entry changes.</span></li><li><b>Typed tools</b><span>List projects, switch PHP, read logs, run checks, manage databases.</span></li><li><b>Risky actions wait for you</b><span>An Approve card shows the exact tool and its parameters.</span></li><li><b>What's at stake, in plain words</b><span>Can't be undone, Backed up first, or Needs your OK.</span></li><li><b>Hold to approve</b><span>Actions that can't be undone need a press held for a moment.</span></li><li><b>Approve for 10 minutes</b><span>A pass for the same action on the same project, which you can end early.</span></li><li><b>Some actions always ask</b><span>Deleting, installing and publishing never get a pass.</span></li><li><b>Agents can't approve themselves</b><span>Only the app can answer a request.</span></li><li><b>Secrets hidden</b><span>Tools that reveal passwords are off unless you turn them on.</span></li><li><b>Values masked</b><span>Agents see .env setting names, never their values.</span></li><li><b>Every run listed</b><span>Each agent session with a live clock, its last steps and every call.</span></li><li><b>Undo an agent's change</b><span>Where it can be undone and nothing has changed it since.</span></li><li><b>Approve from anywhere</b><span>From the request card, the notification, the bell or the run.</span></li><li><b>Ask in plain words</b><span>The Agent page understands "switch shop to PHP 8.3" on your computer.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-health" data-cat="health">
+          <div class="cat-h"><h3>Logs, Doctor and uptime</h3><span class="cat-n">12</span></div>
+          <p class="cat-intro">Find out what's wrong, and whether it was ever down.</p>
+          <ul class="cat-list"><li><b>Doctor</b><span>Checks runtimes, services, ports, domains, certificates and every running project.</span></li><li><b>Fix buttons</b><span>Install or repair right from a failed check.</span></li><li><b>Check one project</b><span>DNS, PHP, database and HTTPS, like a browser would.</span></li><li><b>Live logs</b><span>Apache, MySQL, PHP, visits, dev servers, add-ons and setup.</span></li><li><b>Level filters with counts</b><span>Debug, Info, Warn and Error.</span></li><li><b>Search that highlights</b><span>Matching text is marked as you type.</span></li><li><b>Similar lines folded</b><span>Repeats of the same error show once, as "12 similar".</span></li><li><b>Pause and follow</b><span>Pause the stream, scroll back, and jump down to new lines.</span></li><li><b>Recent errors per project</b><span>The latest errors in the project panel, one per row.</span></li><li><b>Uptime bars</b><span>24 hours of whether each running project answered.</span></li><li><b>Debug bundle</b><span>Logs, configs and a health report in one file, passwords removed.</span></li><li><b>Logs rotate safely</b><span>Big logs are trimmed without breaking the programs writing to them.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-setup" data-cat="setup">
+          <div class="cat-h"><h3>Setup, updates and Linux</h3><span class="cat-n">15</span></div>
+          <p class="cat-intro">It installs and repairs itself, and stays current.</p>
+          <ul class="cat-list"><li><b>One click setup</b><span>Installs Apache, MySQL 8.4 and the PHP versions your projects use.</span></li><li><b>See the commands first</b><span>Every command is shown before it runs.</span></li><li><b>Live progress</b><span>Each step with its timer and a Retry if it fails.</span></li><li><b>Setup checklist</b><span>A ring that fills as you add a folder, switch on a project and more.</span></li><li><b>.test without Valet</b><span>One password prompt, then .test works with a certificate that signs only .test.</span></li><li><b>Homebrew installed for you</b><span>The official installer, checked by Apple before it opens.</span></li><li><b>Repairs broken installs</b><span>Gives back files a past install left owned by root.</span></li><li><b>Updates you opt into</b><span>Nothing is checked until you turn it on.</span></li><li><b>Signed updates</b><span>Every update is signature-checked and must start before it replaces the app.</span></li><li><b>Roll back</b><span>The previous version is kept, one click away.</span></li><li><b>Install when you like</b><span>Now, when you quit, or automatically at night.</span></li><li><b>Stable or beta</b><span>Pick your update channel.</span></li><li><b>Linux beta</b><span>Ubuntu 24.04+, Debian 12+ and Fedora, on x86_64 and arm64.</span></li><li><b>Signed apt and dnf repository</b><span>Linux updates arrive with your normal system updates.</span></li><li><b>Start at login</b><span>Your sites are ready when you log in, if you want that.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-switching" data-cat="switching">
+          <div class="cat-h"><h3>Coming from another tool</h3><span class="cat-n">10</span></div>
+          <p class="cat-intro">Bring what you have. The originals stay where they are.</p>
+          <ul class="cat-list"><li><b>Finds MAMP, MAMP PRO and XAMPP</b><span>And whether their MySQL is running.</span></li><li><b>Copy databases</b><span>The source is only read; nothing is written to it.</span></li><li><b>Checked row by row</b><span>Every table's rows are compared by count and content.</span></li><li><b>Never overwrites</b><span>A database already in LocalSites is left alone.</span></li><li><b>htdocs as a projects folder</b><span>Add MAMP's or XAMPP's htdocs and its projects appear.</span></li><li><b>Old settings kept</b><span>Each project's PHP version and web root are taken from MAMP's virtual hosts.</span></li><li><b>Works alongside Valet</b><span>Valet sites are shown and keep working.</span></li><li><b>Move one Valet site</b><span>Serve it with LocalSites at the same address; Valet's config isn't edited.</span></li><li><b>Give it back</b><span>Switch it off and Valet serves it again.</span></li><li><b>Any other MySQL</b><span>Import a .sql, .sql.gz or .zip export from Herd, DBngin or anything else.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-app" data-cat="app">
+          <div class="cat-h"><h3>The app</h3><span class="cat-n">16</span></div>
+          <p class="cat-intro">Fast to use, from the mouse or the keyboard.</p>
+          <ul class="cat-list"><li><b>Command launcher</b><span>⌘K finds any project, view or action, with your recent ones first.</span></li><li><b>Keyboard shortcuts</b><span>G then a letter to jump, J and K to move, E to switch on, O to open.</span></li><li><b>Shortcut sheet</b><span>Press ? to see and search every shortcut.</span></li><li><b>Tabs</b><span>Several views or projects side by side, back and forward per tab.</span></li><li><b>Filters</b><span>Status, type, folder, group, git account and PHP version, combined.</span></li><li><b>Display options</b><span>Group, sort, and choose what each row shows.</span></li><li><b>Did you mean</b><span>A search with no results suggests close names and the filter hiding them.</span></li><li><b>Notification centre</b><span>30 days of notices in tabs, with agent requests answered in place.</span></li><li><b>Do Not Disturb</b><span>For an hour, until tomorrow or until you turn it off. Agent requests still come through.</span></li><li><b>Toasts you can dismiss</b><span>They stack, fan out on hover and swipe away.</span></li><li><b>Recent activity</b><span>Every change in plain words, with who made it: you, the CLI or an agent.</span></li><li><b>Dock badge explained</b><span>Overview says exactly what the number on the app icon means.</span></li><li><b>Theme</b><span>System, dark or light, with an accent colour and corner style you choose.</span></li><li><b>Contrast checked</b><span>The theme editor shows the contrast of button text and links.</span></li><li><b>Offline banner</b><span>If the background service stops answering, the app says so and retries.</span></li><li><b>Light on memory</b><span>When hidden for a while, the window unloads and comes back where you were.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-cli" data-cat="cli">
+          <div class="cat-h"><h3>Command line</h3><span class="cat-n">6</span></div>
+          <p class="cat-intro">Everything the app does, from the terminal.</p>
+          <ul class="cat-list"><li><b>localsites</b><span>status, sites, on, off, set, logs, open, doctor, setup and more.</span></li><li><b>JSON everywhere</b><span>Add --json to any command for scripts.</span></li><li><b>Any API call</b><span>localsites call reaches every method the app uses.</span></li><li><b>Database commands</b><span>List, create, back up and get credentials.</span></li><li><b>Import from the terminal</b><span>Copy MAMP or XAMPP databases with a per-table check report.</span></li><li><b>Scripts are treated like agents</b><span>A command run without a terminal needs your approval for risky actions.</span></li></ul>
+        </div>
+        <div class="cat-group" id="f-safety" data-cat="safety">
+          <div class="cat-h"><h3>Safety and privacy</h3><span class="cat-n">11</span></div>
+          <p class="cat-intro">What it does with your computer, and what it won't do.</p>
+          <ul class="cat-list"><li><b>No telemetry</b><span>No accounts, no tracking, no upsells.</span></li><li><b>Certificate limited to .test</b><span>The certificate authority can only sign .test and localhost, never real websites.</span></li><li><b>Only your computer</b><span>Every service listens on 127.0.0.1.</span></li><li><b>Owner-only control</b><span>The app, CLI and agents talk over a socket only your account can open.</span></li><li><b>The app proves who it is</b><span>On macOS, LocalSites checks the code signature of whoever is asking.</span></li><li><b>Passwords in the Keychain</b><span>Or the Secret Service on Linux. Never on a command line.</span></li><li><b>Backups before anything risky</b><span>If a backup fails, nothing is changed.</span></li><li><b>Problem reports are off</b><span>Turn them on if you like; you see each report, cleaned, before it's sent.</span></li><li><b>Trash, not delete</b><span>Projects go to the Trash so you can put them back.</span></li><li><b>.env backups kept outside</b><span>They hold passwords, so they never sit in a folder that's served or committed.</span></li><li><b>Strict app security</b><span>Only the app's own code runs in its window.</span></li></ul>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="mf">
+  <div class="wrap">
+    <div class="mf-top">
+      <div class="mf-brand">
+        <a class="brand" href="./"><svg class="logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M1.5 6.75C1.5 5.75544 1.89509 4.80161 2.59835 4.09835C3.30161 3.39509 4.25544 3 5.25 3H8.379C8.97554 3.00053 9.54745 3.23792 9.969 3.66L12 5.688L8.91 8.778C8.84029 8.84832 8.75734 8.90415 8.66595 8.94225C8.57455 8.98035 8.47652 8.99998 8.3775 9H1.5V6.75ZM1.5 10.5V17.25C1.5 18.2446 1.89509 19.1984 2.59835 19.9016C3.30161 20.6049 4.25544 21 5.25 21H9.9C9.0367 19.3101 8.7824 17.3742 9.17994 15.5186C9.57747 13.663 10.6026 12.0013 12.0824 10.8133C13.5623 9.62538 15.4064 8.98393 17.304 8.99708C19.2017 9.01023 21.0367 9.67717 22.5 10.8855V9.75C22.5 8.75544 22.1049 7.80161 21.4016 7.09835C20.6984 6.39509 19.7446 6 18.75 6H13.8105L9.9705 9.84C9.76141 10.0493 9.51308 10.2154 9.23973 10.3287C8.96638 10.4419 8.67338 10.5001 8.3775 10.5H1.5ZM15.825 12.225C15.39 13.3155 15.0855 14.808 15.015 16.5H19.485C19.4145 14.808 19.11 13.3155 18.675 12.225C18.4245 11.5995 18.1455 11.142 17.8725 10.854C17.6025 10.569 17.3925 10.5 17.25 10.5C17.1075 10.5 16.8975 10.569 16.6275 10.854C16.3545 11.142 16.0755 11.5995 15.825 12.225ZM14.745 10.98C14.629 11.2041 14.5244 11.4339 14.4315 11.6685C13.9155 12.96 13.584 14.649 13.515 16.5H10.5405C10.676 15.2855 11.1387 14.1305 11.8791 13.1584C12.6196 12.1862 13.6101 11.4333 14.745 10.98ZM19.755 10.98C19.867 11.198 19.971 11.4275 20.067 11.6685C20.5845 12.9615 20.9145 14.649 20.985 16.5H23.958C23.8226 15.2857 23.3602 14.1308 22.62 13.1587C21.8798 12.1865 20.8896 11.4335 19.755 10.98ZM23.958 18H20.985C20.9145 19.851 20.5845 21.54 20.067 22.8315C19.971 23.0715 19.867 23.301 19.755 23.52C20.8896 23.0665 21.8798 22.3135 22.62 21.3413C23.3602 20.3692 23.8226 19.2143 23.958 18ZM17.25 24C17.391 24 17.6025 23.931 17.8725 23.646C18.1455 23.358 18.4245 22.9005 18.675 22.275C19.11 21.1845 19.4145 19.692 19.485 18H15.015C15.0855 19.692 15.39 21.1845 15.825 22.275C16.0755 22.9005 16.3545 23.358 16.6275 23.646C16.8975 23.931 17.1075 24 17.25 24ZM14.745 23.52C13.6099 23.0669 12.619 22.3141 11.8783 21.3419C11.1375 20.3697 10.6746 19.2147 10.539 18H13.515C13.5855 19.851 13.917 21.54 14.433 22.8315C14.53 23.0715 14.634 23.301 14.745 23.52Z"/></svg>LocalSites</a>
+        <p>Free and open source local web development for Mac and Linux. Every folder gets https://name.test, the PHP it needs and a database.</p>
+        <div class="mf-rel">
+          <span class="mf-rel-h">Follow new releases</span>
+          <div class="mf-rel-a">
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Watch on GitHub</a>
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases.atom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>RSS feed</a>
+          </div>
+          <span class="mf-rel-n">One entry per release. No email, no tracking.</span>
+        </div>
+      </div>
+      <nav class="mf-cols" aria-label="Footer">
+        <div><h3>Product</h3><ul><li><a href="projects.html">Projects</a></li><li><a href="databases.html">Databases</a></li><li><a href="agents.html">AI agents</a><i class="bdg">MCP</i></li><li><a href="tools.html">Everyday tools</a></li><li><a href="features.html">All features</a><i class="bdg">206</i></li></ul></div>
+        <div><h3>Decide</h3><ul><li><a href="compare.html">Compare</a></li><li><a href="security.html">Security</a></li><li><a href="compare.html#switch">Switching guides</a></li><li><a href="index.html#faq">FAQ</a></li></ul></div>
+        <div><h3>Project</h3><ul><li><a href="https://github.com/itismowgli/localsites">GitHub</a></li><li><a href="https://github.com/itismowgli/localsites/releases">Changelog</a><i class="bdg">{{version}}</i></li><li><a href="https://github.com/itismowgli/localsites/issues">Report a problem</a></li><li><a href="https://github.com/itismowgli/localsites/security/policy">Security policy</a></li><!-- fund:any --><li><a href="index.html#support">Sponsor</a></li><!-- /fund:any --></ul></div>
+        <div><h3>Legal</h3><ul><li><a href="terms.html">Terms</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="refunds.html">Refunds</a></li><li><a href="shipping.html">Shipping</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      </nav>
+    </div>
+    <p class="mf-word" aria-hidden="true">localsites</p>
+    <div class="mf-bar">
+      <div class="mf-bar-l">
+        <a class="mf-status" href="https://github.com/itismowgli/localsites/releases/latest"><span class="mf-dot"><i></i></span>Version {{version}} is out</a>
+        <span>© 2026 LocalSites · MIT licence</span>
+      </div>
+      <div class="mf-theme" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-set="system" aria-label="System" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" role="radio" data-theme-set="light" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+        <button type="button" role="radio" data-theme-set="dark" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+
+</body>
+</html>

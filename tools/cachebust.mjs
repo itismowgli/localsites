@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path';
 const SITE_URL = 'https://itismowgli.github.io/localsites/';
 // relative or absolute links into these folders, and the shared stylesheets, icon sprite and scripts,
 // without a query yet (a #fragment, as in icons.svg#i-bell, stays after the version)
-const ref = /(["'(=])((?:https:\/\/itismowgli\.github\.io\/localsites\/)?(?:\.\/)?((?:screenshots|brand|fonts|vendor)\/[^"'?#)\s]+|(?:tokens|legal)\.css|icons\.svg))(?=["')\s#])/g;
+const ref = /(["'(=])((?:https:\/\/itismowgli\.github\.io\/localsites\/)?(?:\.\/)?((?:screenshots|brand|fonts|vendor)\/[^"'?#)\s]+|(?:tokens|legal|site)\.css|(?:site|demos)\.js|icons\.svg))(?=["')\s#])/g;
 
 for (const page of process.argv.slice(2)) {
   const root = dirname(page);

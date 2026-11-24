@@ -1,0 +1,290 @@
+<!--page {"title": "LocalSites: free MAMP PRO, Laravel Herd and XAMPP alternative for Mac and Linux", "description": "Free, open-source local web development for Mac and Linux (beta). Every folder gets https://name.test, PHP per project, MySQL, Laravel, WordPress and Next.js, with an MCP server for AI coding agents.", "path": "index.html", "nav": "home"}-->
+<!--head-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "LocalSites",
+  "alternateName": [
+    "LocalSites for macOS",
+    "LocalSites for Linux",
+    "localsites"
+  ],
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Local web development environment",
+  "operatingSystem": "macOS, Linux",
+  "softwareVersion": "{{version}}",
+  "datePublished": "2026-11-09",
+  "softwareRequirements": "macOS on Apple silicon, or Linux (beta: Ubuntu 24.04+, Debian 12+, Fedora; x86_64 or arm64). LocalSites installs Homebrew (httpd, mysql@8.4, php) for you",
+  "fileSize": "22MB",
+  "isAccessibleForFree": true,
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Free, open-source local web development environment for macOS and Linux (beta) and an alternative to MAMP PRO, Laravel Herd, XAMPP and Laravel Valet: HTTPS .test domains for every folder, PHP 7.1 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js, a CLI and an MCP server for AI coding agents.",
+  "featureList": [
+    "HTTPS .test domain for every project folder",
+    "PHP 7.1 to 8.5 per project with isolated PHP-FPM pools",
+    "Apache or Nginx, Xdebug per project",
+    "MySQL 8.4 with one login per project",
+    "Data browser for MySQL, MariaDB, PostgreSQL and SQLite",
+    "Copy databases from MAMP PRO, MAMP or XAMPP, checked row by row",
+    "Laravel Valet compatible",
+    "Runs Next.js and Node dev servers behind HTTPS",
+    "MCP server for Claude, Cursor, VS Code and Windsurf, with approval for risky actions",
+    "Git panel with GitHub pull request and CI status",
+    "Mailpit, Redis, Valkey, Memcached, PostgreSQL, Meilisearch and MinIO add-ons",
+    "Share a site with a password through tunnl.gg, Cloudflare or bore, ending by itself",
+    "Risky AI agent actions wait for approval in the app; secrets stay hidden from agents",
+    "Backup before every import, restore, empty and delete",
+    "Read-only data browser with staged edits, exact SQL review and nested filter rules",
+    "Live logs with level filters, search and folded repeats; 24-hour uptime per project",
+    "Signed in-app updates with one-click rollback",
+    "CLI with JSON output"
+  ],
+  "keywords": "MAMP PRO alternative, Laravel Herd alternative, XAMPP alternative, Local WP alternative, local development environment, macOS, PHP, MySQL, Laravel, WordPress, Next.js, HTTPS .test domains, Laravel Valet, MCP server, AI coding agents",
+  "url": "https://itismowgli.github.io/localsites/",
+  "downloadUrl": "https://github.com/itismowgli/localsites/releases/latest",
+  "installUrl": "https://github.com/itismowgli/localsites#install",
+  "releaseNotes": "https://github.com/itismowgli/localsites/releases",
+  "codeRepository": "https://github.com/itismowgli/localsites",
+  "programmingLanguage": "Go",
+  "image": "https://itismowgli.github.io/localsites/brand/social-preview.png",
+  "screenshot": [
+    "https://itismowgli.github.io/localsites/screenshots/projects.jpg",
+    "https://itismowgli.github.io/localsites/screenshots/data-browser.jpg",
+    "https://itismowgli.github.io/localsites/screenshots/agents.jpg"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "itismowgli",
+    "url": "https://github.com/itismowgli"
+  },
+  "sameAs": [
+    "https://github.com/itismowgli/localsites"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is LocalSites a free alternative to MAMP PRO, Laravel Herd or XAMPP?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. LocalSites is free and open source under the MIT licence, with no paid tier. It does the same core job: an HTTPS .test address for every project, PHP per project and MySQL. It can copy your databases from MAMP PRO, MAMP or XAMPP and check every row, and works alongside Laravel Valet."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I run several PHP versions on a Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does LocalSites work with Laravel Valet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can AI coding agents use LocalSites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What do I need to install first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Homebrew, then brew install httpd mysql@8.4 php, plus any other php@X.Y versions you want. LocalSites uses them directly."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I get HTTPS .test domains for local sites on a Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://<folder>.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I connect Claude Code, Cursor or VS Code to my local sites?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Open Settings → AI agents and click Connect next to your client, or run localsites mcp config. For Claude Code: claude mcp add localsites -- \"$(which localsites)\" mcp. The agent can then list projects, switch PHP versions, read logs and run health checks."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "macOS says it can't verify LocalSites. What do I do?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "LocalSites isn't notarized by Apple yet, because that needs a paid developer account. The code is open source. To open it the first time: click Done on the warning, open System Settings → Privacy & Security, scroll to Security and click Open Anyway next to LocalSites, then confirm. You only need to do this once."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does LocalSites run on Windows or Linux?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Linux, yes, as a beta from version 1.4: Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Install the .deb or .rpm from the GitHub release. Windows is planned."
+      }
+    }
+  ]
+}
+</script>
+<!--/head-->
+  <div class="hero">
+    <div class="wrap">
+      <a class="pill reveal" href="https://github.com/itismowgli/localsites/releases/latest"><b>{{version}}</b> See what's new &rarr;</a>
+      <h1 class="reveal">Local web development, without the fiddling</h1>
+      <p class="lead reveal">Every project folder gets a real <code>https://name.test</code> address. PHP, MySQL, Laravel, WordPress and Next.js
+        work out of the box. Free and open source, with an MCP server so your AI agent runs the same stack you do.</p>
+      <div class="cta reveal">
+        <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.67c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.27 1.23-2.51 1.25-2.57-.03-.01-2.4-.92-2.37-3.69zM14.1 5.92c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.05-.51 2.68-1.28z"/></svg>
+          Download for macOS</a>
+        <a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a>
+      </div>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap">
+      <div class="frame" id="heroFrame">
+        <picture><source srcset="screenshots/projects-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/projects.jpg" width="2000" height="1264" fetchpriority="high"
+          alt="LocalSites projects list with a Laravel project open, showing PHP version, web root, web server, Xdebug and database settings"></picture>
+      </div>
+    </div>
+    <p class="stack-label">Works with the stack you already use</p>
+    <div class="stack wrap" aria-label="Supported stacks">
+      <span>PHP</span><span>Laravel</span><span>WordPress</span><span>Next.js</span><span>Node</span><span>MySQL</span><span>PostgreSQL</span><span>Apache</span><span>Nginx</span><span>Docker</span>
+    </div>
+    <div class="stats wrap" aria-label="LocalSites in numbers">
+      <div class="stat reveal"><b>22 MB</b><span>The whole app</span></div>
+      <div class="stat reveal"><b>24 MB</b><span>Background service at idle</span></div>
+      <div class="stat reveal"><b>7.1 to 8.5</b><span>PHP, per project</span></div>
+      <div class="stat reveal"><b>$0</b><span>Free and open source, for good</span></div>
+    </div>
+  </div>
+
+
+
+  <section id="areas">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">What’s inside</div><h2>One app for your whole local stack</h2><p class="sub">Pick an area to see how it works, or <a class="text-link" href="features.html">browse every feature</a>.</p></div>
+      <div class="cards"><a class="card reveal" href="projects.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-folder-pen"/></svg></span><h3>Projects</h3><p>Every folder gets https://name.test, the PHP it needs and a web server.</p><ul class="card-tags"><li>.test with HTTPS</li><li>PHP per project</li><li>Node and Docker</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="databases.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><h3>Databases</h3><p>MySQL 8.4 with a login per database, backups before every risky step, and a data browser.</p><ul class="card-tags"><li>Read-only first</li><li>Filter rules</li><li>Row-checked imports</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="agents.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-blocks"/></svg></span><h3>AI agents</h3><p>An MCP server for Claude, Cursor and VS Code that waits for you before anything risky.</p><ul class="card-tags"><li>Approve in the app</li><li>Secrets hidden</li><li>Every call listed</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="tools.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-git-branch"/></svg></span><h3>Everyday tools</h3><p>Git with pull request and CI, live logs, Doctor, uptime, and sharing a site with a password.</p><ul class="card-tags"><li>Commit graph</li><li>Log stream</li><li>Shares that expire</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="security.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><h3>Security</h3><p>What LocalSites does with your computer, and the things it never does.</p><ul class="card-tags"><li>No telemetry</li><li>Keychain</li><li>Signed updates</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="compare.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><h3>Compare</h3><p>How it stacks up against MAMP PRO, Herd, XAMPP, Valet and Local, honestly.</p><ul class="card-tags"><li>Side by side</li><li>Switching guides</li><li>What’s not there yet</li></ul><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div>
+    </div>
+  </section>
+  <section id="only" class="band">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">Only in LocalSites</div>
+        <h2>Things you won’t find in other local servers</h2>
+        <p class="sub">We compared MAMP PRO, Laravel Herd, Valet, Local, XAMPP, DDEV, Lando, ServBay and FlyEnv in November 2026. None of them does these.</p>
+      </div>
+      <ul class="points cols reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-hand"/></svg></span><b>Agents wait for your click</b><span class="pt-d">A risky agent action shows the exact request and waits for Approve in the app. The agent can’t answer it.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye-off"/></svg></span><b>Secrets stay with you</b><span class="pt-d">Agents see your .env setting names, never the values. Tools that reveal passwords are off unless you turn them on.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-database-backup"/></svg></span><b>A backup before every risky step</b><span class="pt-d">Import, restore, empty and delete back up first. If the backup fails, nothing is changed.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><b>A data browser that can’t hurt you</b><span class="pt-d">The database server refuses changes until you allow them. Edits show their SQL and save all at once, or not at all.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-copy-check"/></svg></span><b>Moves from MAMP, checked</b><span class="pt-d">Databases from MAMP PRO, MAMP and XAMPP are copied and compared row by row. The originals are only read.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-link-2-off"/></svg></span><b>Shares that close themselves</b><span class="pt-d">A password by default, limited guesses, a time limit, and .env and .git never served.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>A certificate that can’t fake the web</b><span class="pt-d">The certificate authority LocalSites makes can only sign .test and localhost addresses.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Updates you can take back</b><span class="pt-d">Every update is signed and has to start before it replaces the app. The old version stays one click away.</span></li></ul>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Getting started</div><h2>Running in three steps</h2><p class="sub">No Terminal needed. LocalSites installs what it needs and tells you what it’s doing.</p></div>
+      <ol class="steps reveal">
+        <li><span class="step-n">1</span><b>Download and open</b><span>Drag it into Applications, or install the Linux package. It’s 22 MB.</span></li>
+        <li><span class="step-n">2</span><b>Let it set up</b><span>One click installs Apache, MySQL and PHP with Homebrew, showing every command first.</span></li>
+        <li><span class="step-n">3</span><b>Switch a project on</b><span>Pick a folder and open it at https://name.test, with a trusted certificate.</span></li>
+      </ol>
+    </div>
+  </section>
+  <section id="faq" class="band">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">FAQ</div>
+        <h2>Questions, answered</h2>
+      </div>
+      <div class="faq reveal">
+        <details><summary>Is LocalSites a free alternative to MAMP PRO, Laravel Herd or XAMPP?</summary>
+          <p>Yes. LocalSites is free and open source under the MIT licence, with no paid tier. It does the same core job: an HTTPS .test address for every project, PHP per project and MySQL. It can copy your databases from MAMP PRO, MAMP or XAMPP and check every row, and works alongside Laravel Valet.</p></details>
+        <details><summary>How do I run several PHP versions on a Mac?</summary>
+          <p>Install the versions you want with Homebrew (for example php@8.2 and php), then pick the version for each project in LocalSites. Each project gets its own PHP-FPM pool, and Laravel projects use the version their composer.json asks for.</p></details>
+        <details><summary>Does LocalSites work with Laravel Valet?</summary>
+          <p>Yes. If Valet is installed, LocalSites uses Valet's domains and certificates and shows Valet sites as served by Valet. Without Valet it runs its own HTTPS proxy and DNS for .test domains.</p></details>
+        <details><summary>Can AI coding agents use LocalSites?</summary>
+          <p>Yes. LocalSites is an MCP server. Claude Desktop, Claude Code, Cursor, VS Code and Windsurf connect in one click. Read-only tools run freely; risky actions wait for you to approve them in the app.</p></details>
+        <details><summary>What do I need to install first?</summary>
+          <p>Homebrew, then <code>brew install httpd mysql@8.4 php</code>, plus any other <code>php@X.Y</code> versions you want. LocalSites uses them directly.</p></details>
+        <details><summary>How do I get HTTPS .test domains for local sites on a Mac?</summary>
+          <p>Put a project folder in ~/Sites/localhost (or any folder you add) and switch it on in LocalSites. It is served at https://&lt;folder&gt;.test with a trusted certificate and no port number. LocalSites uses Laravel Valet's domains if you have Valet, or its own proxy and DNS otherwise.</p></details>
+        <details><summary>How do I connect Claude Code, Cursor or VS Code to my local sites?</summary>
+          <p>Open Settings → AI agents and click Connect next to your client, or run <code>localsites mcp config</code>. For Claude Code: <code>claude mcp add localsites -- "$(which localsites)" mcp</code>. The agent can then list projects, switch PHP versions, read logs and run health checks.</p></details>
+        <details><summary>macOS says it can't verify LocalSites. What do I do?</summary>
+          <p>LocalSites isn't notarized by Apple yet, because that needs a paid developer account. The code is open source. To open it the first time: click Done on the warning, open System Settings → Privacy &amp; Security, scroll to Security and click Open Anyway next to LocalSites, then confirm. You only need to do this once.</p></details>
+        <details><summary>Does LocalSites run on Windows or Linux?</summary>
+          <p>Linux, yes, as a beta from version 1.4: Ubuntu 24.04 and newer, Debian 12 and newer, and Fedora, on x86_64 and arm64. Download the <code>.deb</code> or <code>.rpm</code> from the <a href="https://github.com/itismowgli/localsites/releases/latest">latest release</a>; LocalSites installs Homebrew, PHP, Apache and MySQL for you, like on a Mac. Windows is planned.</p></details>
+      </div>
+    </div>
+  </section>
+  <!-- fund:any -->
+  <section id="support">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">Support</div>
+        <h2>Free for everyone, and kept going by people like you.</h2>
+        <p class="sub">LocalSites has no ads, no paid tier and no tracking. If it saves you time, a coffee helps keep it that way.</p>
+      </div>
+      <div class="support">
+        <!-- fund:github -->
+        <div class="tile opt reveal">
+          <span class="ic heart" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>
+          <h3>Sponsor on GitHub</h3>
+          <p>Monthly or one-time. GitHub takes no fee, so all of it goes to LocalSites.</p>
+          <div class="amounts"><span class="chip on">$5 a coffee</span><span class="chip">$15 supporter</span><span class="chip">$50 team</span><span class="chip">any amount</span></div>
+          <a class="btn primary" href="{{github}}"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Become a sponsor</a>
+        </div>
+        <!-- /fund:github -->
+        <!-- fund:razorpay -->
+        <div class="tile opt reveal">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/><path d="M2 10h20M6 15h4"/></svg></span>
+          <h3>Pay with UPI or card</h3>
+          <p>A one-off payment through Razorpay, handy if you're in India. Pick any amount you like.</p>
+          <div class="amounts"><span class="chip">UPI</span><span class="chip">Cards</span><span class="chip">Netbanking</span><span class="chip">any amount</span></div>
+          <a class="btn" href="{{razorpay}}">Pay with Razorpay <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        <!-- /fund:razorpay -->
+        <!-- fund:buy_me_a_coffee -->
+        <div class="tile opt reveal">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg></span>
+          <h3>Buy Me a Coffee</h3>
+          <p>Buy a coffee, or a few. You pay by card and don't need an account.</p>
+          <div class="amounts"><span class="chip">One-off</span><span class="chip">Monthly</span></div>
+          <a class="btn" href="{{buy_me_a_coffee}}">Buy a coffee <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        <!-- /fund:buy_me_a_coffee -->
+      </div>
+    </div>
+  </section>
+  <!-- /fund:any -->
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal">
+      <a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a>
+      <a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a>
+      <a class="btn" href="https://github.com/itismowgli/localsites">View source</a>
+    </div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>

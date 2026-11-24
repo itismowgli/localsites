@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security: what LocalSites does with your computer · LocalSites</title>
+<meta name="description" content="How LocalSites keeps agents in check, your data recoverable, your secrets private and your updates trustworthy, with the limits said plainly.">
+<link rel="canonical" href="https://itismowgli.github.io/localsites/security.html">
+<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
+<meta name="author" content="itismowgli">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" type="image/png" href="brand/app-icon-1024.png">
+<link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalSites">
+<meta property="og:title" content="Security: what LocalSites does with your computer · LocalSites">
+<meta property="og:description" content="How LocalSites keeps agents in check, your data recoverable, your secrets private and your updates trustworthy, with the limits said plainly.">
+<meta property="og:url" content="https://itismowgli.github.io/localsites/security.html">
+<meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Security: what LocalSites does with your computer · LocalSites">
+<meta name="twitter:description" content="How LocalSites keeps agents in check, your data recoverable, your secrets private and your updates trustworthy, with the limits said plainly.">
+<meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+
+<script>try{var t=localStorage.getItem("ls-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="security">
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="LocalSites home"><svg class="logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M1.5 6.75C1.5 5.75544 1.89509 4.80161 2.59835 4.09835C3.30161 3.39509 4.25544 3 5.25 3H8.379C8.97554 3.00053 9.54745 3.23792 9.969 3.66L12 5.688L8.91 8.778C8.84029 8.84832 8.75734 8.90415 8.66595 8.94225C8.57455 8.98035 8.47652 8.99998 8.3775 9H1.5V6.75ZM1.5 10.5V17.25C1.5 18.2446 1.89509 19.1984 2.59835 19.9016C3.30161 20.6049 4.25544 21 5.25 21H9.9C9.0367 19.3101 8.7824 17.3742 9.17994 15.5186C9.57747 13.663 10.6026 12.0013 12.0824 10.8133C13.5623 9.62538 15.4064 8.98393 17.304 8.99708C19.2017 9.01023 21.0367 9.67717 22.5 10.8855V9.75C22.5 8.75544 22.1049 7.80161 21.4016 7.09835C20.6984 6.39509 19.7446 6 18.75 6H13.8105L9.9705 9.84C9.76141 10.0493 9.51308 10.2154 9.23973 10.3287C8.96638 10.4419 8.67338 10.5001 8.3775 10.5H1.5ZM15.825 12.225C15.39 13.3155 15.0855 14.808 15.015 16.5H19.485C19.4145 14.808 19.11 13.3155 18.675 12.225C18.4245 11.5995 18.1455 11.142 17.8725 10.854C17.6025 10.569 17.3925 10.5 17.25 10.5C17.1075 10.5 16.8975 10.569 16.6275 10.854C16.3545 11.142 16.0755 11.5995 15.825 12.225ZM14.745 10.98C14.629 11.2041 14.5244 11.4339 14.4315 11.6685C13.9155 12.96 13.584 14.649 13.515 16.5H10.5405C10.676 15.2855 11.1387 14.1305 11.8791 13.1584C12.6196 12.1862 13.6101 11.4333 14.745 10.98ZM19.755 10.98C19.867 11.198 19.971 11.4275 20.067 11.6685C20.5845 12.9615 20.9145 14.649 20.985 16.5H23.958C23.8226 15.2857 23.3602 14.1308 22.62 13.1587C21.8798 12.1865 20.8896 11.4335 19.755 10.98ZM23.958 18H20.985C20.9145 19.851 20.5845 21.54 20.067 22.8315C19.971 23.0715 19.867 23.301 19.755 23.52C20.8896 23.0665 21.8798 22.3135 22.62 21.3413C23.3602 20.3692 23.8226 19.2143 23.958 18ZM17.25 24C17.391 24 17.6025 23.931 17.8725 23.646C18.1455 23.358 18.4245 22.9005 18.675 22.275C19.11 21.1845 19.4145 19.692 19.485 18H15.015C15.0855 19.692 15.39 21.1845 15.825 22.275C16.0755 22.9005 16.3545 23.358 16.6275 23.646C16.8975 23.931 17.1075 24 17.25 24ZM14.745 23.52C13.6099 23.0669 12.619 22.3141 11.8783 21.3419C11.1375 20.3697 10.6746 19.2147 10.539 18H13.515C13.5855 19.851 13.917 21.54 14.433 22.8315C14.53 23.0715 14.634 23.301 14.745 23.52Z"/></svg>LocalSites</a>
+    <nav class="links" aria-label="Main">
+      <div class="dd dd-mega">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true" data-nav="features">Features<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <div class="mm">
+            <div class="mm-main">
+              <p class="mm-h">Product</p>
+              <div class="mm-grid">
+                <a href="projects.html" data-nav="projects"><span class="dd-ic"><svg><use href="icons.svg#i-folder-pen"/></svg></span><span><b>Projects</b><span>Folders, addresses, PHP and dev servers</span></span></a>
+                <a href="databases.html" data-nav="databases"><span class="dd-ic"><svg><use href="icons.svg#i-table-2"/></svg></span><span><b>Databases</b><span>MySQL, backups and a safe data browser</span></span></a>
+                <a href="agents.html" data-nav="agents"><span class="dd-ic"><svg><use href="icons.svg#i-blocks"/></svg></span><span><b>AI agents <i class="bdg">MCP</i></b><span>An MCP server that asks before risky steps</span></span></a>
+                <a href="tools.html" data-nav="tools"><span class="dd-ic"><svg><use href="icons.svg#i-git-branch"/></svg></span><span><b>Everyday tools</b><span>Git, logs, Doctor, uptime and sharing</span></span></a>
+                <a href="security.html" data-nav="security"><span class="dd-ic"><svg><use href="icons.svg#i-shield-check"/></svg></span><span><b>Security</b><span>What it does with your computer</span></span></a>
+                <a href="compare.html" data-nav="compare"><span class="dd-ic"><svg><use href="icons.svg#i-badge-check"/></svg></span><span><b>Compare</b><span>Next to MAMP PRO, Herd, XAMPP and Local</span></span></a>
+              </div>
+            </div>
+            <a class="mm-feat" href="agents.html#approvals">
+              <span class="mm-card" aria-hidden="true">
+                <span class="mm-card-h"><svg><use href="icons.svg#i-shield-alert"/></svg>Claude Code wants to</span>
+                <b>Delete database shop_staging</b>
+                <span class="mm-card-a"><i>Deny</i><i class="on">Hold to approve</i></span>
+              </span>
+              <b>Agents wait for your click</b>
+              <span>Risky steps show the exact request and wait for you in the app.</span>
+            </a>
+          </div>
+          <div class="mm-foot">
+            <a href="features.html" data-nav="features-all"><svg><use href="icons.svg#i-combine"/></svg>Every feature, one by one</a>
+            <a href="compare.html#switch"><svg><use href="icons.svg#i-plug"/></svg>Switching guides</a>
+            <a href="https://github.com/itismowgli/localsites/releases/latest"><svg><use href="icons.svg#i-package"/></svg>What’s new in {{version}}</a>
+          </div>
+        </div>
+      </div>
+      <a href="compare.html" data-nav="compare">Compare</a>
+      <a href="security.html" data-nav="security">Security</a>
+      <div class="dd dd-small">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true">Resources<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <a href="https://github.com/itismowgli/localsites/releases"><span class="dd-ic"><svg><use href="icons.svg#i-history"/></svg></span><span><b>Changelog <i class="bdg">{{version}}</i></b><span>Every release and what changed</span></span></a>
+          <a href="compare.html#switch"><span class="dd-ic"><svg><use href="icons.svg#i-plug"/></svg></span><span><b>Switching guides</b><span>From MAMP, Herd, XAMPP, Valet or Local</span></span></a>
+          <a href="index.html#faq"><span class="dd-ic"><svg><use href="icons.svg#i-stethoscope"/></svg></span><span><b>FAQ</b><span>Setup, PHP versions, Valet and agents</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/security/policy"><span class="dd-ic"><svg><use href="icons.svg#i-key-round"/></svg></span><span><b>Security policy</b><span>How to report a vulnerability</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/issues"><span class="dd-ic"><svg><use href="icons.svg#i-bell"/></svg></span><span><b>Report a problem</b><span>Open an issue on GitHub</span></span></a>
+        </div>
+      </div>
+    </nav>
+    <div class="right">
+      <a class="btn sm ghost hide-sm" href="https://github.com/itismowgli/localsites"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+      <!-- fund:any --><a class="btn sm heart hide-sm" href="index.html#support"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Sponsor</a><!-- /fund:any -->
+      <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 8h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="l2" d="M4 16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>Security</b>What it does with your computer, and what it won’t</span>
+      <h1 class="reveal">Built so you can trust it</h1>
+      <p class="lead reveal">What LocalSites does with your computer, what it never does, and where its protection stops.</p>
+      <p class="meta reveal">Open source · Signed updates · No telemetry</p>
+    </div>
+  </div>
+  <section class="sec-five band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">The short version</div><h2>Five things worth knowing</h2></div><ul class="points cols five"><li class="reveal"><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-hand"/></svg></span><b>Agents can’t act alone on risky things</b><span class="pt-d">Risky steps wait for your click and give up after 90 seconds. A ten-minute pass covers one action on one project, never deletes or installs.</span></li><li class="reveal"><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>The app proves who it is</b><span class="pt-d">On macOS the service checks the code signature of whoever is asking. A program pretending to be LocalSites can’t approve requests or install updates.</span></li><li class="reveal"><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-database-backup"/></svg></span><b>Your data has a way back</b><span class="pt-d">Every destructive database step backs up first and stops if the backup fails. Browsing is read-only, enforced by the database server.</span></li><li class="reveal"><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-link-2-off"/></svg></span><b>Shares are safe by default</b><span class="pt-d">A password unless you choose none, limited guesses per visitor, .env and .git never served, and an end time no later than 24 hours.</span></li><li class="reveal"><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Updates are signed and reversible</b><span class="pt-d">An update must match the release key and start before it replaces the app. The previous version stays, and update checks are off until you turn them on.</span></li></ul></div>
+  </section>
+  <section class="">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">In detail</div><h2>Every safeguard, by area</h2><p class="sub">Each one is in the code today. The source is open if you want to check.</p></div><div class="sec-group reveal"><h3>Agents and approvals</h3><ul class="also-list two"><li><b>Owner-only control</b><span>The app, CLI and agents talk over a socket only your account can open, with a token that changes every start.</span></li><li><b>Person-only actions</b><span>Installing updates, moving projects to the Trash and installing Homebrew are refused for agents and scripts.</span></li><li><b>Risky fields need approval</b><span>Changing a start command, environment variables or the projects folder waits for you.</span></li><li><b>Secrets masked</b><span>Passwords, tokens and every environment value show as dots in requests and the activity log.</span></li><li><b>Hidden tools</b><span>Approval tools are never offered to agents; password tools need --allow-secrets.</span></li><li><b>A record of everything</b><span>Every change and every agent call is logged, without secrets, in an owner-only file.</span></li></ul></div><div class="sec-group reveal"><h3>Your data</h3><ul class="also-list two"><li><b>Read-only transactions</b><span>Browsing and queries run in a transaction the database server enforces as read-only.</span></li><li><b>Write statements blocked</b><span>In read-only mode only SELECT, SHOW, DESCRIBE, EXPLAIN and WITH can run.</span></li><li><b>All or nothing</b><span>Staged edits save in one transaction, only if each row still matches.</span></li><li><b>Values always bound</b><span>Filters and edits pass values as parameters; column names are checked.</span></li><li><b>.env backed up first</b><span>Kept outside the project, because it holds passwords. One click puts it back.</span></li><li><b>Git that can’t lose work</b><span>Pull is fast-forward only, and project hooks never run.</span></li></ul></div><div class="sec-group reveal"><h3>Secrets</h3><ul class="also-list two"><li><b>Keychain</b><span>The macOS Keychain, or the Secret Service on Linux.</span></li><li><b>Never on a command line</b><span>Passwords reach MySQL tools through a pipe, never the process list.</span></li><li><b>One login per database</b><span>Each database’s user can reach only that database.</span></li><li><b>Certificate limited to .test</b><span>The certificate authority can only sign .test and localhost.</span></li><li><b>MySQL locked down</b><span>Listens on 127.0.0.1, with remote protocols and local file loading off.</span></li><li><b>Strong passwords</b><span>Made with the system’s secure random source.</span></li></ul></div><div class="sec-group reveal"><h3>Sharing</h3><ul class="also-list two"><li><b>Password by default</b><span>At least 8 characters; bore always needs one.</span></li><li><b>Limited guesses</b><span>10 wrong passwords per visitor in 10 minutes, 100 overall.</span></li><li><b>Local-only pages stay closed</b><span>A visitor is never seen as localhost by your site.</span></li><li><b>One site per share</b><span>Each share reaches one site, never your other sites or databases.</span></li><li><b>Your ssh identity private</b><span>tunnl.gg runs without your keys, agent or config.</span></li><li><b>Ends by itself</b><span>No longer than 24 hours, extensions included.</span></li></ul></div><div class="sec-group reveal"><h3>Updates and installs</h3><ul class="also-list two"><li><b>Signed releases</b><span>Nothing installs unless the release signature matches the key in the app.</span></li><li><b>Checked downloads</b><span>Size and SHA-256 must match, or the download is deleted.</span></li><li><b>A failed swap undoes itself</b><span>If any step fails, the old app is put back.</span></li><li><b>Homebrew checked by Apple</b><span>The installer must pass Apple’s check, or it’s deleted.</span></li><li><b>Adminer pinned</b><span>A fixed release, refused unless its fingerprint matches.</span></li><li><b>Signed Linux repository</b><span>Packages and repository metadata are signed.</span></li></ul></div><div class="sec-group reveal"><h3>Privacy</h3><ul class="also-list two"><li><b>No telemetry</b><span>No accounts, no tracking, no upsells.</span></li><li><b>Problem reports off</b><span>Turn them on if you like; each report is cleaned and shown to you first.</span></li><li><b>Analytics off</b><span>Homebrew and Meilisearch run with analytics switched off.</span></li><li><b>Only your computer</b><span>Every service listens on 127.0.0.1.</span></li><li><b>Strict app security</b><span>Only the app’s own code runs in its window.</span></li><li><b>Tested</b><span>Dedicated security tests cover the API, agents, sharing and certificates.</span></li></ul></div></div>
+  </section>
+  <section class="band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Limits</div><h2>Where the protection stops</h2><p class="sub">So you know exactly what it covers.</p></div><div class="notyet reveal"><ul><li><b>Strongest check on signed macOS builds</b><span>Proving the caller by code signature works only there. On Linux and development builds the caller’s own name decides.</span></li><li><b>Approvals guard against agents, not malware</b><span>Anything already running as you can read what you can. Approvals stop an agent acting on its own, for example after a prompt injection.</span></li><li><b>bore shares are plain http</b><span>Its pages and password travel unencrypted; the app says so when you pick it.</span></li><li><b>Linux keyring session</b><span>Secrets travel over your own session bus without extra encryption, as libsecret does by default.</span></li></ul></div></div>
+  </section>
+  <section class="rel">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Keep exploring</div><h2>More of LocalSites</h2></div><div class="cards"><a class="card reveal" href="agents.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-blocks"/></svg></span><h3>AI agents</h3><p>An MCP server that asks before risky steps</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="databases.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><h3>Databases</h3><p>MySQL, backups and a safe data browser</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="compare.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><h3>Compare</h3><p>Side by side with MAMP PRO, Herd, XAMPP, Valet and Local</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div></div>
+  </section>
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>
+</main>
+
+<footer class="mf">
+  <div class="wrap">
+    <div class="mf-top">
+      <div class="mf-brand">
+        <a class="brand" href="./"><svg class="logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M1.5 6.75C1.5 5.75544 1.89509 4.80161 2.59835 4.09835C3.30161 3.39509 4.25544 3 5.25 3H8.379C8.97554 3.00053 9.54745 3.23792 9.969 3.66L12 5.688L8.91 8.778C8.84029 8.84832 8.75734 8.90415 8.66595 8.94225C8.57455 8.98035 8.47652 8.99998 8.3775 9H1.5V6.75ZM1.5 10.5V17.25C1.5 18.2446 1.89509 19.1984 2.59835 19.9016C3.30161 20.6049 4.25544 21 5.25 21H9.9C9.0367 19.3101 8.7824 17.3742 9.17994 15.5186C9.57747 13.663 10.6026 12.0013 12.0824 10.8133C13.5623 9.62538 15.4064 8.98393 17.304 8.99708C19.2017 9.01023 21.0367 9.67717 22.5 10.8855V9.75C22.5 8.75544 22.1049 7.80161 21.4016 7.09835C20.6984 6.39509 19.7446 6 18.75 6H13.8105L9.9705 9.84C9.76141 10.0493 9.51308 10.2154 9.23973 10.3287C8.96638 10.4419 8.67338 10.5001 8.3775 10.5H1.5ZM15.825 12.225C15.39 13.3155 15.0855 14.808 15.015 16.5H19.485C19.4145 14.808 19.11 13.3155 18.675 12.225C18.4245 11.5995 18.1455 11.142 17.8725 10.854C17.6025 10.569 17.3925 10.5 17.25 10.5C17.1075 10.5 16.8975 10.569 16.6275 10.854C16.3545 11.142 16.0755 11.5995 15.825 12.225ZM14.745 10.98C14.629 11.2041 14.5244 11.4339 14.4315 11.6685C13.9155 12.96 13.584 14.649 13.515 16.5H10.5405C10.676 15.2855 11.1387 14.1305 11.8791 13.1584C12.6196 12.1862 13.6101 11.4333 14.745 10.98ZM19.755 10.98C19.867 11.198 19.971 11.4275 20.067 11.6685C20.5845 12.9615 20.9145 14.649 20.985 16.5H23.958C23.8226 15.2857 23.3602 14.1308 22.62 13.1587C21.8798 12.1865 20.8896 11.4335 19.755 10.98ZM23.958 18H20.985C20.9145 19.851 20.5845 21.54 20.067 22.8315C19.971 23.0715 19.867 23.301 19.755 23.52C20.8896 23.0665 21.8798 22.3135 22.62 21.3413C23.3602 20.3692 23.8226 19.2143 23.958 18ZM17.25 24C17.391 24 17.6025 23.931 17.8725 23.646C18.1455 23.358 18.4245 22.9005 18.675 22.275C19.11 21.1845 19.4145 19.692 19.485 18H15.015C15.0855 19.692 15.39 21.1845 15.825 22.275C16.0755 22.9005 16.3545 23.358 16.6275 23.646C16.8975 23.931 17.1075 24 17.25 24ZM14.745 23.52C13.6099 23.0669 12.619 22.3141 11.8783 21.3419C11.1375 20.3697 10.6746 19.2147 10.539 18H13.515C13.5855 19.851 13.917 21.54 14.433 22.8315C14.53 23.0715 14.634 23.301 14.745 23.52Z"/></svg>LocalSites</a>
+        <p>Free and open source local web development for Mac and Linux. Every folder gets https://name.test, the PHP it needs and a database.</p>
+        <div class="mf-rel">
+          <span class="mf-rel-h">Follow new releases</span>
+          <div class="mf-rel-a">
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Watch on GitHub</a>
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases.atom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>RSS feed</a>
+          </div>
+          <span class="mf-rel-n">One entry per release. No email, no tracking.</span>
+        </div>
+      </div>
+      <nav class="mf-cols" aria-label="Footer">
+        <div><h3>Product</h3><ul><li><a href="projects.html">Projects</a></li><li><a href="databases.html">Databases</a></li><li><a href="agents.html">AI agents</a><i class="bdg">MCP</i></li><li><a href="tools.html">Everyday tools</a></li><li><a href="features.html">All features</a><i class="bdg">206</i></li></ul></div>
+        <div><h3>Decide</h3><ul><li><a href="compare.html">Compare</a></li><li><a href="security.html">Security</a></li><li><a href="compare.html#switch">Switching guides</a></li><li><a href="index.html#faq">FAQ</a></li></ul></div>
+        <div><h3>Project</h3><ul><li><a href="https://github.com/itismowgli/localsites">GitHub</a></li><li><a href="https://github.com/itismowgli/localsites/releases">Changelog</a><i class="bdg">{{version}}</i></li><li><a href="https://github.com/itismowgli/localsites/issues">Report a problem</a></li><li><a href="https://github.com/itismowgli/localsites/security/policy">Security policy</a></li><!-- fund:any --><li><a href="index.html#support">Sponsor</a></li><!-- /fund:any --></ul></div>
+        <div><h3>Legal</h3><ul><li><a href="terms.html">Terms</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="refunds.html">Refunds</a></li><li><a href="shipping.html">Shipping</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      </nav>
+    </div>
+    <p class="mf-word" aria-hidden="true">localsites</p>
+    <div class="mf-bar">
+      <div class="mf-bar-l">
+        <a class="mf-status" href="https://github.com/itismowgli/localsites/releases/latest"><span class="mf-dot"><i></i></span>Version {{version}} is out</a>
+        <span>© 2026 LocalSites · MIT licence</span>
+      </div>
+      <div class="mf-theme" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-set="system" aria-label="System" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" role="radio" data-theme-set="light" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+        <button type="button" role="radio" data-theme-set="dark" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+
+</body>
+</html>

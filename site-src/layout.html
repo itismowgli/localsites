@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="https://itismowgli.github.io/localsites/{{path}}">
+<link rel="alternate" type="text/markdown" title="LocalSites summary for language models" href="llms.txt">
+<meta name="author" content="itismowgli">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" type="image/png" href="brand/app-icon-1024.png">
+<link rel="apple-touch-icon" href="brand/app-icon-square-1024.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LocalSites">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="https://itismowgli.github.io/localsites/{{path}}">
+<meta property="og:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="LocalSites app showing a list of local projects with HTTPS addresses">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="https://itismowgli.github.io/localsites/brand/social-preview.png">
+{{head}}
+<script>try{var t=localStorage.getItem("ls-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="{{nav}}">
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="LocalSites home">{{logo}}LocalSites</a>
+    <nav class="links" aria-label="Main">
+      <div class="dd dd-mega">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true" data-nav="features">Features<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <div class="mm">
+            <div class="mm-main">
+              <p class="mm-h">Product</p>
+              <div class="mm-grid">
+                <a href="projects.html" data-nav="projects"><span class="dd-ic"><svg><use href="icons.svg#i-folder-pen"/></svg></span><span><b>Projects</b><span>Folders, addresses, PHP and dev servers</span></span></a>
+                <a href="databases.html" data-nav="databases"><span class="dd-ic"><svg><use href="icons.svg#i-table-2"/></svg></span><span><b>Databases</b><span>MySQL, backups and a safe data browser</span></span></a>
+                <a href="agents.html" data-nav="agents"><span class="dd-ic"><svg><use href="icons.svg#i-blocks"/></svg></span><span><b>AI agents <i class="bdg">MCP</i></b><span>An MCP server that asks before risky steps</span></span></a>
+                <a href="tools.html" data-nav="tools"><span class="dd-ic"><svg><use href="icons.svg#i-git-branch"/></svg></span><span><b>Everyday tools</b><span>Git, logs, Doctor, uptime and sharing</span></span></a>
+                <a href="security.html" data-nav="security"><span class="dd-ic"><svg><use href="icons.svg#i-shield-check"/></svg></span><span><b>Security</b><span>What it does with your computer</span></span></a>
+                <a href="compare.html" data-nav="compare"><span class="dd-ic"><svg><use href="icons.svg#i-badge-check"/></svg></span><span><b>Compare</b><span>Next to MAMP PRO, Herd, XAMPP and Local</span></span></a>
+              </div>
+            </div>
+            <a class="mm-feat" href="agents.html#approvals">
+              <span class="mm-card" aria-hidden="true">
+                <span class="mm-card-h"><svg><use href="icons.svg#i-shield-alert"/></svg>Claude Code wants to</span>
+                <b>Delete database shop_staging</b>
+                <span class="mm-card-a"><i>Deny</i><i class="on">Hold to approve</i></span>
+              </span>
+              <b>Agents wait for your click</b>
+              <span>Risky steps show the exact request and wait for you in the app.</span>
+            </a>
+          </div>
+          <div class="mm-foot">
+            <a href="features.html" data-nav="features-all"><svg><use href="icons.svg#i-combine"/></svg>Every feature, one by one</a>
+            <a href="compare.html#switch"><svg><use href="icons.svg#i-plug"/></svg>Switching guides</a>
+            <a href="https://github.com/itismowgli/localsites/releases/latest"><svg><use href="icons.svg#i-package"/></svg>What’s new in {{version}}</a>
+          </div>
+        </div>
+      </div>
+      <a href="compare.html" data-nav="compare">Compare</a>
+      <a href="security.html" data-nav="security">Security</a>
+      <div class="dd dd-small">
+        <button class="dd-btn" aria-expanded="false" aria-haspopup="true">Resources<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="dd-menu">
+          <a href="https://github.com/itismowgli/localsites/releases"><span class="dd-ic"><svg><use href="icons.svg#i-history"/></svg></span><span><b>Changelog <i class="bdg">{{version}}</i></b><span>Every release and what changed</span></span></a>
+          <a href="compare.html#switch"><span class="dd-ic"><svg><use href="icons.svg#i-plug"/></svg></span><span><b>Switching guides</b><span>From MAMP, Herd, XAMPP, Valet or Local</span></span></a>
+          <a href="index.html#faq"><span class="dd-ic"><svg><use href="icons.svg#i-stethoscope"/></svg></span><span><b>FAQ</b><span>Setup, PHP versions, Valet and agents</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/security/policy"><span class="dd-ic"><svg><use href="icons.svg#i-key-round"/></svg></span><span><b>Security policy</b><span>How to report a vulnerability</span></span></a>
+          <a href="https://github.com/itismowgli/localsites/issues"><span class="dd-ic"><svg><use href="icons.svg#i-bell"/></svg></span><span><b>Report a problem</b><span>Open an issue on GitHub</span></span></a>
+        </div>
+      </div>
+    </nav>
+    <div class="right">
+      <a class="btn sm ghost hide-sm" href="https://github.com/itismowgli/localsites">{{github}}GitHub</a>
+      <!-- fund:any --><a class="btn sm heart hide-sm" href="index.html#support"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 14.25.345 6.595a4.25 4.25 0 0 1 6.01-6.01L8 2.23l1.645-1.645a4.25 4.25 0 0 1 6.01 6.01Z"/></svg>Sponsor</a><!-- /fund:any -->
+      <a class="btn sm primary" href="https://github.com/itismowgli/localsites/releases/latest">Download</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4 8h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="l2" d="M4 16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+{{body}}
+</main>
+
+<footer class="mf">
+  <div class="wrap">
+    <div class="mf-top">
+      <div class="mf-brand">
+        <a class="brand" href="./">{{logo}}LocalSites</a>
+        <p>Free and open source local web development for Mac and Linux. Every folder gets https://name.test, the PHP it needs and a database.</p>
+        <div class="mf-rel">
+          <span class="mf-rel-h">Follow new releases</span>
+          <div class="mf-rel-a">
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases">{{github}}Watch on GitHub</a>
+            <a class="btn sm" href="https://github.com/itismowgli/localsites/releases.atom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>RSS feed</a>
+          </div>
+          <span class="mf-rel-n">One entry per release. No email, no tracking.</span>
+        </div>
+      </div>
+      <nav class="mf-cols" aria-label="Footer">
+        <div><h3>Product</h3><ul><li><a href="projects.html">Projects</a></li><li><a href="databases.html">Databases</a></li><li><a href="agents.html">AI agents</a><i class="bdg">MCP</i></li><li><a href="tools.html">Everyday tools</a></li><li><a href="features.html">All features</a><i class="bdg">206</i></li></ul></div>
+        <div><h3>Decide</h3><ul><li><a href="compare.html">Compare</a></li><li><a href="security.html">Security</a></li><li><a href="compare.html#switch">Switching guides</a></li><li><a href="index.html#faq">FAQ</a></li></ul></div>
+        <div><h3>Project</h3><ul><li><a href="https://github.com/itismowgli/localsites">GitHub</a></li><li><a href="https://github.com/itismowgli/localsites/releases">Changelog</a><i class="bdg">{{version}}</i></li><li><a href="https://github.com/itismowgli/localsites/issues">Report a problem</a></li><li><a href="https://github.com/itismowgli/localsites/security/policy">Security policy</a></li><!-- fund:any --><li><a href="index.html#support">Sponsor</a></li><!-- /fund:any --></ul></div>
+        <div><h3>Legal</h3><ul><li><a href="terms.html">Terms</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="refunds.html">Refunds</a></li><li><a href="shipping.html">Shipping</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      </nav>
+    </div>
+    <p class="mf-word" aria-hidden="true">localsites</p>
+    <div class="mf-bar">
+      <div class="mf-bar-l">
+        <a class="mf-status" href="https://github.com/itismowgli/localsites/releases/latest"><span class="mf-dot"><i></i></span>Version {{version}} is out</a>
+        <span>© 2026 LocalSites · MIT licence</span>
+      </div>
+      <div class="mf-theme" role="radiogroup" aria-label="Theme">
+        <button type="button" role="radio" data-theme-set="system" aria-label="System" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button type="button" role="radio" data-theme-set="light" aria-label="Light" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+        <button type="button" role="radio" data-theme-set="dark" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+{{scripts}}
+</body>
+</html>

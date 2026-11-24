@@ -1,0 +1,67 @@
+<!--page {"title": "Everyday tools: Git, live logs, Doctor, uptime and sharing \u00b7 LocalSites", "description": "A Git panel with a commit graph, pull request and CI status, live logs with filters, a Doctor that finds what is broken, 24-hour uptime and shares with a password that end by themselves.", "path": "tools.html", "nav": "tools"}-->
+<!--scripts-->
+<script src="demos.js"></script>
+<!--/scripts-->
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>Everyday tools</b>Git, logs, Doctor, uptime and sharing</span>
+      <h1 class="reveal">Everything around the code, in one place</h1>
+      <p class="lead reveal">Your branch and its pull request, live logs, a Doctor that finds what’s broken, uptime for every project, and sharing a site with a password.</p>
+      <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a></div>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/git-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/git.jpg" loading="lazy" width="2000" height="1264" alt="The Git panel with branch, changes, branch tree and commit history"></picture></div></div></div>
+  </div>
+  <section id="git" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Git</div><h2>Your branch, at a glance</h2><p class="sub">Ahead and behind, changed files, the open pull request and its CI run, and a commit graph with a card for each commit.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="graph" aria-label="A commit graph; hover a row to see the commit"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-git-branch"/></svg></span><b>Safe pull</b><span class="pt-d">Fast-forward only, and refused with uncommitted work.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>Nothing lost</b><span class="pt-d">Switching branch is refused while there are changes.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-link-2-off"/></svg></span><b>Never hangs</b><span class="pt-d">Git never prompts for a password; project hooks don’t run.</span></li></ul>
+    </div>
+  </section>
+  <section id="logs" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Logs</div><h2>Logs you can actually read</h2><p class="sub">Apache, PHP, MySQL, visits and dev servers, streaming live. Filter by level, search with highlights, and repeats of the same error fold into one.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="logs" aria-label="A live log: click the level buttons, search, pause, or open a folded group"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>Pause and follow</b><span class="pt-d">Scroll back and jump down to new lines.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-file-code"/></svg></span><b>Every format understood</b><span class="pt-d">Apache, PHP, MySQL and access logs.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-alert"/></svg></span><b>Recent errors per project</b><span class="pt-d">In each project’s panel, one per row.</span></li></ul>
+    </div>
+  </section>
+  <section id="health" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Health</div><h2>Find what’s broken, and fix it</h2><p class="sub">Doctor checks runtimes, services, ports, domains, certificates and every running project, with a fix button on each problem. Uptime shows whether each project answered over the last day.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="mock-health"><div class="mh-h"><b>Uptime</b><span>last 24 hours</span></div><div class="mh-r"><span>storefront</span><span class="mh-bars"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></span><span class="mh-p">100%</span></div><div class="mh-r"><span>journal</span><span class="mh-bars"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="part"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></span><span class="mh-p">99.8%</span></div><div class="mh-r"><span>dashboard</span><span class="mh-bars"><i class="none"></i><i class="none"></i><i class="none"></i><i class="none"></i><i class="none"></i><i class="none"></i><i class="none"></i><i class="none"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></span><span class="mh-p">100%</span></div><div class="mh-r"><span>api</span><span class="mh-bars"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="down"></i><i class="part"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></span><span class="mh-p">97.9%</span></div></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-stethoscope"/></svg></span><b>Check one project</b><span class="pt-d">DNS, PHP, database and HTTPS, like a browser would.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-badge-check"/></svg></span><b>Uptime bars</b><span class="pt-d">24 hours per project; switched-off time doesn’t count.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-package"/></svg></span><b>Debug bundle</b><span class="pt-d">Logs and configs in one file, passwords removed.</span></li></ul>
+    </div>
+  </section>
+  <section id="sharing" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Sharing</div><h2>Show a client without deploying</h2><p class="sub">A public https link with a password, for a limited time. Nothing to install and no account, and only that one site is reachable.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="mock-share"><div class="ms-h"><span class="st on">Live</span><code>proud-wind-bd33.tunnl.gg</code></div><p>Stops in 47 min · password protected · 12 visits · 2 refused</p><p class="dm-note">Visitors leave the username empty and type the password.</p><div class="ms-a"><span class="dbtn sm">Copy link</span><span class="dbtn sm">Copy password</span><span class="dm-sp"></span><span class="dbtn sm">Stop sharing</span></div></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-key-round"/></svg></span><b>Password by default</b><span class="pt-d">Four random words and a number.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Ends by itself</b><span class="pt-d">From 15 minutes to 24 hours.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye-off"/></svg></span><b>.env and .git never served</b><span class="pt-d">Hidden files return Not found.</span></li></ul>
+    </div>
+  </section>
+  <section id="speed" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Speed</div><h2>Quick from the keyboard</h2><p class="sub">Press ⌘K to find any project, view or action, with your recent ones first. G then a letter jumps to a view, and ? shows every shortcut.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="shot"><picture><source srcset="screenshots/palette-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/palette.jpg" loading="lazy" width="2000" height="1264" alt="The command launcher searching for a project"></picture></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-combine"/></svg></span><b>Tabs</b><span class="pt-d">Several views side by side, with back and forward.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-bell"/></svg></span><b>Notification centre</b><span class="pt-d">30 days of notices, with agent requests answered in place.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>Theme</b><span class="pt-d">System, dark or light, with your accent and corners.</span></li></ul>
+    </div>
+  </section>
+  <section class="also">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">And more</div><h2>Also in everyday tools</h2><p class="sub">The smaller things that save you time. <a class="text-link" href="features.html">See every feature</a>.</p></div>
+      <ul class="grid-list reveal"><li><b>Branch tree</b><span>feature/ names fold into folders.</span></li><li><b>Fetch</b><span>Never changes your files.</span></li><li><b>Log rotation</b><span>Big logs trimmed without breaking anything.</span></li><li><b>Recent activity</b><span>Every change in plain words.</span></li><li><b>Ending soon notice</b><span>Extend or stop from the notification.</span></li><li><b>Do Not Disturb</b><span>Agent requests still come through.</span></li><li><b>Offline banner</b><span>Says when the background service stops answering.</span></li><li><b>Dock badge explained</b><span>What the number on the icon means.</span></li><li><b>Light on memory</b><span>A hidden window unloads and comes back where you were.</span></li></ul>
+    </div>
+  </section>
+  <section class="rel band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Keep exploring</div><h2>More of LocalSites</h2></div><div class="cards"><a class="card reveal" href="projects.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-folder-pen"/></svg></span><h3>Projects</h3><p>Folders, addresses, PHP and dev servers</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="agents.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-blocks"/></svg></span><h3>AI agents</h3><p>An MCP server that asks before risky steps</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="security.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><h3>Security</h3><p>What it does with your computer, and what it won’t</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div></div>
+  </section>
+  <section class="pfaq">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div><div class="faq reveal"><details><summary>Which tunnel does sharing use?</summary><p>tunnl.gg by default, which needs only the ssh already on your computer. Cloudflare and bore work too. None of them needs an account.</p></details><details><summary>Does the Git panel change my repository?</summary><p>Only when you ask: Fetch downloads commits without touching your files, Pull is fast-forward only, and switching branch is refused while you have uncommitted work.</p></details></div></div>
+  </section>
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>

@@ -1,0 +1,69 @@
+<!--page {"title": "Databases: MySQL 8.4, backups and a safe data browser \u00b7 LocalSites", "description": "MySQL 8.4 with one login per database, a backup before every risky step, imports from MAMP checked row by row, and a data browser that is read-only until you allow changes.", "path": "databases.html", "nav": "databases"}-->
+<!--scripts-->
+<script src="demos.js"></script>
+<!--/scripts-->
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill reveal"><b>Databases</b>MySQL, backups and a safe data browser</span>
+      <h1 class="reveal">Your data, safe by default</h1>
+      <p class="lead reveal">MySQL 8.4 with a login per database, a backup before every risky step, and a data browser the database server keeps read-only until you say so.</p>
+      <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a></div>
+      <p class="meta reveal">Free · MIT licence · Apple silicon and Linux · No account, no telemetry</p>
+    </div>
+    <div class="stage wrap"><div class="frame" id="heroFrame"><div class="shot"><picture><source srcset="screenshots/data-browser-light.jpg" media="(prefers-color-scheme: light)"><img src="screenshots/data-browser.jpg" loading="lazy" width="2000" height="1264" alt="The data browser showing a products table"></picture></div></div></div>
+  </div>
+  <section id="data-browser" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Data browser</div><h2>Read-only until you say so</h2><p class="sub">The database server itself refuses changes until you allow them. When you edit, you see the exact SQL first, and it saves all at once or not at all.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="mock-review"><div class="mr-h">Save 3 changes to <b>orders</b>?</div><pre><span class="k">UPDATE</span> `orders` <span class="k">SET</span> `status` = ? <span class="k">WHERE</span> `id` = ?
+<span class="k">UPDATE</span> `orders` <span class="k">SET</span> `total` = ? <span class="k">WHERE</span> `id` = ?
+<span class="k">DELETE FROM</span> `orders` <span class="k">WHERE</span> `id` = ?</pre><p class="mr-note">These run in one transaction. If any row changed since you loaded it, nothing is saved.</p><div class="mr-a"><span class="dbtn">Keep editing</span><span class="dbtn primary">Save 3 changes</span></div></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><b>Every kind of database</b><span class="pt-d">LocalSites MySQL, MAMP’s MySQL, MySQL over SSH, PostgreSQL and SQLite.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-copy-check"/></svg></span><b>Exact rows only</b><span class="pt-d">If a row changed since you loaded it, nothing is saved.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-key-round"/></svg></span><b>Two switches to write</b><span class="pt-d">A connection must allow changes, and each write query must ask.</span></li></ul>
+    </div>
+  </section>
+  <section id="filters" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Filters</div><h2>Filter the way you’d say it</h2><p class="sub">Where, and, or, with groups inside groups. The filter writes itself out as SQL, JSON or plain English, and every value is passed safely.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="rules" aria-label="A filter of nested rules with its SQL output. Click and to switch it to or."></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-table-2"/></svg></span><b>Inputs that fit the column</b><span class="pt-d">Dates get a date picker, numbers get ranges, lists get choices.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Undo anything</b><span class="pt-d">⌘Z and ⇧⌘Z, one step per field.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-code"/></svg></span><b>Edit it as SQL</b><span class="pt-d">Send the filter to the SQL tab with its values written in.</span></li></ul>
+    </div>
+  </section>
+  <section id="backups" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Backups</div><h2>A backup before every risky step</h2><p class="sub">Import, restore, empty and delete back up first. If the backup fails, nothing is changed. Restoring keeps a copy of what was there.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="mock-list"><div class="ml-h"><b>Backups of shop</b><span>4 kept</span></div><div class="ml-r"><span>Before import · today 14:02</span><span>2.4 MB</span><span class="dbtn sm">Restore</span></div><div class="ml-r"><span>Before empty · yesterday 18:40</span><span>2.3 MB</span><span class="dbtn sm">Restore</span></div><div class="ml-r"><span>Backed up by you · 21 Nov</span><span>2.1 MB</span><span class="dbtn sm">Restore</span></div><div class="ml-r"><span>Before restore · 18 Nov</span><span>1.9 MB</span><span class="dbtn sm">Restore</span></div></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-history"/></svg></span><b>Restore in a click</b><span class="pt-d">Backups are listed newest first.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-copy-check"/></svg></span><b>Duplicate a database</b><span class="pt-d">Structure and data, with its own login.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-package"/></svg></span><b>Export and import</b><span class="pt-d">.sql, .sql.gz and .zip.</span></li></ul>
+    </div>
+  </section>
+  <section id="logins" class="blk">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Logins</div><h2>One login per database</h2><p class="sub">No shared root. Each database gets a user that can only reach that database, and each project shows which database it uses.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ localsites db create shop&quot;, &quot;\u2713 created shop with its own login ls_shop&quot;, &quot;$ localsites connect-db storefront shop&quot;, &quot;\u2713 .env backed up, then updated&quot;, &quot;# undo with localsites restore-env storefront&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>See a project’s database</b><span class="pt-d">From LocalSites, its .env or WordPress’ wp-config.php.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-file-code"/></svg></span><b>Snippets to paste</b><span class="pt-d">Laravel, Node, Django, Rails, WordPress, PDO and GUI apps.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-key-round"/></svg></span><b>Passwords in the Keychain</b><span class="pt-d">Or the Secret Service on Linux.</span></li></ul>
+    </div>
+  </section>
+  <section id="moving-over" class="blk band">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">Moving over</div><h2>From MAMP or XAMPP, checked row by row</h2><p class="sub">Copy your databases in one step. The source is only read, and every table is compared by row count and content before you switch.</p></div>
+      <div class="panel reveal"><div class="panel-in"><div class="demo" data-demo="terminal" data-lines="[&quot;$ localsites import database mamp-pro shop_db&quot;, &quot;TABLE       SOURCE   COPY&quot;, &quot;orders      5,230    5,230  \u2713&quot;, &quot;customers   1,104    1,104  \u2713&quot;, &quot;\u2713 every row matches; the original is untouched&quot;]" aria-label="A terminal session"></div></div></div>
+      <ul class="points cols three reveal"><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><b>Never overwrites</b><span class="pt-d">A database already in LocalSites is left alone.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-database-backup"/></svg></span><b>Keeps the dump</b><span class="pt-d">The import is kept as a backup of the original.</span></li><li><span class="pt-ic" aria-hidden="true"><svg><use href="icons.svg#i-eye"/></svg></span><b>Browse MAMP meanwhile</b><span class="pt-d">Its MySQL opens read-only in the data browser.</span></li></ul>
+    </div>
+  </section>
+  <section class="also">
+    <div class="wrap">
+      <div class="head reveal"><div class="eyebrow">And more</div><h2>Also in Databases</h2><p class="sub">The smaller things that save you time. <a class="text-link" href="features.html">See every feature</a>.</p></div>
+      <ul class="grid-list reveal"><li><b>MySQL sleeps when idle</b><span>After 20 quiet minutes, and wakes when needed.</span></li><li><b>PostgreSQL 17 add-on</b><span>With the same backup-first tools.</span></li><li><b>SQL tab</b><span>Autocomplete for keywords, tables and columns.</span></li><li><b>Query history</b><span>The last 60 queries per connection.</span></li><li><b>Export results</b><span>Copy as CSV or save a file.</span></li><li><b>Open in TablePlus</b><span>Or Sequel Ace, with the details filled in.</span></li><li><b>Adminer</b><span>A checked copy at adminer.test.</span></li><li><b>SSH tunnels</b><span>Your own keys; it never asks for passwords.</span></li><li><b>Root password</b><span>Random and strong, kept in the Keychain.</span></li></ul>
+    </div>
+  </section>
+  <section class="rel band">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">Keep exploring</div><h2>More of LocalSites</h2></div><div class="cards"><a class="card reveal" href="agents.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-blocks"/></svg></span><h3>AI agents</h3><p>An MCP server that asks before risky steps</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="security.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-shield-check"/></svg></span><h3>Security</h3><p>What it does with your computer, and what it won’t</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a><a class="card reveal" href="projects.html"><span class="card-ic" aria-hidden="true"><svg><use href="icons.svg#i-folder-pen"/></svg></span><h3>Projects</h3><p>Folders, addresses, PHP and dev servers</p><span class="card-more">Learn more <span aria-hidden="true">&rarr;</span></span></a></div></div>
+  </section>
+  <section class="pfaq">
+    <div class="wrap"><div class="head reveal"><div class="eyebrow">FAQ</div><h2>Questions, answered</h2></div><div class="faq reveal"><details><summary>Will LocalSites touch my MAMP databases?</summary><p>No. It only reads them to make a copy, then checks the copy row by row. Projects keep using MAMP’s MySQL until you connect them to the copy.</p></details><details><summary>Can I edit data safely?</summary><p>Yes. Every connection opens read-only. In Edit mode your changes wait, show their exact SQL, and save in one transaction only if each row still matches.</p></details><details><summary>Which databases can I browse?</summary><p>LocalSites MySQL, MAMP’s MySQL, any MySQL or MariaDB (also over SSH), PostgreSQL and SQLite files.</p></details></div></div>
+  </section>
+  <div class="final wrap">
+    <img class="reveal" src="brand/app-icon-1024.png" alt="" width="96" height="96" loading="lazy">
+    <h2 class="reveal">Your local stack, sorted.</h2>
+    <div class="cta reveal"><a class="btn primary" href="https://github.com/itismowgli/localsites/releases/latest">Download for macOS</a><a class="btn" href="https://github.com/itismowgli/localsites#linux-beta">Linux (beta)</a><a class="btn" href="features.html">Every feature</a></div>
+    <p class="meta reveal">macOS on Apple silicon, or Linux (beta). LocalSites installs Homebrew, PHP, Apache and MySQL for you.</p>
+  </div>
