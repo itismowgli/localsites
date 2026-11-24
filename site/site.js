@@ -57,6 +57,18 @@
   const frame = document.getElementById('heroFrame');
   if (frame) requestAnimationFrame(() => setTimeout(() => frame.classList.add('flat'), 250));
 
+  // tabs (security safeguards): one panel at a time; without the script every panel shows
+  document.querySelectorAll('[data-tabs]').forEach((root) => {
+    const tabs = [...root.querySelectorAll('[role="tab"]')];
+    const show = (t, focus) => { tabs.forEach((x) => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; document.getElementById(x.getAttribute('aria-controls')).hidden = !on; });
+      if (focus) t.focus(); const seg = t.parentElement; seg.scrollLeft = t.offsetLeft - (seg.clientWidth - t.clientWidth) / 2; };
+    root.classList.add('js'); show(tabs.find((t) => t.getAttribute('aria-selected') === 'true') || tabs[0]);
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => show(t));
+      t.addEventListener('keydown', (e) => { const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key]; if (n === undefined) return; e.preventDefault(); show(tabs[(n + tabs.length) % tabs.length], true); });
+    });
+  });
+
   // feature catalogue: search filters every feature; the index follows the group in view
   const q = document.getElementById('catQ');
   if (q) {
