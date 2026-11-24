@@ -13,7 +13,7 @@ run the same local stack.
 [![License: MIT](https://img.shields.io/badge/license-MIT-3e3e44.svg)](LICENSE)
 [![Platform: macOS](https://img.shields.io/badge/platform-macOS-111.svg?logo=apple)](#install)
 [![Platform: Linux beta](https://img.shields.io/badge/platform-Linux%20beta-111.svg?logo=linux)](#linux-beta)
-[![Go](https://img.shields.io/github/go-mod/go-version/itismowgli/localsites?color=00ADD8&logo=go)](go.mod)
+[![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg?logo=go&logoColor=white)](go.mod)
 [![CI](https://github.com/itismowgli/localsites/actions/workflows/ci.yml/badge.svg)](https://github.com/itismowgli/localsites/actions/workflows/ci.yml)
 [![MCP server](https://img.shields.io/badge/MCP-ready-3e3e44.svg)](#ai-agents-mcp)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-22c55e.svg)](CONTRIBUTING.md)

@@ -109,6 +109,7 @@ lint:
 	go vet ./...
 	node --check desktop/frontend/dist/app.js
 	node tools/support.mjs --check
+	@v=$$(sed -n 's/^go \([0-9]*\.[0-9]*\).*/\1/p' go.mod); grep -q "badge/go-$$v-" README.md || (echo "README Go badge doesn't say $$v (go.mod)"; exit 1)
 	node tools/build-site.mjs --check   # site/*.html built from site-src/
 	node tools/build-tokens.mjs --check   # tokens.css current; no raw colors in the app or the site
 	go run ./tools/release changelog -check   # CHANGELOG.md matches changelog.json
