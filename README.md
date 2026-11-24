@@ -63,6 +63,7 @@ does nothing until something changes. MySQL sleeps when nothing needs it.
 | **Many folders, many git accounts** | Add every projects folder you use. Group folders (one per GitHub/GitLab/Bitbucket account) are found automatically |
 | **Per-project settings** | Environment variables, `php.ini` overrides, web root, domain, or commit a `localsites.yaml` to share them with your team |
 | **Your editor, your terminal** | Open any project in the editor or terminal you choose (VS Code, Cursor, Zed, PhpStorm, Sublime, iTerm2, Ghostty, kitty and more). LocalSites asks once and never guesses |
+| **Its database, one click away** | Each project shows the database it uses (from LocalSites, its `.env` or WordPress' `wp-config.php`) and opens it in the data browser in one click |
 | **Rename, hide or trash** | Rename a project folder and its settings and address follow; hide it from LocalSites; or move it to the Trash. Its database is never touched |
 
 ### Sets itself up
@@ -84,6 +85,9 @@ open a project in an editor, LocalSites asks which one you use instead of guessi
   tables, rows, structure, SQL with autocomplete and history
 - **Safe by default.** Every connection starts read-only. In Edit mode changes are staged, you review the exact
   SQL, and everything is saved in one transaction
+- **Filters you can read.** Build a filter from rules (and, or, groups inside groups) with inputs that fit each
+  column, undo with <kbd>⌘</kbd><kbd>Z</kbd>, and see it as SQL, JSON or plain English. Values are always passed
+  as parameters
 - **Database tools.** Export (`.sql`, `.sql.gz`; full, structure or data), import (`.sql`, `.sql.gz`, `.zip`),
   backups and restore, duplicate, empty, delete. Anything that removes data is backed up first
 - **Open in TablePlus or Sequel Ace** with the details filled in. **Adminer** at `https://adminer.test` (a
@@ -94,7 +98,8 @@ open a project in an editor, LocalSites asks which one you use instead of guessi
 <img src="docs/screenshots/git.jpg" alt="Git panel showing branch, changed files, branch tree and commit history" width="900">
 
 Branch, changed files, ahead/behind, fetch, fast-forward pull, branch tree, switch and create branches (refused
-when you have uncommitted work), commit graph, and the open **GitHub pull request and CI status** for your branch.
+when you have uncommitted work), and the open **GitHub pull request and CI status** for your branch. The history
+is a **commit graph**: hover a commit for its message, author, branches, tags and changed lines.
 
 ### Add-ons when you need them
 
@@ -124,7 +129,13 @@ resources and ready-made prompts to diagnose a project.
 - Read-only tools run freely
 - **Risky tools wait for you**: stopping services, sharing a site, saving data edits, emptying a cache,
   exporting or importing a database, editing a project's `.env`, and setting a start command or environment
-  variables show an Approve button in the app, with a macOS notification. Agents can't approve themselves
+  variables show an approval card in the app, with a macOS notification. The card shows the exact tool and its
+  settings in plain words; steps that can't be undone need the button held for a moment. Agents can't approve
+  themselves, and a request nobody answers in 90 seconds changes nothing
+- **Passes** let one agent repeat one action on one project for ten minutes without asking, with the time left in
+  the status bar. Deleting, installing and publishing never get a pass
+- **Every run, listed.** The AI agents page shows each agent session with its status, a live clock and its steps.
+  Open one to see every tool it called, with **Undo** where the change can be undone and links to backups
 - Tools that reveal passwords stay off unless you start the server with `--allow-secrets`. Without it, agents
   see the names of a project's environment variables but not their values
 
@@ -133,15 +144,16 @@ resources and ready-made prompts to diagnose a project.
 <img src="docs/screenshots/palette.jpg" alt="Command palette searching for a project, with PHP version switches and open actions" width="900">
 
 Tabs, a <kbd>⌘</kbd><kbd>K</kbd> command palette, <kbd>G</kbd> then a letter to jump
-anywhere, filters and grouping by type, status, folder, git account or PHP version. Light and dark themes, works
-down to 460 px wide, plus a **menu bar icon** with your running projects, shares and pending agent requests.
+anywhere, filters and grouping by type, status, folder, git account or PHP version. Light and dark themes with your own
+accent colour (a contrast check keeps text readable) and three corner sizes, works down to 460 px wide, plus a **menu bar icon** with your running projects, shares and pending agent requests.
 
 <img src="docs/screenshots/projects-light.jpg" alt="LocalSites in the light theme" width="900">
 
 ### Notifications
 
 A bell in the status bar keeps everything LocalSites told you for 30 days: services that stopped, finished
-installs, agent requests, shares about to end, updates and problems. Do Not Disturb and a switch per kind live
+installs, agent requests, shares about to end, updates and problems, sorted into tabs. Agent requests can be
+answered right there. Do Not Disturb and a switch per kind live
 there and in Settings → Notifications. On macOS, notifications have buttons: **Approve** or **Deny** an agent
 request, **Extend** or **Stop** a share that's about to end, **Open logs** after a crash.
 
@@ -150,7 +162,9 @@ request, **Extend** or **Stop** a share that's about to end, **Open logs** after
 - **Doctor** checks runtimes, services, ports, configs, domains, certificate trust and every running project,
   with a fix for each problem
 - **Check a project** follows one request end to end: DNS → PHP pool → database socket → HTTPS response
-- **Live logs** for Apache, MySQL, and each project's errors, visits and PHP
+- **Live logs** for Apache, MySQL, and each project's errors, visits and PHP, streaming as they happen: filter by
+  level, search with highlights, pause and jump back to new lines, and repeats of the same error fold into one
+- **Uptime** for every project over the last 24 hours, and its **recent errors** in its panel, short and readable
 - **Problems** lists crashes and failed installs. Reporting is off by default; reports are cleaned of passwords,
   tokens, emails, IPs and your user name, and you review each one first
 - **A badge on the Dock icon** counts what needs you: failed Doctor checks, projects with a problem, agent

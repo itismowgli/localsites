@@ -16,7 +16,9 @@ func TestRowsWhereTree(t *testing.T) {
 		}
 		return out, err
 	}
-	rule := func(col, op, v string, vs ...string) Node { return Node{Kind: "rule", Column: col, Op: op, Value: v, Values: vs} }
+	rule := func(col, op, v string, vs ...string) Node {
+		return Node{Kind: "rule", Column: col, Op: op, Value: v, Values: vs}
+	}
 	cases := []struct {
 		w    Node
 		want string
@@ -27,7 +29,7 @@ func TestRowsWhereTree(t *testing.T) {
 		{Node{Kind: "group", Not: true, Children: []Node{rule("name", "=", "Ann")}}, "Bob"},
 		{Node{Kind: "group", Children: []Node{rule("id", "between", "", "1", "1")}}, "Ann"},
 		{Node{Kind: "group", Children: []Node{rule("name", "contains", "")}}, "Ann,Bob"}, // no value yet: skipped
-		{Node{Kind: "group", Children: []Node{rule("name", "=", "x' OR '1'='1")}}, ""}, // a value is only ever a value
+		{Node{Kind: "group", Children: []Node{rule("name", "=", "x' OR '1'='1")}}, ""},   // a value is only ever a value
 	}
 	for _, c := range cases {
 		got, err := names(&c.w)

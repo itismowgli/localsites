@@ -4,6 +4,29 @@ Every LocalSites release, newest first. Written from `internal/version/changelog
 `go run ./tools/release changelog`; the app shows the same list under What's new. Versions follow
 [semantic versioning](https://semver.org): a new feature raises the middle number, a fix the last one.
 
+## 1.7.0 (2026-11-24): A clearer look for approvals, logs, agent runs and data filters
+
+### New
+
+- Agent requests show as cards with the exact tool and its settings, and steps that can't be undone need the Approve button held for a moment
+- Approve the same step for one project for ten minutes with a pass, shown with its time left and ended in one click
+- The AI agents page lists every run with its status, live time and steps, with Undo where a change can be undone
+- The data browser filters with nested rules (and, or, groups) and shows each filter as SQL, JSON or plain English
+- Each project shows the database it uses, from its settings, .env or wp-config.php, and opens it in the data browser in one click
+
+### Improved
+
+- Logs stream live with level filters, search with highlights, a pause button, and repeats of the same error folded into one
+- The Git history is a commit graph with a card for each commit, its branches, tags and changed lines
+- Recent errors in a project are short and readable, one per row
+- Theme settings pick an accent with a contrast check you can trust, and corners come in three sizes
+- Notifications are grouped into tabs, and agent requests can be answered right there
+
+### Fixed
+
+- The setup checklist no longer flashes on screen while the app starts
+- Every panel fits its space without text running over
+
 ## 1.6.1 (2026-11-19): Sharing passwords that are easier to pass on
 
 ### Improved

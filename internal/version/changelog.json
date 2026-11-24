@@ -1,5 +1,38 @@
 [
   {
+    "version": "1.7.0",
+    "date": "2026-11-24",
+    "title": "A clearer look for approvals, logs, agent runs and data filters",
+    "items": [
+      "Agent requests show as cards with the exact tool and its settings, and steps that can't be undone need the Approve button held for a moment",
+      "Approve the same step for one project for ten minutes with a pass, shown with its time left and ended in one click",
+      "The AI agents page lists every run with its status, live time and steps, with Undo where a change can be undone",
+      "Logs stream live with level filters, search with highlights, a pause button, and repeats of the same error folded into one",
+      "The Git history is a commit graph with a card for each commit, its branches, tags and changed lines",
+      "The data browser filters with nested rules (and, or, groups) and shows each filter as SQL, JSON or plain English",
+      "Each project shows the database it uses, from its settings, .env or wp-config.php, and opens it in the data browser in one click",
+      "Recent errors in a project are short and readable, one per row",
+      "Theme settings pick an accent with a contrast check you can trust, and corners come in three sizes",
+      "Notifications are grouped into tabs, and agent requests can be answered right there",
+      "The setup checklist no longer flashes on screen while the app starts",
+      "Every panel fits its space without text running over"
+    ],
+    "kinds": [
+      "new",
+      "new",
+      "new",
+      "improved",
+      "improved",
+      "new",
+      "new",
+      "improved",
+      "improved",
+      "improved",
+      "fixed",
+      "fixed"
+    ]
+  },
+  {
     "version": "1.6.1",
     "date": "2026-11-19",
     "title": "Sharing passwords that are easier to pass on",
