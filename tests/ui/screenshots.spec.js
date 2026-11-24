@@ -37,7 +37,7 @@ async function stubApps(page, defaults = APPS.defaults) {
     { id: 'claude-code', name: 'Claude Code', found: true, connected: true },
     { id: 'cursor', name: 'Cursor', found: true, connected: false, config: '~/.cursor/mcp.json' },
     { id: 'vscode', name: 'VS Code', found: true, connected: false },
-    { id: 'windsurf', name: 'Windsurf', found: false, connected: false },
+    { id: 'windsurf', name: 'Devin Desktop (Windsurf)', found: false, connected: false },
     { id: 'zed', name: 'Zed', found: true, connected: false, manual: '{"context_servers":{}}' }]));
   await page.route('**/__call/git.hosting', json({ provider: 'github', repo: 'acme/storefront',
     pull_requests: [{ number: 42, title: 'Stripe payment intents', url: 'https://github.com/acme/storefront/pull/42', isDraft: false, reviewDecision: 'APPROVED' }],

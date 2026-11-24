@@ -252,7 +252,7 @@ var Methods = []Method{
 	{Name: "storage.list", Description: "What LocalSites keeps on disk (databases, add-on data, backups, logs, .env backups) and the clean-ups available"},
 	{Name: "storage.clean", Description: "Run one clean-up from storage.list (removes only files LocalSites created)", Mutates: true, Destructive: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "php.info", Description: "Each installed PHP version's extensions and whether Xdebug is installed"},
-	{Name: "agents.list", Description: "AI agent apps on this Mac (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Zed) and whether LocalSites is connected to each"},
+	{Name: "agents.list", Description: "AI agent apps on this Mac (Claude Desktop, Claude Code, Cursor, VS Code, Devin Desktop, Zed) and whether LocalSites is connected to each"},
 	{Name: "agents.connect", Description: "Add LocalSites to an agent app's MCP settings (backs up the file first; only the localsites entry changes)", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "agents.disconnect", Description: "Remove LocalSites from an agent app's MCP settings", Mutates: true, Approve: true, Params: []Param{{Name: "id", Type: "string", Required: true}}},
 	{Name: "approvals.list", Description: "Requests from AI agents waiting for the user's approval in the app"},

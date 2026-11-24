@@ -85,7 +85,7 @@ function runlist(el) {
     { t: 'Switched shop to PHP 8.3 and 1 more', who: 'Claude Code', on: 'shop', st: 'running', secs: 74, steps: ['Read the project context', 'Changed shop to PHP 8.3', 'Running a connection check'] },
     { t: 'Delete database shop_staging', who: 'Cursor', on: 'shop_staging', st: 'review', secs: 12, steps: ['Listed databases', 'Made a backup', 'Waiting for your approval'] },
     { t: 'Shared storefront on the internet', who: 'Claude Code', on: 'storefront', st: 'done', secs: 41, steps: ['Checked storefront is running', 'Started a share with a password', 'Copied the link'] },
-    { t: 'Looked around: 6 calls', who: 'Windsurf', on: 'blog', st: 'failed', secs: 9, steps: ['Listed projects', 'Read the error log', 'Check failed: blog is switched off'] },
+    { t: 'Looked around: 6 calls', who: 'Devin', on: 'blog', st: 'failed', secs: 9, steps: ['Listed projects', 'Read the error log', 'Check failed: blog is switched off'] },
   ];
   const meta = { running: ['Running', 'info'], review: ['Needs review', 'warn'], failed: ['Failed', 'err'], done: ['Done', 'ok'] };
   const ic = { running: '<svg class="dm-spin" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2" opacity=".2"/><path d="M8 2a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', review: I.alert, failed: I.x, done: I.ok };

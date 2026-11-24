@@ -42,7 +42,7 @@ reports stay off until you turn them on, and you see each report before it's sen
 Drop a folder in `~/Sites` and open `https://shop.test`. Each project gets a real certificate, its own PHP pool and
 its own database login, and you never type a port number.
 
-Claude, Cursor, VS Code and Windsurf connect over MCP in one click. Agents can list projects, switch PHP, read logs
+Claude, Cursor, VS Code and Devin Desktop (formerly Windsurf) connect over MCP in one click. Agents can list projects, switch PHP, read logs
 and run health checks, and anything risky waits for you to click Approve.
 
 The app is 22 MB because it uses the system web view. At idle the background service uses about 24 MB of memory and
@@ -119,9 +119,9 @@ by default and limits wrong guesses, never serves `.env` or `.git`, and stops by
 
 ### AI agents (MCP)
 
-<img src="docs/screenshots/agents.jpg" alt="Settings: connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click" width="900">
+<img src="docs/screenshots/agents.jpg" alt="Settings: connect Claude Desktop, Claude Code, Cursor, VS Code and Devin Desktop in one click" width="900">
 
-LocalSites is an MCP server. Connect **Claude Desktop, Claude Code, Cursor, VS Code or Windsurf** in one click
+LocalSites is an MCP server. Connect **Claude Desktop, Claude Code, Cursor, VS Code or Devin Desktop** in one click
 (the agent's config file is backed up first and only the LocalSites entry changes). Agents get typed tools:
 `sites_list`, `sites_update`, `sites_check`, `doctor`, `logs`, and more. They also get project summaries as
 resources and ready-made prompts to diagnose a project.
@@ -355,7 +355,7 @@ localsites mcp config                                   # prints setup for your 
 claude mcp add localsites -- "$(which localsites)" mcp  # Claude Code
 ```
 
-Or use **Settings → AI agents** to connect Claude Desktop, Claude Code, Cursor, VS Code and Windsurf in one click.
+Or use **Settings → AI agents** to connect Claude Desktop, Claude Code, Cursor, VS Code and Devin Desktop in one click.
 Everything is also plain JSON: `localsites methods --json` and `localsites call <method> '<json>'`.
 
 ## Security

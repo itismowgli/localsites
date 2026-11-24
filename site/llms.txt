@@ -1,6 +1,6 @@
 # LocalSites
 
-> LocalSites is a free, open-source (MIT) local web development environment for macOS and Linux (beta) and an alternative to MAMP PRO, MAMP, Laravel Herd, XAMPP, Laravel Valet, Local and DBngin. Every project folder gets a real `https://name.test` address. PHP 7.1 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js and Node work out of the box. One engine powers a 22 MB native app, a CLI and an MCP server, so developers and AI coding agents (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf) run the same local stack.
+> LocalSites is a free, open-source (MIT) local web development environment for macOS and Linux (beta) and an alternative to MAMP PRO, MAMP, Laravel Herd, XAMPP, Laravel Valet, Local and DBngin. Every project folder gets a real `https://name.test` address. PHP 7.1 to 8.5 per project, MySQL 8.4, Apache or Nginx, Laravel, WordPress, Next.js and Node work out of the box. One engine powers a 22 MB native app, a CLI and an MCP server, so developers and AI coding agents (Claude Desktop, Claude Code, Cursor, VS Code, Devin Desktop) run the same local stack.
 
 Key facts:
 
@@ -45,7 +45,7 @@ Key facts:
 
 ## AI agents (MCP)
 
-LocalSites is an MCP server. Connect Claude Desktop, Claude Code, Cursor, VS Code or Windsurf in one click from Settings → AI agents, or:
+LocalSites is an MCP server. Connect Claude Desktop, Claude Code, Cursor, VS Code or Devin Desktop in one click from Settings → AI agents, or:
 
 ```sh
 localsites mcp config                                   # prints setup for your client

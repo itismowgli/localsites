@@ -1,4 +1,4 @@
-// Package agentcfg connects AI agent apps (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf) to the
+// Package agentcfg connects AI agent apps (Claude Desktop, Claude Code, Cursor, VS Code, Devin Desktop) to the
 // LocalSites MCP server. Each change backs up the app's config file first, refuses files it cannot read
 // safely (comments, invalid JSON) and only adds or removes the "localsites" entry; everything else is kept.
 package agentcfg
@@ -75,9 +75,13 @@ var specs = []spec{
 		detect: func(h string) bool {
 			return dirExists(filepath.Join(h, "Library", "Application Support", "Code", "User"))
 		}},
-	{id: "windsurf", name: "Windsurf", key: "mcpServers", entry: stdEntry, match: sameCommand,
-		file:   func(h string) string { return filepath.Join(h, ".codeium", "windsurf", "mcp_config.json") },
-		detect: func(h string) bool { return dirExists(filepath.Join(h, ".codeium", "windsurf")) }},
+	// Windsurf became Devin Desktop in June 2026. Its stable channel still keeps MCP servers in
+	// ~/.codeium/windsurf/mcp_config.json (checked in Devin.app 3.14); the id stays "windsurf" so saved choices keep working.
+	{id: "windsurf", name: "Devin Desktop (Windsurf)", key: "mcpServers", entry: stdEntry, match: sameCommand,
+		file: func(h string) string { return filepath.Join(h, ".codeium", "windsurf", "mcp_config.json") },
+		detect: func(h string) bool {
+			return dirExists(filepath.Join(h, ".codeium", "windsurf")) || dirExists("/Applications/Devin.app") || dirExists("/Applications/Windsurf.app")
+		}},
 	{id: "zed", name: "Zed",
 		detect: func(h string) bool { return dirExists(filepath.Join(h, ".config", "zed")) },
 		manual: func(exe string) string {

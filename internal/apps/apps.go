@@ -35,7 +35,7 @@ var Catalog = []App{
 	{ID: "vscode", Name: "VS Code", Kind: "editor", Mac: []string{"Visual Studio Code.app"}, Bins: []string{"code"}, Desktop: []string{"code.desktop", "com.visualstudio.code.desktop", "code_code.desktop"}},
 	{ID: "vscodium", Name: "VSCodium", Kind: "editor", Mac: []string{"VSCodium.app"}, Bins: []string{"codium"}, Desktop: []string{"codium.desktop", "com.vscodium.codium.desktop", "codium_codium.desktop"}},
 	{ID: "cursor", Name: "Cursor", Kind: "editor", Mac: []string{"Cursor.app"}, Bins: []string{"cursor"}, Desktop: []string{"cursor.desktop", "co.anysphere.cursor.desktop"}},
-	{ID: "windsurf", Name: "Windsurf", Kind: "editor", Mac: []string{"Windsurf.app"}, Bins: []string{"windsurf"}, Desktop: []string{"windsurf.desktop"}},
+	{ID: "windsurf", Name: "Devin Desktop", Kind: "editor", Mac: []string{"Devin.app", "Windsurf.app"}, Bins: []string{"devin-desktop", "windsurf"}, Desktop: []string{"devin.desktop", "windsurf.desktop"}}, // Windsurf became Devin Desktop in June 2026
 	{ID: "zed", Name: "Zed", Kind: "editor", Mac: []string{"Zed.app"}, Bins: []string{"zed", "zeditor"}, Desktop: []string{"dev.zed.Zed.desktop", "zed.desktop"}},
 	{ID: "phpstorm", Name: "PhpStorm", Kind: "editor", Mac: []string{"PhpStorm.app"}, Bins: []string{"phpstorm", "phpstorm.sh"}, Desktop: []string{"jetbrains-phpstorm.desktop", "phpstorm_phpstorm.desktop", "com.jetbrains.PhpStorm.desktop"}},
 	{ID: "webstorm", Name: "WebStorm", Kind: "editor", Mac: []string{"WebStorm.app"}, Bins: []string{"webstorm", "webstorm.sh"}, Desktop: []string{"jetbrains-webstorm.desktop", "webstorm_webstorm.desktop", "com.jetbrains.WebStorm.desktop"}},
